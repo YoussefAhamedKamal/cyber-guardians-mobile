@@ -1,0 +1,378 @@
+# Cyber Guardians — PROJECT MAP
+
+> لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
+> الحالة: **🟢 تشغيل وإنتاج (Live on GitHub Pages)**
+
+---
+
+## [TECH_STACK]
+
+| الطبقة | التقنية | الإصدار | الغرض |
+|---|---|---|---|
+| Build | Vite | 8.0.14 | Bundler / Dev server |
+| Language | TypeScript | 6.0.3 | Strict typing |
+| UI Framework | React | 19.x | UI / HUD / Menus |
+| 3D Engine | Three.js | 0.184.0 | WebGL rendering |
+| React → Three | @react-three/fiber | 9.6.1 | R3F renderer |
+| 3D Helpers | @react-three/drei | 10.7.7 | Utility components |
+| State | Zustand | 5.0.13 | Game + Settings store |
+| Persist | IndexedDB (مخصص) | — | تخزين الملفات الكبيرة (WAV, صور) |
+| Audio | Web Audio API (Procedural) | — | BGM (procedural/file) + SFX (7 أنواع) |
+| 3D Characters | useGLTF (RobotExpressive) + Float + useAnimations | — | نماذج محملة من الإنترنت مع حركات |
+| 3D Environment | Stars + Particles + Grid | — | خلفية نجمية مع جزيئات عائمة |
+| Testing | Vitest | 4.1.7 | 35 اختبار ✅ |
+| Deploy | GitHub Actions → GitHub Pages | — | نشر آلي مع workflow_dispatch |
+| AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
+
+### قيود تقنية
+- Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
+- ES2022 target
+- Path aliases: `@/` → `src/`
+- Resolution: responsive 16:9 (base 1200×675)
+- Chunk size: ~1.2MB (Three.js)
+- Deployment base: `/cyber-guardians/`
+
+---
+
+## [SYSTEM_FLOW]
+
+```
+[Boot]
+  │
+  ├─→ Main Menu ←────────────────────────────┐
+  │     ├─→ New Game → Level 1               │
+  │     ├─→ Continue → Level Select          │
+  │     └─→ Settings                         │
+  │                                          │
+  ├─→ Level Select ←──────────────────────┐  │
+  │     ├─→ Level[N] (جديد/مكرر)          │  │
+  │     │     ├─→ Story Dialogue (3D)     │  │
+  │     │     ├─→ Challenge (mini-game)   │  │
+  │     │     │     ├─→ إعادة تعيين       │  │
+  │     │     │     └─→ Result Screen     │  │
+  │     │     │           ├─→ متابعة       │  │
+  │     │     │           └─→ إعادة محاولة │  │
+  │     │     ├─→ Outro Dialogue          │  │
+  │     │     └─→ Back to Level Select ───┘  │
+  │     └─→ جميع المستويات قابلة لإعادة ────┘
+  │
+  ├─→ Settings (5 tabs: الصوت, العرض, الخطوط, الفيديو, عام)
+  │
+  ├─→ Celebration Video (المستوى 7 فقط — بعد الحوار الأخير)
+  │
+  └─→ Victory (عند إكمال 7 مستويات)
+       → Reset → Main Menu
+
+Keyboard Shortcuts: M (mute), Esc (back)
+```
+
+---
+
+## [LEVEL MAP]
+
+| # | الاسم | الثغرة | التحدي | عدد الأسئلة/الخطوات | ملاحظات |
+|---|---|---|---|---|---|
+| 1 | رسالة مشبوهة | Phishing | بطاقات تصنيف إيميلات | 6 إيميلات | خلط عشوائي + إعادة محاولة |
+| 2 | الباب المفتوح | Password | بناء كلمة مرور بالمعايير | 4 قواعد | إعادة محاولة |
+| 3 | الضيف غير المرغوب | Malware | متاهة سوكوبان (ادفع العدو) | 7×7 Grid — 4 ملفات خبيثة | إعادة تعيين/محاولة |
+| 4 | الثغرة في الجدار | Network | إعداد جدار ناري | 6 منافذ | إعادة محاولة |
+| 5 | الرسالة المشفرة | Encryption | Caesar Cipher | Shift 1-10 | إعادة محاولة |
+| 6 | الموقع المخترق | Web Security | إصلاح كود (SQLi + XSS) | 2 قطع كود | خلط عشوائي + إعادة محاولة |
+| 7 | الهجوم الأخير | Incident Response | اختيار متعدد | 3 خطوات | خلط عشوائي + إعادة محاولة + فيديو احتفال |
+
+---
+
+## [ARCHITECTURE]
+
+```
+src/
+├── App.tsx                          # 7 شاشات (menu, levelSelect, dialogue, gameplay, settings, celebration, victory)
+├── main.tsx                         # Entry point
+│
+├── challenges/                      # 7 mini-games كاملة + shuffle
+│   ├── ChallengeRenderer.tsx        # Router حسب type
+│   ├── CardChallenge.tsx            # Level 1 — shuffle emails
+│   ├── BuildChallenge.tsx           # Level 2
+│   ├── MazeChallenge.tsx            # Level 3 — Sokoban 7×7, 4 malware, reset/retry
+│   ├── DragDropChallenge.tsx        # Level 4
+│   ├── DecryptChallenge.tsx         # Level 5 — shuffle options via monoFont
+│   ├── CodeFixChallenge.tsx         # Level 6 — shuffle codes + options
+│   └── ResponseChallenge.tsx        # Level 7 — shuffle steps + options
+│
+├── components/
+│   ├── ui/
+│   │   ├── Button.tsx               # 3 variants — CSS variables for borders/colors
+│   │   ├── Modal.tsx                # CSS variable borderRadius
+│   │   ├── ProgressBar.tsx          # CSS variable borderRadius + accent-color
+│   │   ├── DialogueBox.tsx          # فيديو مستقل لكل شخصية (zayn.mp4, nora.mp4, etc.)
+│   │   ├── BackgroundVideo.tsx      # فيديو/صورة/GIF مخصص + سطوع
+│   │   ├── CelebrationVideo.tsx     # فيديو احتفال نهاية اللعبة + skip button
+│   │   ├── SettingsPanel.tsx        # 5 tabs + رفع ملفات لكل شخصية + معاينة خطوط
+│   │   └── KeyboardShortcuts.tsx    # اختصارات لوحة المفاتيح — CSS variables
+│   └── three/
+│       ├── GameCanvas.tsx
+│       ├── CharacterModel.tsx       # GLTF + Animations (غير مستخدم حالياً)
+│       └── Environment.tsx          # Stars + Particles + Grid
+│
+├── store/
+│   ├── gameStore.ts                 # Zustand + persist (IndexedDB) — Set serialization fix
+│   └── settingsStore.ts            # 28 حقل إعدادات (18 قديم + 10 جديد)
+│
+├── systems/
+│   ├── ProceduralAudio.ts           # BGM (procedural/file) + SFX (7 أنواع) — autoplay fix
+│   └── LoggingSystem.ts
+│
+├── hooks/
+│   └── useResponsive.ts
+│
+├── data/
+│   ├── characters.ts                # 6 شخصيات (زين، نورا، عمر، ليلى، طارق، النظام)
+│   └── dialogue.ts                  # 7 مستويات — نص + تحديات + shuffle
+│
+├── types/
+│   ├── index.ts
+│   ├── settings.ts                  # 28 حقل
+│   ├── dialogue.ts
+│   └── characters.ts
+│
+├── utils/
+│   ├── constants.ts                 # قيم افتراضية + FONT_OPTIONS + HEADING_FONT_OPTIONS + MONO_FONT_OPTIONS
+│   ├── indexedDBStorage.ts          # تخزين Zustand في IndexedDB + تثاقل من localStorage
+│   └── helpers.ts
+│
+└── __tests__/                       # 35 اختبار ✅
+    ├── gameStore.test.ts            # 9 tests
+    ├── settingsStore.test.ts        # 6 tests
+    ├── storage.test.ts              # 5 tests
+    ├── helpers.test.ts              # 6 tests
+    ├── logging.test.ts              # 5 tests
+    └── levels.test.ts               # 4 tests
+```
+
+---
+
+## [SETTINGS] — 28 حقل
+
+### تبويب الصوت
+| الميزة | الحالة | التخزين |
+|---|---|---|
+| BGM Volume (0–200%) | ✅ | IndexedDB |
+| SFX Volume (0–200%) | ✅ | IndexedDB |
+| Mute Toggle | ✅ | IndexedDB |
+| Custom BGM Upload (audio/*) | ✅ | IndexedDB (data URL) |
+
+### تبويب العرض
+| الميزة | الحالة | التخزين |
+|---|---|---|
+| Background Color | ✅ | IndexedDB |
+| Background Brightness (0.1–2) | ✅ | IndexedDB — CSS variable |
+| Background Animation (image/video/GIF) | ✅ | IndexedDB (data URL, 20MB max) |
+| Background Animation Brightness | ✅ | IndexedDB |
+| Border Radius (0–32px) | ✅ | IndexedDB — CSS variable `--custom-border-radius` |
+| Border Width (0–6px) | ✅ | IndexedDB — CSS variable `--custom-border-width` |
+| Border Color | ✅ | IndexedDB — CSS variable `--custom-border-color` |
+
+### تبويب الخطوط
+| الميزة | النطاق | الافتراضي | التخزين |
+|---|---|---|---|
+| خط النص الأساسي | 5 خيارات | Cairo | IndexedDB |
+| خط العناوين | 6 خيارات | Cairo | IndexedDB |
+| خط الكود | 5 خيارات | Courier New | IndexedDB |
+| حجم النص الأساسي | 12–28px | 16px | IndexedDB |
+| حجم العناوين | 14–40px | 24px | IndexedDB |
+| حجم الكود | 10–24px | 14px | IndexedDB |
+| حجم النص الثانوي | 10–20px | 13px | IndexedDB |
+| لون النص الأساسي | color picker | أبيض | IndexedDB |
+| لون العناوين | color picker | أزرق | IndexedDB |
+| لون التمييز | color picker | أزرق | IndexedDB |
+| لون النص الثانوي | color picker | رمادي | IndexedDB |
+| معاينة حية | — | — | — |
+
+### تبويب الفيديو
+| الميزة | الحالة | التخزين |
+|---|---|---|
+| فيديو زين (محلل أمني) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو د. نورا (خبيرة تشفير) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو عمر (خبير شبكات) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو ليلى (خبيرة أمن ويب) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو طارق (محلل برمجيات خبيثة) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو النظام (إشعارات وأهداف) | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو الاحتفال (نهاية اللعبة) | ✅ | IndexedDB (data URL, 50MB max) |
+| خلفية القائمة الرئيسية | ✅ | IndexedDB (data URL, 50MB max) |
+
+### تبويب عام
+| الميزة | الحالة | التخزين |
+|---|---|---|
+| Quality Preset (low/medium/high) | ✅ | IndexedDB |
+| Accessibility Mode | ✅ | IndexedDB |
+| Keyboard Shortcuts | ✅ | — |
+| Reset All Defaults | ✅ | IndexedDB |
+
+---
+
+## [CSS_VARIABLES]
+
+| المتغير | الاستخدام | القيمة الافتراضية |
+|---|---|---|
+| `--custom-brightness` | سطوع الخلفية | 1.0 |
+| `--custom-border-radius` | نصف قطر الحدود | 12px |
+| `--custom-border-color` | لون الحدود | rgba(255,255,255,0.2) |
+| `--custom-border-width` | سماكة الحدود | 1px |
+| `--heading-font` | خط العناوين | Cairo |
+| `--heading-font-size` | حجم العناوين | 24px |
+| `--heading-color` | لون العناوين | #4FC3F7 |
+| `--accent-color` | لون التمييز | #4FC3F7 |
+| `--muted-color` | لون النص الثانوي | #888888 |
+| `--mono-font` | خط الكود | Courier New |
+| `--mono-font-size` | حجم الكود | 14px |
+| `--border-color-subtle` | حدود عامة | rgba(255,255,255,0.2) |
+| `--border-color-muted` | حدود خافتة | rgba(255,255,255,0.1) |
+| `--border-color-faint` | حدود شبه مخفية | rgba(255,255,255,0.06) |
+| `--border-color-success` | نجاح | #81C784 |
+| `--border-color-error` | خطأ | #E57373 |
+| `--border-color-warning` | تحذير | #FFB74D |
+
+---
+
+## [FILES & ASSETS]
+
+### فيديوهات الشخصيات (public/videos/)
+| الملف | الدور | ملاحظات |
+|---|---|---|
+| `zayn.mp4` | زين — محلل أمني | فيديو افتراضي |
+| `nora.mp4` | د. نورا — خبيرة تشفير | فيديو افتراضي |
+| `omar.mp4` | عمر — خبير شبكات | فيديو افتراضي |
+| `layla.mp4` | ليلى — خبيرة أمن ويب | فيديو افتراضي |
+| `tariq.mp4` | طارق — محلل برمجيات خبيثة | فيديو افتراضي |
+| `system.mp4` | النظام — إشعارات وأهداف | فيديو افتراضي |
+| `celebration.mp4` | شاشة الاحتفال | نهاية المستوى 7 |
+
+### ملفات أخرى
+| الملف | الحجم | الاستخدام |
+|---|---|---|
+| `public/videos/background.mp4` | 2.5MB | خلفية اللعبة (حلقة) |
+| `public/videos/background_1.mp4` | 13MB | خلفية بديلة |
+| `public/videos/output.wav` | 1.4MB | موسيقى خلفية مخصصة |
+| `public/videos/زين.webp` | — | صورة FLUX لشخصية زين |
+| `PROMPTS.md` | 475+ سطر | أوامر FLUX + مشاهد انتقالية + مشهد النظام |
+| `.github/workflows/deploy.yml` | — | GitHub Pages deploy (Node.js 24) |
+
+---
+
+## [CHARACTERS]
+
+| المعرف | الاسم | الدور | اللون | فيديو |
+|---|---|---|---|---|
+| `zayn` | زين | محلل أمني | `#4FC3F7` | `zayn.mp4` |
+| `nora` | د. نورا | خبيرة تشفير | `#CE93D8` | `nora.mp4` |
+| `omar` | عمر | خبير شبكات | `#FFB74D` | `omar.mp4` |
+| `layla` | ليلى | خبيرة أمن ويب | `#81C784` | `layla.mp4` |
+| `tariq` | طارق | محلل برمجيات خبيثة | `#E57373` | `tariq.mp4` |
+| `system` | النظام | إشعارات وأهداف | `#FFFFFF` | `system.mp4` |
+
+---
+
+## [MAZE_CHALLENGE] — المستوى 3
+
+**النوع**: Sokoban-style push mechanic
+
+**الخريطة**:
+```
+   0 1 2 3 4 5 6
+0: . . . . . . .
+1: . W . . M . .    M = (4,1), W = (1,1)
+2: . . . . . M .    M = (5,2)
+3: . . . W . . .    W = (3,3)
+4: . . . M . . .    M = (3,4)
+5: . M . . . . .    M = (1,5)
+6: . . E . . E .    E = (2,6), E = (5,6)
+```
+
+**التحسينات**:
+- زر **إعادة تعيين** أثناء اللعب
+- زر **إعادة المحاولة** بعد الإكمال
+- `useCallback` أُزيل (stale closure كان ينهي اللعبة بدرياً)
+- `secured` يُحسب من `totalMalware - malware.length` بدل state منفصل
+- كل الملفات الخبيثة تصل إلى نقطة أمان (تم إصلاح موضع (5,0) → (4,1))
+
+---
+
+## [SHUFFLE_SYSTEM]
+
+في كل مرة يُفتح المستوى أو تُعاد المحاولة، يتم خلط الأسئلة والإجابات عشوائياً:
+
+| المستوى | ما يُخلط |
+|---|---|
+| 1 (رسالة مشبوهة) | ترتيب الإيميلات |
+| 6 (الموقع المخترق) | ترتيب الثغرات + ترتيب الإجابات |
+| 7 (الهجوم الأخير) | ترتيب الخطوات + ترتيب الإجابات |
+
+**الآلية**: `useState(() => shuffle(data))` — الخلط يحدث مرة واحدة عند تحميل المكون.
+
+---
+
+## [CELEBRATION_VIDEO]
+
+- يظهر **فقط** بعد إنهاء المستوى 7 (الهجوم الأخير)
+- فيديو full-screen مع صوت
+- زر "تخطي" يظهر بعد 3 ثواني
+- عند انتهاء الفيديو → صفحة النقاط (Victory)
+
+---
+
+## [BORDER_SYSTEM]
+
+تم توحيد **~55** حد hardcoded باستخدام CSS variables:
+
+| المكون | التعديلات |
+|---|---|
+| Button | `--custom-border-radius`, `--custom-border-color`, `--accent-color` |
+| Modal | `--custom-border-radius` |
+| SettingsPanel | `--custom-border-radius`, `--custom-border-color`, `--border-color-faint` |
+| KeyboardShortcuts | `--custom-border-radius`, `--border-color-subtle`, `--accent-color` |
+| ProgressBar | `--custom-border-radius`, `--accent-color` |
+| App (level select) | `--custom-border-radius`, `--custom-border-width`, `--accent-color`, `--border-color-subtle`, `--border-color-faint` |
+| MazeChallenge | `--custom-border-width`, `--border-color-error`, `--border-color-success`, `--accent-color`, `--border-color-subtle` |
+| BuildChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-subtle`, `--border-color-success`, `--border-color-faint` |
+| DragDropChallenge | `--custom-border-radius`, `--custom-border-width`, `--accent-color`, `--border-color-muted` |
+| DecryptChallenge | `--custom-border-width`, `--accent-color`, `--border-color-success` |
+| CodeFixChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-muted`, `--border-color-success`, `--border-color-error` |
+| ResponseChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-muted`, `--border-color-success`, `--border-color-error` |
+
+---
+
+## [AUDIO_SYSTEM]
+
+**ProceduralAudio.ts** — التحسينات:
+- `playFileBg()`: `Math.min(volume, 1)` لمنع قيم > 1
+- `playFileBg()`: `preload='auto'` لتحميل مسبق
+- `playFileBg()`: fallback to user interaction click إذا المتصفح منع autoplay
+- `playClick()`: يعيد تشغيل BGM إذا متوقف
+- متغير مشترك `bgAudio` لمنع تداخل ملفات صوتية
+
+---
+
+## [ORPHANS & PENDING]
+
+### مكتمل
+- [x] **إعادة المحاولة في كل التحديات** — تم
+- [x] **خلط الأسئلة عشوائياً** — تم (المستويات 1, 6, 7)
+- [x] **فيديو احتفال نهاية اللعبة** — تم (celebration.mp4 + CelebrationVideo)
+- [x] **فيديو مستقل لكل شخصية** — تم (6 شخصيات: zayn, nora, omar, layla, tariq, system)
+- [x] **إعدادات خطوط شاملة** — تم (12 إعداد + معاينة حية)
+- [x] **توحيد الحدود** — تم (~55 hardcoded → CSS variables)
+- [x] **إصلاح Set serialization** — تم
+- [x] **إصلاح autoplay الصوت** — تم
+- [x] **توليد فيديوهات الشخصيات** — تم (zayn.mp4, nora.mp4, omar.mp4, layla.mp4, tariq.mp4, system.mp4, celebration.mp4)
+
+### معلق / غير مربوط
+- [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
+- [ ] **AudioSystem** — `src/systems/AudioSystem.ts` مصدّر لكن غير مستورد في أي كود إنتاجي. الـ app يستخدم `ProceduralAudio` بدلاً منه.
+- [ ] **LoggingSystem** — `src/systems/LoggingSystem.ts` يستخدم فقط في `__tests__/`، ليس في الإنتاج.
+- [ ] **تسجيل الموسيقى من MiniMax Music** — الأوامر جاهزة في PROMPTS.md، `output.wav` حالياً placeholder
+- [ ] **نموذج GLTF مخصص لكل شخصية** — حالياً نموذج واحد (RobotExpressive)
+- [ ] **تلميحات داخل التحديات** — للمستخدمين الجدد
+- [ ] **ترجمة إنجليزية** — MVP عربي بالكامل
+- [ ] **صفحة Credits** — بسيطة يمكن إضافتها
+- [ ] **مشهد البداية (Intro)** — أوامر الفيديو جاهزة في PROMPTS.md
+- [ ] **تقسيم الـ chunk** — ~1.2MB حالياً (Three.js dominates)

@@ -1,0 +1,75 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a1a;
+  color: #fff;
+  font-family: 'Segoe UI', 'Cairo', Tahoma, sans-serif;
+  direction: rtl;
+  -webkit-overflow-scrolling: touch;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.15);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #4FC3F7;
+  cursor: pointer;
+}
+
+select {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+
+@media (max-width: 600px) {
+  html { font-size: 14px; }
+  select { font-size: 16px !important; }
+  input, button { font-size: 16px !important; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  select, input, button, textarea {
+    font-size: 16px !important;
+  }
+}
