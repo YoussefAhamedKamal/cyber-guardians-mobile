@@ -8,6 +8,17 @@ import { audio } from '@/systems/ProceduralAudio'
 import { BASE_URL } from '@/utils/constants'
 import type { LevelId } from '@/types'
 
+const FONT_STYLE_ID = 'cg-custom-fonts'
+
+function injectFont(name: string, url: string) {
+  const existing = document.getElementById(FONT_STYLE_ID)
+  if (existing) existing.remove()
+  const style = document.createElement('style')
+  style.id = FONT_STYLE_ID
+  style.textContent = `@font-face{font-family:'${name}';src:url('${url}') format('truetype');font-weight:normal;font-style:normal;font-display:swap}`
+  document.head.appendChild(style)
+}
+
 type Screen = 'menu' | 'levelSelect' | 'dialogue' | 'gameplay' | 'settings' | 'celebration' | 'victory'
 
 function isValidLevel(id: number): id is LevelId {
@@ -27,6 +38,11 @@ export function App() {
   useEffect(() => {
     audio.setSfxVolume(settings.sfxVolume)
   }, [settings.sfxVolume])
+
+  useEffect(() => {
+    if (settings.customFontUrl) injectFont(settings.customFontName || 'CustomFont', settings.customFontUrl)
+    if (settings.customHeadingFontUrl) injectFont(settings.customHeadingFontName || 'CustomHeadingFont', settings.customHeadingFontUrl)
+  }, [settings.customFontUrl, settings.customFontName, settings.customHeadingFontUrl, settings.customHeadingFontName])
 
   useEffect(() => {
     const vol = settings.muted || settings.bgmMuted ? 0 : settings.bgmVolume
@@ -134,8 +150,8 @@ export function App() {
           justifyContent: 'center', height: '100%', gap: '24px',
           position: 'relative', zIndex: 1,
         }}>
-          <h1 style={{ fontSize: '48px', margin: 0, ...titleGradient }}>Cyber Guardians</h1>
-          <p style={{ fontSize: '20px', color: '#888', margin: 0 }}>حراس الأمن السيبراني</p>
+          <h1 style={{ fontSize: '48px', margin: 0, fontFamily: 'var(--heading-font)', ...titleGradient }}>Cyber Guardians</h1>
+          <p style={{ fontSize: '20px', color: '#888', margin: 0, fontFamily: 'var(--heading-font)' }}>حراس الأمن السيبراني</p>
           <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
             <Button onClick={handleStart}>بدء اللعبة</Button>
             <Button variant="secondary" onClick={() => setScreen('settings')}>الإعدادات</Button>

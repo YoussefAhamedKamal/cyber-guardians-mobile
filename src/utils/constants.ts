@@ -7,7 +7,7 @@ export const ASPECT_RATIO = 16 / 9
 export const STORAGE_KEY = 'cyber-guardians-save'
 export const SETTINGS_KEY = 'cyber-guardians-settings'
 
-export const GAMING_FONT_OPTIONS = ['Press Start 2P', 'VT323', 'Orbitron', 'Russo One', 'Rajdhani', 'Audiowide', 'Monoton', 'Teko'] as const
+export const GAMING_FONT_OPTIONS = ['Ryzes', 'Press Start 2P', 'VT323', 'Orbitron', 'Russo One', 'Rajdhani', 'Audiowide', 'Monoton', 'Teko'] as const
 
 export const DEFAULT_SETTINGS = {
   bgmVolume: 0.7,
@@ -16,9 +16,9 @@ export const DEFAULT_SETTINGS = {
   bgmMuted: false,
   qualityPreset: 'high' as const,
   fontSize: 16,
-  fontFamily: 'Cairo',
+  fontFamily: 'Ryzes',
   fontColor: '#ffffff',
-  headingFont: 'Cairo',
+  headingFont: 'Ryzes',
   headingFontSize: 24,
   headingColor: '#4FC3F7',
   accentColor: '#4FC3F7',
@@ -44,6 +44,10 @@ export const DEFAULT_SETTINGS = {
   customTariqVideoUrl: '',
   customSystemVideoUrl: '',
   customCelebrationVideoUrl: '',
+  customFontName: '',
+  customFontUrl: '',
+  customHeadingFontName: '',
+  customHeadingFontUrl: '',
 }
 
 export const QUALITY_PRESETS = {

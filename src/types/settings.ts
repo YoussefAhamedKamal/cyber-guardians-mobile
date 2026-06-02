@@ -33,4 +33,8 @@ export interface GameSettings {
   customTariqVideoUrl: string
   customSystemVideoUrl: string
   customCelebrationVideoUrl: string
+  customFontName: string
+  customFontUrl: string
+  customHeadingFontName: string
+  customHeadingFontUrl: string
 }

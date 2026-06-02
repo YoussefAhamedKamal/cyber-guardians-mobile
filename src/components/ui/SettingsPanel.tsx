@@ -8,6 +8,17 @@ interface Props {
   onBack: () => void
 }
 
+const FONT_STYLE_ID = 'cg-custom-fonts'
+
+function injectFontStyle(name: string, url: string) {
+  const existing = document.getElementById(FONT_STYLE_ID)
+  if (existing) existing.remove()
+  const style = document.createElement('style')
+  style.id = FONT_STYLE_ID
+  style.textContent = `@font-face{font-family:'${name}';src:url('${url}') format('truetype');font-weight:normal;font-style:normal;font-display:swap}`
+  document.head.appendChild(style)
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px', borderRadius: 'var(--custom-border-radius)',
   background: '#1a1a2e', color: '#fff',
@@ -30,6 +41,43 @@ const rowStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '8px',
+}
+
+function FontUploadRow({
+  label, currentName, currentUrl, onUpload, onRemove,
+}: {
+  label: string
+  currentName: string
+  currentUrl: string
+  onUpload: (name: string, url: string) => void
+  onRemove: () => void
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const name = file.name.replace(/\.[^/.]+$/, '')
+      const url = reader.result as string
+      injectFontStyle(name, url)
+      onUpload(name, url)
+    }
+    reader.readAsDataURL(file)
+  }
+  return (
+    <div>
+      <label style={labelStyle}>{label}</label>
+      <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+        <input ref={ref} type="file" accept=".ttf,.otf,.woff,.woff2" onChange={handleFile} style={{ display: 'none' }} />
+        <Button variant="secondary" onClick={() => ref.current?.click()}>
+          {currentUrl ? 'تغيير' : 'رفع خط'}
+        </Button>
+        {currentUrl && <button onClick={onRemove} style={removeBtn}>إزالة</button>}
+      </div>
+      {currentName && <div style={{ color: '#81C784', fontSize: '12px', marginTop: '4px' }}>✓ {currentName}</div>}
+    </div>
+  )
 }
 
 function FileUploadRow({
@@ -226,6 +274,8 @@ export function SettingsPanel({ onBack }: Props) {
               <select value={s.fontFamily}
                 onChange={(e) => s.setFontFamily(e.target.value)} style={inputStyle}>
                 {FONT_OPTIONS.map((f) => (<option key={f} value={f}>{f}</option>))}
+                {s.customFontName && <option key={s.customFontName} value={s.customFontName}>{s.customFontName} (مثبّت)</option>}
+                {s.customHeadingFontName && s.customHeadingFontName !== s.customFontName && <option key={s.customHeadingFontName} value={s.customHeadingFontName}>{s.customHeadingFontName} (مثبّت)</option>}
               </select>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={labelStyle}>الحجم</label>
@@ -247,6 +297,8 @@ export function SettingsPanel({ onBack }: Props) {
               <select value={s.headingFont}
                 onChange={(e) => s.setHeadingFont(e.target.value)} style={inputStyle}>
                 {HEADING_FONT_OPTIONS.map((f) => (<option key={f} value={f}>{f}</option>))}
+                {s.customHeadingFontName && <option key={s.customHeadingFontName} value={s.customHeadingFontName}>{s.customHeadingFontName} (مثبّت)</option>}
+                {s.customFontName && s.customFontName !== s.customHeadingFontName && <option key={s.customFontName} value={s.customFontName}>{s.customFontName} (مثبّت)</option>}
               </select>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={labelStyle}>الحجم</label>
@@ -299,6 +351,29 @@ export function SettingsPanel({ onBack }: Props) {
               </div>
               <input type="range" min={10} max={20} step={1} value={s.mutedFontSize}
                 onChange={(e) => s.setMutedFontSize(+e.target.value)} style={{ width: '100%' }} />
+            </div>
+
+            {/* ── رفع الخطوط المحلية ── */}
+            <div style={{ ...rowStyle, borderColor: 'rgba(79,195,247,0.3)', background: 'rgba(79,195,247,0.04)' }}>
+              <label style={{ ...labelStyle, color: '#4FC3F7', fontWeight: 700, marginBottom: '8px' }}>تثبيت الخطوط محلياً</label>
+              <FontUploadRow
+                label="خط للنص الأساسي"
+                currentName={s.customFontName}
+                currentUrl={s.customFontUrl}
+                onUpload={(name, url) => s.setCustomFont(name, url)}
+                onRemove={() => s.removeCustomFont()}
+              />
+              <div style={{ height: '8px' }} />
+              <FontUploadRow
+                label="خط للعناوين"
+                currentName={s.customHeadingFontName}
+                currentUrl={s.customHeadingFontUrl}
+                onUpload={(name, url) => s.setCustomHeadingFont(name, url)}
+                onRemove={() => s.removeCustomHeadingFont()}
+              />
+              <div style={{ color: '#888', fontSize: '11px', marginTop: '6px' }}>
+                الصيغ المدعومة: TTF, OTF, WOFF, WOFF2
+              </div>
             </div>
 
             {/* ── معاينة ── */}

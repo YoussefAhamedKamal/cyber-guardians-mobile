@@ -40,6 +40,10 @@ interface SettingsStore extends GameSettings {
   setCustomTariqVideoUrl: (url: string) => void
   setCustomSystemVideoUrl: (url: string) => void
   setCustomCelebrationVideoUrl: (url: string) => void
+  setCustomFont: (name: string, url: string) => void
+  setCustomHeadingFont: (name: string, url: string) => void
+  removeCustomFont: () => void
+  removeCustomHeadingFont: () => void
   resetAll: () => void
 }
 
@@ -84,6 +88,10 @@ export const useSettingsStore = create<SettingsStore>()(
       setCustomTariqVideoUrl: (url) => set({ customTariqVideoUrl: url }),
       setCustomSystemVideoUrl: (url) => set({ customSystemVideoUrl: url }),
       setCustomCelebrationVideoUrl: (url) => set({ customCelebrationVideoUrl: url }),
+      setCustomFont: (name, url) => set({ customFontName: name, customFontUrl: url }),
+      setCustomHeadingFont: (name, url) => set({ customHeadingFontName: name, customHeadingFontUrl: url }),
+      removeCustomFont: () => set({ customFontName: '', customFontUrl: '' }),
+      removeCustomHeadingFont: () => set({ customHeadingFontName: '', customHeadingFontUrl: '' }),
       resetAll: () => set({ ...DEFAULT_SETTINGS }),
     }),
     { name: SETTINGS_KEY, storage: createJSONStorage(() => indexedDBStorage) }
