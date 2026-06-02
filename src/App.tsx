@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useResponsive } from '@/hooks'
-import { Button, ProgressBar, DialogueBox, BackgroundVideo, SettingsPanel, CelebrationVideo } from '@/components/ui'
+import { Button, ProgressBar, DialogueBox, BackgroundVideo, SettingsPanel, CelebrationVideo, MenuScreen } from '@/components/ui'
 import { useGameStore, useSettingsStore } from '@/store'
 import { levels } from '@/data'
 import { ChallengeRenderer } from '@/challenges'
@@ -143,20 +143,15 @@ export function App() {
 
   return (
     <div style={containerStyle}>
-      <BackgroundVideo blur={2} overlayOpacity={0.7} />
+      <BackgroundVideo
+        blur={screen === 'menu' ? 0 : 2}
+        overlayOpacity={screen === 'menu' ? 0 : 0.7}
+      />
       {screen === 'menu' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', height: '100%', gap: '24px',
-          position: 'relative', zIndex: 1,
-        }}>
-          <h1 style={{ fontSize: '48px', margin: 0, fontFamily: 'var(--heading-font)', ...titleGradient }}>Cyber Guardians</h1>
-          <p style={{ fontSize: '20px', color: '#888', margin: 0, fontFamily: 'var(--heading-font)' }}>حراس الأمن السيبراني</p>
-          <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
-            <Button onClick={handleStart}>بدء اللعبة</Button>
-            <Button variant="secondary" onClick={() => setScreen('settings')}>الإعدادات</Button>
-          </div>
-        </div>
+        <MenuScreen
+          onStart={handleStart}
+          onSettings={() => setScreen('settings')}
+        />
       )}
 
       {screen === 'levelSelect' && (

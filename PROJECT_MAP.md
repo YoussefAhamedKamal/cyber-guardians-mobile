@@ -39,10 +39,9 @@
 ```
 [Boot]
   │
-  ├─→ Main Menu ←────────────────────────────┐
-  │     ├─→ New Game → Level 1               │
-  │     ├─→ Continue → Level Select          │
-  │     └─→ Settings                         │
+  ├─→ Main Menu (game-style: orbs + grid + particles) ←─┐
+  │     ├─→ Start Game → Level Select                   │
+  │     └─→ Settings                                    │
   │                                          │
   ├─→ Level Select ←──────────────────────┐  │
   │     ├─→ Level[N] (جديد/مكرر)          │  │
@@ -86,7 +85,7 @@ Keyboard Shortcuts: M (mute), Esc (back)
 
 ```
 src/
-├── App.tsx                          # 7 شاشات (menu, levelSelect, dialogue, gameplay, settings, celebration, victory)
+├── App.tsx                          # 7 شاشات — MenuScreen مستقل + BackgroundVideo متغير حسب الشاشة
 ├── main.tsx                         # Entry point
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
@@ -108,7 +107,8 @@ src/
 │   │   ├── BackgroundVideo.tsx      # فيديو/صورة/GIF مخصص + سطوع
 │   │   ├── CelebrationVideo.tsx     # فيديو احتفال نهاية اللعبة + skip button
 │   │   ├── SettingsPanel.tsx        # 5 tabs + رفع ملفات لكل شخصية + معاينة خطوط
-│   │   └── KeyboardShortcuts.tsx    # اختصارات لوحة المفاتيح — CSS variables
+│   │   ├── KeyboardShortcuts.tsx    # اختصارات لوحة المفاتيح — CSS variables
+│   │   └── MenuScreen.tsx           # شاشة البداية (Fortnite/Free Fire style) — title top-left, orbs, grid, particles, circular buttons
 │   └── three/
 │       ├── GameCanvas.tsx
 │       ├── CharacterModel.tsx       # GLTF + Animations (غير مستخدم حالياً)
@@ -234,6 +234,18 @@ src/
 
 ---
 
+## [CSS_ANIMATIONS]
+
+| الكلمة المفتاحية | الوظيفة | المدة |
+|---|---|---|
+| `cg-particle-rise` | جسيمات متصاعدة من الأسفل للأعلى بتلاشي | 10–20s |
+| `cg-orb-float` | كرات ضبابية عائمة مع تغير الحجم | 12s |
+| `cg-grid-move` | شبكة منظور 3D متحركة للأعلى | 20s |
+| `cg-title-glow` | توهج متغير للعنوان (نيلي → بنفسجي) | 3s |
+| `cg-notification-pulse` | نبض نقطة الإشعار (تكبير/تصغير) | 2.5s |
+
+---
+
 ## [FILES & ASSETS]
 
 ### فيديوهات الشخصيات (public/videos/)
@@ -250,8 +262,10 @@ src/
 ### ملفات أخرى
 | الملف | الحجم | الاستخدام |
 |---|---|---|
-| `public/videos/background.mp4` | 2.5MB | خلفية اللعبة (حلقة) |
-| `public/videos/background_1.mp4` | 13MB | خلفية بديلة |
+| `public/videos/background.mp4` | 2.5MB | خلفية اللعبة (قديم — احتياطي) |
+| `public/videos/background_1.mp4` | 1.3MB | خلفية سابقة (احتياطي) |
+| `public/videos/original.mp4` | 1.3MB | خلفية اللعبة الرئيسية (حلقة، 1280×720) |
+| `public/startpage5.html` | — | تصميم مرجعي لشاشة البداية (Fortnite/Free Fire style) |
 | `public/videos/output.wav` | 1.4MB | موسيقى خلفية مخصصة |
 | `public/videos/زين.webp` | — | صورة FLUX لشخصية زين |
 | `PROMPTS.md` | 475+ سطر | أوامر FLUX + مشاهد انتقالية + مشهد النظام |
@@ -364,6 +378,7 @@ src/
 - [x] **إصلاح Set serialization** — تم
 - [x] **إصلاح autoplay الصوت** — تم
 - [x] **توليد فيديوهات الشخصيات** — تم (zayn.mp4, nora.mp4, omar.mp4, layla.mp4, tariq.mp4, system.mp4, celebration.mp4)
+- [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style — عنوان top-left بتدرج + توهج، كرات ضبابية عائمة، شبكة منظور 3D، جسيمات متصاعدة، أزرار دائرية بحواف زجاجية ونصوص تظهر عند التحويم
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
