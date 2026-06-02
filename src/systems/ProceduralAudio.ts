@@ -1,4 +1,5 @@
 let ctx: AudioContext | null = null
+let _sfxVolume = 1.0
 
 function getCtx(): AudioContext {
   if (!ctx) ctx = new AudioContext()
@@ -12,7 +13,7 @@ function playTone(freq: number, duration: number, type: OscillatorType = 'sine',
   const gain = c.createGain()
   osc.type = type
   osc.frequency.setValueAtTime(freq, c.currentTime)
-  gain.gain.setValueAtTime(volume, c.currentTime)
+  gain.gain.setValueAtTime(volume * _sfxVolume, c.currentTime)
   gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration)
   osc.connect(gain)
   gain.connect(c.destination)
@@ -21,8 +22,11 @@ function playTone(freq: number, duration: number, type: OscillatorType = 'sine',
 }
 
 let bgAudio: HTMLAudioElement | null = null
+let _bgmVolume = 1
 
 export const audio = {
+  setSfxVolume(v: number) { _sfxVolume = v },
+
   playCorrect() {
     playTone(523.25, 0.1, 'sine', 0.3)
     setTimeout(() => playTone(659.25, 0.1, 'sine', 0.3), 100)
@@ -36,9 +40,6 @@ export const audio = {
 
   playClick() {
     playTone(800, 0.05, 'sine', 0.1)
-    if (bgAudio && bgAudio.paused) {
-      bgAudio.play().catch(() => {})
-    }
   },
 
   playLevelUp() {
@@ -66,15 +67,29 @@ export const audio = {
     return () => clearInterval(interval)
   },
 
+  stopBg() {
+    if (bgAudio) {
+      bgAudio.pause()
+      bgAudio.remove()
+      bgAudio = null
+    }
+  },
+
+  setBgVolume(v: number) {
+    _bgmVolume = v
+    if (bgAudio) bgAudio.volume = Math.min(v, 1)
+  },
+
   playFileBg(src: string, volume: number) {
+    this.stopBg()
     if (volume <= 0 || !src) return () => {}
-    if (bgAudio) { bgAudio.pause(); bgAudio.remove() }
     const el = document.createElement('audio')
     el.src = src
     el.loop = true
     el.preload = 'auto'
     el.volume = Math.min(volume, 1)
     bgAudio = el
+    _bgmVolume = volume
     el.play().catch(() => {
       const resume = () => { el.play().catch(() => {}) ; document.removeEventListener('click', resume) }
       document.addEventListener('click', resume, { once: true })

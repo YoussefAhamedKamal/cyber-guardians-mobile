@@ -25,10 +25,13 @@ export function App() {
   if (!level) return null
 
   useEffect(() => {
-    if (settings.muted || settings.bgmMuted || settings.bgmVolume <= 0) return
-    let stop: () => void
+    audio.setSfxVolume(settings.sfxVolume)
+  }, [settings.sfxVolume])
+
+  useEffect(() => {
+    const vol = settings.muted || settings.bgmMuted ? 0 : settings.bgmVolume
     const bgSrc = settings.customBgUrl || `${BASE_URL}videos/output.wav`
-    stop = audio.playFileBg(bgSrc, settings.bgmVolume)
+    const stop = audio.playFileBg(bgSrc, vol)
     return () => stop()
   }, [settings.bgmVolume, settings.bgmMuted, settings.muted, settings.customBgUrl])
 

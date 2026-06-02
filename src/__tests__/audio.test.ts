@@ -10,5 +10,8 @@ describe('ProceduralAudio', () => {
     expect(typeof audio.playLevelUp).toBe('function')
     expect(typeof audio.playVictory).toBe('function')
     expect(typeof audio.playBgLoop).toBe('function')
+    expect(typeof audio.stopBg).toBe('function')
+    expect(typeof audio.setBgVolume).toBe('function')
+    expect(typeof audio.setSfxVolume).toBe('function')
   })
 })
