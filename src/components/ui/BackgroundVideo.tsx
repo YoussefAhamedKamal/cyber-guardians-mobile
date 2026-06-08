@@ -13,14 +13,17 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6, muted = true }
   const videoRef = useRef<HTMLVideoElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
 
-  const useCustomAnim = s.bgAnimationUrl.length > 0
-  const isImage = useCustomAnim && s.bgAnimationUrl.startsWith('data:image/')
+  const customBoy = s.customBoyVideoUrl
+  const animUrl = s.bgAnimationUrl
+  const activeUrl = customBoy || animUrl
+  const useCustomAnim = activeUrl.length > 0
+  const isImage = useCustomAnim && activeUrl.startsWith('data:image/')
 
   useEffect(() => {
     const el = videoRef.current
     if (!el || !useCustomAnim || isImage) return
     el.play().catch(() => {})
-  }, [useCustomAnim, isImage, s.bgAnimationUrl])
+  }, [useCustomAnim, isImage, activeUrl])
 
   const brightness = useCustomAnim ? s.bgAnimationBrightness : s.bgBrightness
 
@@ -39,7 +42,7 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6, muted = true }
         ) : (
           <video
             ref={videoRef} muted={muted} loop playsInline autoPlay
-            src={s.bgAnimationUrl}
+            src={activeUrl}
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
               filter: `brightness(${brightness})${blur ? ` blur(${blur}px)` : ''}`,
@@ -49,7 +52,7 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6, muted = true }
       ) : (
           <video
             ref={videoRef} muted={muted} loop playsInline autoPlay
-            src={`${BASE_URL}videos/original.mp4`}
+            src={activeUrl || `${BASE_URL}videos/original.mp4`}
           style={{
             width: '100%', height: '100%', objectFit: 'cover',
             filter: `brightness(${brightness})${blur ? ` blur(${blur}px)` : ''}`,
