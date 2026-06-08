@@ -131,6 +131,14 @@ function AISettings() {
     () => provider?.models.find((m) => m.id === ai.modelId) ? '' : ai.modelId
   )
 
+  useEffect(() => {
+    if (provider?.models.some(m => m.id === ai.modelId)) {
+      setCustomModel('')
+    } else {
+      setCustomModel(ai.modelId)
+    }
+  }, [ai.providerId, ai.modelId, provider])
+
   const handleTestConnection = async () => {
     const model = ai.modelId.trim()
     if (!model) { setTestStatus('⚠️ أدخل اسم النموذج أولاً'); return }
@@ -142,7 +150,11 @@ function AISettings() {
   }
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (e.target.value === '__custom__') { setCustomModel(''); return }
+    if (e.target.value === '__custom__') {
+      ai.setModel('')
+      setCustomModel('')
+      return
+    }
     ai.setModel(e.target.value); setCustomModel('')
   }
 
@@ -175,7 +187,7 @@ function AISettings() {
           </label>
           {usingCustom && (
             <label style={{ color: '#aaa' }}>اسم النموذج المخصص
-              <input value={customModel} onChange={(e) => { setCustomModel(e.target.value); if (e.target.value.trim()) ai.setModel(e.target.value.trim()) }} placeholder="..." style={inputStyle} />
+              <input value={customModel} onChange={(e) => { setCustomModel(e.target.value); ai.setModel(e.target.value.trim()) }} placeholder="..." style={inputStyle} />
             </label>
           )}
         </>

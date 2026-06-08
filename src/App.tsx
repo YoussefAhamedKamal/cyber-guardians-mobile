@@ -47,11 +47,15 @@ export function App() {
   }, [settings.customFontUrl, settings.customFontName, settings.customHeadingFontUrl, settings.customHeadingFontName])
 
   useEffect(() => {
+    if (screen === 'menu' || screen === 'celebration' || screen === 'victory') {
+      audio.stopBg()
+      return
+    }
     const vol = settings.muted || settings.bgmMuted ? 0 : settings.bgmVolume
     const bgSrc = settings.customBgUrl || `${BASE_URL}videos/output.wav`
     const stop = audio.playFileBg(bgSrc, vol)
     return () => stop()
-  }, [settings.bgmVolume, settings.bgmMuted, settings.muted, settings.customBgUrl])
+  }, [screen, settings.bgmVolume, settings.bgmMuted, settings.muted, settings.customBgUrl])
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -148,6 +152,7 @@ export function App() {
       <BackgroundVideo
         blur={screen === 'menu' ? 0 : 2}
         overlayOpacity={screen === 'menu' ? 0 : 0.7}
+        muted={screen !== 'menu'}
       />
       {screen === 'menu' && (
         <MenuScreen

@@ -5,9 +5,10 @@ import { BASE_URL } from '@/utils/constants'
 interface Props {
   blur?: number
   overlayOpacity?: number
+  muted?: boolean
 }
 
-export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6 }: Props) {
+export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6, muted = true }: Props) {
   const s = useSettingsStore()
   const videoRef = useRef<HTMLVideoElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
@@ -37,7 +38,7 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6 }: Props) {
           />
         ) : (
           <video
-            ref={videoRef} muted loop playsInline autoPlay
+            ref={videoRef} muted={muted} loop playsInline autoPlay
             src={s.bgAnimationUrl}
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
@@ -47,7 +48,7 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6 }: Props) {
         )
       ) : (
           <video
-            ref={videoRef} muted loop playsInline autoPlay
+            ref={videoRef} muted={muted} loop playsInline autoPlay
             src={`${BASE_URL}videos/original.mp4`}
           style={{
             width: '100%', height: '100%', objectFit: 'cover',

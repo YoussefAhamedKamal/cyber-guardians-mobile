@@ -39,30 +39,29 @@
 ```
 [Boot]
   │
-  ├─→ Main Menu (game-style: orbs + grid + particles) ←─┐
-  │     ├─→ Start Game → Level Select                   │
-  │     └─→ Settings                                    │
-  │                                          │
-  ├─→ Level Select ←──────────────────────┐  │
-  │     ├─→ Level[N] (جديد/مكرر)          │  │
-  │     │     ├─→ Story Dialogue (3D)     │  │
-  │     │     ├─→ Challenge (mini-game)   │  │
-  │     │     │     ├─→ إعادة تعيين       │  │
-  │     │     │     └─→ Result Screen     │  │
-  │     │     │           ├─→ متابعة       │  │
-  │     │     │           └─→ إعادة محاولة │  │
-  │     │     ├─→ Outro Dialogue          │  │
-  │     │     └─→ Back to Level Select ───┘  │
-  │     └─→ جميع المستويات قابلة لإعادة ────┘
+  ├─→ Main Menu (video with sound, no BGM) ←─┐
+  │     ├─→ Start Game → Level Select         │
+  │     └─→ Settings                          │
+  │                                    │
+  ├─→ Level Select (BGM starts) ←─────┐  │
+  │     ├─→ Level[N] (جديد/مكرر)      │  │
+  │     │     ├─→ Story Dialogue (3D) │  │
+  │     │     ├─→ Challenge (mini-game)│  │
+  │     │     │     ├─→ إعادة تعيين   │  │
+  │     │     │     └─→ Result Screen │  │
+  │     │     │           ├─→ متابعة  │  │
+  │     │     │           └─→ إعادة   │  │
+  │     │     ├─→ Outro Dialogue      │  │
+  │     │     └─→ Back to Level Select┘  │
+  │     └─→ جميع المستويات قابلة لإعادة ┘
   │
   ├─→ Settings (5 tabs: الصوت, العرض, الخطوط, الفيديو, عام)
   │
-  ├─→ Celebration Video (المستوى 7 فقط — بعد الحوار الأخير)
+  ├─→ Celebration Video (BGM stops, فيديو بصوت, المستوى 7 فقط)
   │
-  └─→ Victory (عند إكمال 7 مستويات)
-       → Reset → Main Menu
+  └─→ Victory (إعادة تعيين → Main Menu)
 
-Keyboard Shortcuts: M (mute), Esc (back)
+Keyboard Shortcuts: M (mute), B (BGM mute), Esc (back)
 
 UI Layout (top-right corner):
 - 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى)
@@ -386,7 +385,9 @@ src/
 ## [CELEBRATION_VIDEO]
 
 - يظهر **فقط** بعد إنهاء المستوى 7 (الهجوم الأخير)
-- فيديو full-screen مع صوت
+- BGM يتوقف قبل ظهور فيديو الاحتفال
+- فيديو full-screen **بصوت** (`autoPlay` + `playsInline`)
+- صوت الفيديو يتحكم عبر `bgmVolume` و `muted` من الإعدادات
 - زر "تخطي" يظهر بعد 3 ثواني
 - عند انتهاء الفيديو → صفحة النقاط (Victory)
 
@@ -421,6 +422,20 @@ src/
 - `playFileBg()`: fallback to user interaction click إذا المتصفح منع autoplay
 - `playClick()`: يعيد تشغيل BGM إذا متوقف
 - متغير مشترك `bgAudio` لمنع تداخل ملفات صوتية
+
+**سلوك الصوت/الفيديو**:
+- **شاشة البداية**: فيديو خلفية بصوت (unmuted)، لا يوجد BGM
+- **شاشة المستويات/التحديات**: BGM يعمل، فيديو الخلفية مكتوم (muted)
+- **شاشة الاحتفال**: BGM يتوقف، فيديو الاحتفال يعمل بصوت
+- **شاشة النصر**: لا يوجد صوت (إعادة تعيين → القائمة الرئيسية)
+
+**BackgroundVideo.tsx**:
+- Prop `muted` (افتراضي `true`) يتحكم في كتم صوت الفيديو
+- `muted={screen !== 'menu'}` — صوت مفعّل فقط في شاشة البداية
+
+**CelebrationVideo.tsx**:
+- `autoPlay` + `playsInline` للتشغيل التلقائي
+- الصوت يتحكم عبر `bgmVolume` و `muted` من الإعدادات
 
 ---
 

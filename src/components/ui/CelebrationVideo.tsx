@@ -37,6 +37,8 @@ export function CelebrationVideo({ onEnd }: Props) {
         ref={videoRef}
         src={videoSrc}
         onEnded={onEnd}
+        autoPlay
+        playsInline
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
       {showSkip && (
