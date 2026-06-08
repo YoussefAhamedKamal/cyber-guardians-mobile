@@ -168,6 +168,7 @@ src/
 |---|---|---|
 | **Student Chat** | مفتوح للجميع | شات مع AI يجيب عن أسئلة الأمن السيبراني مدعوم بـ system prompt مخصص |
 | **Faculty Editor** | محمي برمز PIN (افتراضي: 1234) | محرر لمحتوى اللعبة: عناوين، حوار، تحديات + تصدير/استيراد JSON |
+| **Faculty PIN Change** | في تبويب Settings | تغيير رمز هيئة التدريس مع التحقق من الرمز الحالي |
 | **AI Providers** | 4 مزودين | OpenAI, OpenRouter (مع نماذج مجانية), Ollama (محلي), API مخصص (OpenAI-compatible) |
 | **Streaming** | نعم | عرض الردود بشكل تدريجي |
 | **API Keys** | localStorage | مشفرة وغير مشاركة مع الـ persist (IndexedDB) |

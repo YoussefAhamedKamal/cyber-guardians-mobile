@@ -245,25 +245,26 @@ function FacultyPinChanger() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
-      <label style={{ color: '#aaa' }}>الرمز الحالي
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+      <label style={{ color: '#ddd', fontWeight: 500 }}>الرمز الحالي
         <input type="password" value={currentPin} onChange={(e) => { setCurrentPin(e.target.value); setMsg(null) }} placeholder="****" style={inputStyle} />
       </label>
-      <label style={{ color: '#aaa' }}>الرمز الجديد
+      <label style={{ color: '#ddd', fontWeight: 500 }}>الرمز الجديد
         <input type="password" value={newPin} onChange={(e) => { setNewPin(e.target.value); setMsg(null) }} placeholder="4 أحرف على الأقل" style={inputStyle} />
       </label>
-      <label style={{ color: '#aaa' }}>تأكيد الرمز الجديد
+      <label style={{ color: '#ddd', fontWeight: 500 }}>تأكيد الرمز الجديد
         <input type="password" value={confirmPin} onChange={(e) => { setConfirmPin(e.target.value); setMsg(null) }} placeholder="أعد إدخال الرمز" style={inputStyle} />
       </label>
       <button onClick={handleChange} style={{
-        padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+        padding: '8px', borderRadius: '6px', border: 'none',
         background: 'linear-gradient(135deg,#CE93D8,#BA68C8)',
-        color: '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: 'pointer',
+        color: '#0a0a1a', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
       }}>💾 حفظ الرمز</button>
       {msg && (
         <div style={{
-          padding: '6px', borderRadius: '4px', fontSize: '11px', textAlign: 'center',
-          background: msg.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)',
+          padding: '8px', borderRadius: '6px', fontSize: '12px', textAlign: 'center',
+          background: msg.startsWith('✅') ? 'rgba(129,199,132,0.2)' : 'rgba(229,115,115,0.2)',
+          border: `1px solid ${msg.startsWith('✅') ? 'rgba(129,199,132,0.4)' : 'rgba(229,115,115,0.4)'}`,
           color: msg.startsWith('✅') ? '#81C784' : '#E57373',
         }}>{msg}</div>
       )}
