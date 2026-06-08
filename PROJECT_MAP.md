@@ -322,7 +322,8 @@ src/
 |---|---|---|
 | `public/videos/background.mp4` | 2.5MB | خلفية اللعبة (قديم — احتياطي) |
 | `public/videos/background_1.mp4` | 1.3MB | خلفية سابقة (احتياطي) |
-| `public/videos/original.mp4` | 1.3MB | خلفية اللعبة الرئيسية (حلقة، 1280×720) |
+| `public/videos/original.mp4` | 1.3MB | خلفية اللعبة الرئيسية (قديم — احتياطي) |
+| `public/videos/start.mp4` | — | فيديو الخلفية الافتراضي للقائمة الرئيسية (بصوت) |
 | `public/startpage5.html` | — | تصميم مرجعي لشاشة البداية (Fortnite/Free Fire style) |
 | `public/videos/output.wav` | 1.4MB | موسيقى خلفية مخصصة |
 | `public/videos/زين.webp` | — | صورة FLUX لشخصية زين |

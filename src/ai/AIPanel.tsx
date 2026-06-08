@@ -246,13 +246,13 @@ function FacultyPinChanger() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-      <label style={{ color: '#ddd', fontWeight: 500 }}>الرمز الحالي
+      <label style={{ color: '#fff', fontWeight: 500 }}>الرمز الحالي
         <input type="password" value={currentPin} onChange={(e) => { setCurrentPin(e.target.value); setMsg(null) }} placeholder="****" style={inputStyle} />
       </label>
-      <label style={{ color: '#ddd', fontWeight: 500 }}>الرمز الجديد
+      <label style={{ color: '#fff', fontWeight: 500 }}>الرمز الجديد
         <input type="password" value={newPin} onChange={(e) => { setNewPin(e.target.value); setMsg(null) }} placeholder="4 أحرف على الأقل" style={inputStyle} />
       </label>
-      <label style={{ color: '#ddd', fontWeight: 500 }}>تأكيد الرمز الجديد
+      <label style={{ color: '#fff', fontWeight: 500 }}>تأكيد الرمز الجديد
         <input type="password" value={confirmPin} onChange={(e) => { setConfirmPin(e.target.value); setMsg(null) }} placeholder="أعد إدخال الرمز" style={inputStyle} />
       </label>
       <button onClick={handleChange} style={{

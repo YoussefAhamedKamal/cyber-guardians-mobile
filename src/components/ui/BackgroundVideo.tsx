@@ -52,7 +52,7 @@ export function BackgroundVideo({ blur = 0, overlayOpacity = 0.6, muted = true }
       ) : (
           <video
             ref={videoRef} muted={muted} loop playsInline autoPlay
-            src={activeUrl || `${BASE_URL}videos/original.mp4`}
+            src={activeUrl || `${BASE_URL}videos/start.mp4`}
           style={{
             width: '100%', height: '100%', objectFit: 'cover',
             filter: `brightness(${brightness})${blur ? ` blur(${blur}px)` : ''}`,
