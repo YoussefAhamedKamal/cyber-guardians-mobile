@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { useResponsive } from '@/hooks'
 import { Button, ProgressBar, DialogueBox, BackgroundVideo, SettingsPanel, CelebrationVideo, MenuScreen } from '@/components/ui'
 import { useGameStore, useSettingsStore } from '@/store'
-import { levels } from '@/data'
+import { AIPanel } from '@/ai/AIPanel'
+import { getLevels } from '@/data/gameData'
 import { ChallengeRenderer } from '@/challenges'
 import { audio } from '@/systems/ProceduralAudio'
 import { BASE_URL } from '@/utils/constants'
@@ -31,6 +32,7 @@ export function App() {
   const responsive = useResponsive()
   const game = useGameStore()
   const settings = useSettingsStore()
+  const levels = getLevels()
 
   const level = levels.find((l) => l.id === game.currentLevel)
   if (!level) return null
@@ -266,12 +268,14 @@ export function App() {
         v1.1.0
       </div>
 
+      <AIPanel />
+
       {/* BGM toggle button */}
       <button
         onClick={() => settings.toggleBgmMute()}
         title={settings.bgmMuted || settings.muted ? 'تشغيل الموسيقى الخلفية' : 'كتم الموسيقى الخلفية'}
         style={{
-          position: 'fixed', bottom: '16px', right: '16px', zIndex: 9999,
+          position: 'fixed', top: '72px', right: '16px', zIndex: 9999,
           width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)',
           background: (settings.bgmMuted || settings.muted) ? 'rgba(255,82,82,0.2)' : 'rgba(79,195,247,0.2)',
           color: '#fff', fontSize: '20px', cursor: 'pointer',

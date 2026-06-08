@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { DialogueLine } from '@/types'
-import { characters } from '@/data'
+import { getCharacters } from '@/data/gameData'
 import { audio } from '@/systems/ProceduralAudio'
 import { useSettingsStore } from '@/store'
 import { BASE_URL } from '@/utils/constants'
@@ -12,6 +12,7 @@ interface DialogueBoxProps {
 
 function VideoBackground({ speakerId }: { speakerId: string }) {
   const settings = useSettingsStore()
+  const characters = getCharacters()
   const char = characters[speakerId]
 
   const customMap: Record<string, string> = {
@@ -58,6 +59,7 @@ const preloaded = new Set<string>()
 export function DialogueBox({ lines, onComplete }: DialogueBoxProps) {
   const [index, setIndex] = useState(0)
   const [charIndex, setCharIndex] = useState(0)
+  const characters = getCharacters()
 
   useEffect(() => {
     for (const id of Object.keys(characters)) {

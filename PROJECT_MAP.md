@@ -63,6 +63,12 @@
        → Reset → Main Menu
 
 Keyboard Shortcuts: M (mute), Esc (back)
+
+UI Layout (top-right corner):
+- 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى)
+- 🔊 BGM toggle button: y = 72px (أسفل زر AI)
+- AI Panel: centered on screen when opened
+- Panel closes: زر ✕ / النافذة المعتمة / زر AI (toggle)
 ```
 
 ---
@@ -85,8 +91,13 @@ Keyboard Shortcuts: M (mute), Esc (back)
 
 ```
 src/
-├── App.tsx                          # 7 شاشات — MenuScreen مستقل + BackgroundVideo متغير حسب الشاشة
+├── App.tsx                          # 8 شاشات + AIPanel — MenuScreen + AI Assistant مدمج
 ├── main.tsx                         # Entry point
+│
+├── ai/
+│   ├── AIPanel.tsx                  # AI Assistant panel: StudentChat + FacultyEditor + Settings
+│   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama
+│   └── prompts.ts                   # System prompts: طالب + هيئة تدريس
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
 │   ├── ChallengeRenderer.tsx        # Router حسب type
@@ -116,7 +127,8 @@ src/
 │
 ├── store/
 │   ├── gameStore.ts                 # Zustand + persist (IndexedDB) — Set serialization fix
-│   └── settingsStore.ts            # 28 حقل إعدادات (18 قديم + 10 جديد)
+│   ├── settingsStore.ts            # 28 حقل إعدادات (18 قديم + 10 جديد)
+│   └── aiStore.ts                  # AI state: provider, model, API keys, messages, faculty PIN
 │
 ├── systems/
 │   ├── ProceduralAudio.ts           # BGM (procedural/file) + SFX (7 أنواع) — autoplay fix
@@ -148,6 +160,52 @@ src/
     ├── logging.test.ts              # 5 tests
     └── levels.test.ts               # 4 tests
 ```
+
+---
+
+## [AI_ASSISTANT]
+
+| الميزة | الوضع | التفاصيل |
+|---|---|---|
+| **Student Chat** | مفتوح للجميع | شات مع AI يجيب عن أسئلة الأمن السيبراني مدعوم بـ system prompt مخصص |
+| **Faculty Editor** | محمي برمز PIN (افتراضي: 1234) | محرر لمحتوى اللعبة: عناوين، حوار، تحديات + تصدير/استيراد JSON |
+| **AI Providers** | 4 مزودين | OpenAI, OpenRouter (مع نماذج مجانية), Ollama (محلي), API مخصص (OpenAI-compatible) |
+| **Streaming** | نعم | عرض الردود بشكل تدريجي |
+| **API Keys** | localStorage | مشفرة وغير مشاركة مع الـ persist (IndexedDB) |
+| **زر AI FAB** | أعلى اليمين (y: 16px) | زر دائري مع pulse animation عند التحويم |
+| **زر الصوت** | أسفل زر AI (y: 72px) | كتم/تشغيل الموسيقى الخلفية |
+| **لوحة AI** | منتصف الشاشة | تظهر عند الضغط على زر AI، تختفي عند الإغلاق |
+| **إغلاق اللوحة** | 3 طرق | زر ✕، النافذة المعتمة، زر AI مرة أخرى (toggle) |
+| **إرشادات الاستخدام** | — | موجودة أدناه |
+
+### إرشادات استخدام AI Assistant
+
+#### 🆓 OpenCode Zen (نماذج مجانية)
+افتح إعدادات AI ← اختر OpenRouter ← اختر أحد النماذج المجانية:
+- `meta-llama/llama-3.2-3b-instruct:free` — خفيف وسريع
+- `mistralai/mistral-7b-instruct:free` — دقيق
+- `google/gemini-2.0-flash-exp:free` — قوي جداً
+
+1. سجل في https://openrouter.ai
+2. أنشئ API Key مجاني
+3. الصقه في حقل API Key في الإعدادات
+
+#### 🔓 OpenAI
+1. سجل في https://platform.openai.com
+2. أنشئ API Key من Billing → API Keys
+3. اختر `gpt-4o-mini` (رخيص) أو `gpt-4o`
+
+#### 💻 Ollama (نماذج محلية - مجانية تماماً)
+1. ثبت Ollama من https://ollama.ai
+2. شغل أمر مثل `ollama run llama3.2`
+3. في الإعدادات: اختر Ollama، اترك API Key فارغ (أو أي قيمة)
+4. تأكد أن Ollama شغال (`ollama serve`)
+
+#### 🔧 API مخصص
+أي مزود يدعم OpenAI-compatible API:
+1. ضع Base URL (مثلاً `https://generativelanguage.googleapis.com/v1beta/openai/` لجيميني)
+2. ضع API Key المناسب
+3. اختر النموذج المطلوب
 
 ---
 
@@ -379,6 +437,7 @@ src/
 - [x] **إصلاح autoplay الصوت** — تم
 - [x] **توليد فيديوهات الشخصيات** — تم (zayn.mp4, nora.mp4, omar.mp4, layla.mp4, tariq.mp4, system.mp4, celebration.mp4)
 - [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style — عنوان top-left بتدرج + توهج، كرات ضبابية عائمة، شبكة منظور 3D، جسيمات متصاعدة، أزرار دائرية بحواف زجاجية ونصوص تظهر عند التحويم
+- [x] **AI Assistant مدمج** — تم: Student Chat + Faculty Editor + دعم OpenAI/OpenRouter/Ollama/API مخصص + تخزين API Keys محلياً
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.

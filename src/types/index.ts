@@ -7,3 +7,4 @@ export type {
   ChallengeResult, ChallengeState,
 } from './game'
 export type { GameSettings } from './settings'
+export type { AIMessage } from './ai'
