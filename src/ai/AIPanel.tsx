@@ -208,6 +208,65 @@ function AISettings() {
           color: testStatus.startsWith('✅') ? '#81C784' : '#E57373',
         }}>{testStatus}</div>
       )}
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
+        <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🔐 تغيير رمز هيئة التدريس</div>
+        <FacultyPinChanger />
+      </div>
+    </div>
+  )
+}
+
+function FacultyPinChanger() {
+  const ai = useAIStore()
+  const [currentPin, setCurrentPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const handleChange = () => {
+    if (currentPin !== ai.facultyPin) {
+      setMsg('❌ الرمز الحالي خطأ')
+      return
+    }
+    if (newPin.length < 4) {
+      setMsg('❌ الرمز الجديد يجب أن يكون 4 أحرف على الأقل')
+      return
+    }
+    if (newPin !== confirmPin) {
+      setMsg('❌ الرمز الجديد غير متطابق')
+      return
+    }
+    ai.setFacultyPin(newPin)
+    setCurrentPin('')
+    setNewPin('')
+    setConfirmPin('')
+    setMsg('✅ تم تغيير الرمز بنجاح')
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+      <label style={{ color: '#aaa' }}>الرمز الحالي
+        <input type="password" value={currentPin} onChange={(e) => { setCurrentPin(e.target.value); setMsg(null) }} placeholder="****" style={inputStyle} />
+      </label>
+      <label style={{ color: '#aaa' }}>الرمز الجديد
+        <input type="password" value={newPin} onChange={(e) => { setNewPin(e.target.value); setMsg(null) }} placeholder="4 أحرف على الأقل" style={inputStyle} />
+      </label>
+      <label style={{ color: '#aaa' }}>تأكيد الرمز الجديد
+        <input type="password" value={confirmPin} onChange={(e) => { setConfirmPin(e.target.value); setMsg(null) }} placeholder="أعد إدخال الرمز" style={inputStyle} />
+      </label>
+      <button onClick={handleChange} style={{
+        padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+        background: 'linear-gradient(135deg,#CE93D8,#BA68C8)',
+        color: '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: 'pointer',
+      }}>💾 حفظ الرمز</button>
+      {msg && (
+        <div style={{
+          padding: '6px', borderRadius: '4px', fontSize: '11px', textAlign: 'center',
+          background: msg.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)',
+          color: msg.startsWith('✅') ? '#81C784' : '#E57373',
+        }}>{msg}</div>
+      )}
     </div>
   )
 }
