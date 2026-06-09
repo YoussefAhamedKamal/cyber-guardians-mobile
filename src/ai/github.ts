@@ -1,6 +1,6 @@
 const GITHUB_CONFIG_KEY = 'cg-github-config'
 
-export const MAIN_REPO = { owner: 'ykamal-1', repo: 'cyber-guardians-mobile' }
+export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
 
 export interface GitHubConfig {
   token: string
@@ -251,6 +251,31 @@ export async function pushCustomFile(
 export async function getGitHubUsername(): Promise<string> {
   const data = await apiFetch('/user', 'GET')
   return data.login
+}
+
+export async function resolveGithubOwner(input: string): Promise<string> {
+  const trimmed = input.trim()
+  if (!trimmed) throw new Error('أدخل اسم المستخدم أو الإيميل')
+
+  if (!trimmed.includes('@')) {
+    try {
+      await apiFetch(`/users/${trimmed}`, 'GET')
+      return trimmed
+    } catch {
+      throw new Error(`المستخدم "${trimmed}" غير موجود على GitHub`)
+    }
+  }
+
+  try {
+    const data = await apiFetch(`/search/users?q=${encodeURIComponent(trimmed)}+in:email`, 'GET')
+    if (data.items && data.items.length > 0) {
+      return data.items[0].login
+    }
+    throw new Error(`لم يتم العثور على حساب GitHub لهذا الإيميل: ${trimmed}`)
+  } catch (e: any) {
+    if (e.message.includes('لم يتم العثور')) throw e
+    throw new Error(`خطأ في البحث: ${e.message}`)
+  }
 }
 
 export async function forkMainRepo(): Promise<{ owner: string; repo: string; url: string }> {
