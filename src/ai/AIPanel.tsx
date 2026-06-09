@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, pushAllContentToNewRepo, setupDirectEdit, MAIN_REPO } from './github'
+import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, MAIN_REPO } from './github'
 import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
@@ -291,7 +291,7 @@ function AISettings() {
                 levels: (contentStore.newLevels || []) as unknown[],
                 characters: contentStore.newCharacters as Record<string, unknown>,
               }
-              const results = await pushAllContentToNewRepo(newRepo.owner, newRepo.repo, 'main', contentData)
+                const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
               setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
               setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
               await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
@@ -1041,7 +1041,7 @@ function FacultyDataEditor() {
                   levels: (contentStore.newLevels || []) as unknown[],
                   characters: contentStore.newCharacters as Record<string, unknown>,
                 }
-                const results = await pushAllContentToNewRepo(newRepo.owner, newRepo.repo, 'main', contentData)
+              const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
                 await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
                 setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
                 setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })

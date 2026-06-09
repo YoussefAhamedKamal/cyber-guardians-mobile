@@ -382,16 +382,74 @@ export async function pushAllContentToNewRepo(
     results.push('✅ gameMeta.ts')
   } catch (e: any) { results.push(`❌ gameMeta.ts: ${e.message}`) }
 
-  const readme = `# Cyber Guardians Mobile\n\nتم إنشاء هذا المستودع عبر اللعبة.\n\n## الروابط\n- 🌐 اللعبة: https://${newOwner}.github.io/${newRepo}/\n- 📦 المستودع: https://github.com/${newOwner}/${newRepo}\n`
-  try {
-    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/README.md`, 'PUT', {
-      message: `${msg} — README`,
-      content: btoa(unescape(encodeURIComponent(readme))),
-      branch: branchName,
-    })
-    results.push('✅ README.md')
-  } catch (e: any) { results.push(`❌ README.md: ${e.message}`) }
+  return results
+}
 
+export async function copyEntireRepo(
+  sourceOwner: string,
+  sourceRepo: string,
+  targetOwner: string,
+  targetRepo: string,
+  targetBranch: string,
+  contentData: {
+    gameMeta: Record<string, unknown>
+    levels: unknown[]
+    characters: Record<string, unknown>
+  }
+): Promise<string[]> {
+  const results: string[] = []
+  const SKIP_FILES = ['.gitignore', 'node_modules', '.env', '.env.local']
+  const SKIP_DIRS = ['node_modules', '.git', 'dist', '.github', 'scripts']
+
+  async function copyRecursive(path: string): Promise<void> {
+    let items: any[]
+    try {
+      items = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/contents/${path}`, 'GET')
+    } catch { return }
+    if (!Array.isArray(items)) return
+
+    for (const item of items) {
+      if (SKIP_DIRS.includes(item.name) || SKIP_FILES.includes(item.name)) continue
+
+      const itemPath = path ? `${path}/${item.name}` : item.name
+
+      if (item.type === 'dir') {
+        await copyRecursive(itemPath)
+      } else if (item.type === 'file') {
+        try {
+          const fileData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/contents/${itemPath}`, 'GET')
+          const content = fileData.content
+          const sha = fileData.sha
+
+          let finalContent = content
+          let finalMessage = `📋 نسخ: ${itemPath}`
+
+          if (itemPath === 'src/data/characters.ts') {
+            finalContent = btoa(unescape(encodeURIComponent(generateCharactersTS(contentData.characters))))
+            finalMessage = '🎮 تحديث الشخصيات'
+          } else if (itemPath === 'src/data/dialogue.ts') {
+            finalContent = btoa(unescape(encodeURIComponent(generateDialogueTS(contentData.levels))))
+            finalMessage = '🎮 تحديث المستويات'
+          } else if (itemPath === 'src/data/gameMeta.ts') {
+            finalContent = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
+            finalMessage = '🎮 تحديث الإعدادات'
+          }
+
+          await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${itemPath}`, 'PUT', {
+            message: finalMessage,
+            content: finalContent,
+            branch: targetBranch,
+            sha: undefined,
+          })
+          results.push(`✅ ${itemPath}`)
+        } catch (e: any) {
+          results.push(`❌ ${itemPath}: ${e.message}`)
+        }
+      }
+    }
+  }
+
+  await copyRecursive('')
   return results
 }
 
