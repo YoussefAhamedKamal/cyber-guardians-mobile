@@ -100,7 +100,7 @@ function escapeStr(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')
 }
 
-function generateCharactersTS(characters: Record<string, any>): string {
+export function generateCharactersTS(characters: Record<string, any>): string {
   const lines: string[] = [
     "import type { Character } from '@/types'\n",
     "export const characters: Record<string, Character> = {",
@@ -123,7 +123,7 @@ function generateCharactersTS(characters: Record<string, any>): string {
   return lines.join('\n') + '\n'
 }
 
-function generateDialogueTS(levels: any[]): string {
+export function generateDialogueTS(levels: any[]): string {
   const lines: string[] = [
     "import type { LevelData } from '@/types'\n",
     "export const levels: LevelData[] = [",
@@ -173,7 +173,7 @@ function generateDialogueTS(levels: any[]): string {
   return lines.join('\n') + '\n'
 }
 
-function generateGameMetaTS(meta: Record<string, unknown>): string {
+export function generateGameMetaTS(meta: Record<string, unknown>): string {
   const lines: string[] = [
     "import type { GameMeta } from '@/types'\n",
     "export const gameMeta: GameMeta = ",
@@ -181,6 +181,20 @@ function generateGameMetaTS(meta: Record<string, unknown>): string {
     '',
   ]
   return lines.join('\n')
+}
+
+function updateViteBasePath(content: string, repoName: string): string {
+  const baseRegex = /base\s*[:=]\s*['"`][^'"`]*['"`]/
+  if (baseRegex.test(content)) {
+    return content.replace(/(base\s*[:=]\s*)['"`][^'"`]*['"`]/, `$1'/${repoName}/'`)
+  }
+  const withConfig = content.replace(/(defineConfig\s*\(\s*\{)/, `$1\n  base: '/${repoName}/',`)
+  if (withConfig !== content) return withConfig
+  return content.replace(/(export\s+default\s+)/, `const BASE_PATH = '/${repoName}/';\n\n$1`)
+}
+
+function decodeB64UTF8(b64: string): string {
+  try { return decodeURIComponent(escape(atob(b64))) } catch { try { return atob(b64) } catch { return b64 } }
 }
 
 export async function pushContentToGitHub(
@@ -325,7 +339,7 @@ export async function createNewRepo(name: string, description: string): Promise<
   const data = await apiFetch('/user/repos', 'POST', {
     name,
     description,
-    auto_init: true,
+    auto_init: false,
     private: false,
   })
   return { owner: data.owner.login, repo: data.name, url: data.html_url }
@@ -398,82 +412,116 @@ export async function copyEntireRepo(
   }
 ): Promise<string[]> {
   const results: string[] = []
-  const SKIP_FILES = ['.gitignore', 'node_modules', '.env', '.env.local']
-  const SKIP_DIRS = ['node_modules', '.git', 'dist', 'public']
-  const SKIP_EXTENSIONS = ['.mp4', '.mp3', '.wav', '.webp', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ttf', '.woff', '.woff2', '.eot', '.map', '.lock']
+  const isFromMain = sourceOwner === MAIN_REPO.owner && sourceRepo === MAIN_REPO.repo
 
-  async function copyRecursive(path: string): Promise<void> {
-    let items: any[]
+  // === Step 1: Get source tree (recursive) ===
+  let sourceTree: Array<{ path: string; mode: string; type: string; sha: string; size: number }>
+  try {
+    const refData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/refs/heads/main`, 'GET')
+    const commitData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/commits/${refData.object.sha}`, 'GET')
+    const treeData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/trees/${commitData.tree.sha}?recursive=1`, 'GET')
+    sourceTree = treeData.tree
+  } catch (e: any) {
+    results.push(`❌ فشل قراءة شجرة المصدر: ${e.message}`)
+    return results
+  }
+
+  // === Step 2: Create blobs in target repo and build tree ===
+  const treeItems: Array<{ path: string; mode: string; type: string; sha: string }> = []
+
+  for (const item of sourceTree) {
+    if (item.type !== 'blob') continue
+
+    let contentBase64: string
     try {
-      items = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/contents/${path}`, 'GET')
-    } catch { return }
-    if (!Array.isArray(items)) return
+      const blobData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/blobs/${item.sha}`, 'GET')
+      contentBase64 = blobData.content
+    } catch (e: any) {
+      results.push(`⚠️ ${item.path}: فشل تحميل (${e.message})`)
+      continue
+    }
 
-    for (const item of items) {
-      if (SKIP_DIRS.includes(item.name) || SKIP_FILES.includes(item.name)) continue
-      if (SKIP_EXTENSIONS.some(ext => item.name.toLowerCase().endsWith(ext))) continue
-
-      const itemPath = path ? `${path}/${item.name}` : item.name
-
-      if (item.type === 'dir') {
-        await copyRecursive(itemPath)
-      } else if (item.type === 'file') {
-        try {
-          const fileData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/contents/${itemPath}`, 'GET')
-          const content = fileData.content
-          const sha = fileData.sha
-
-          let finalContent = content
-          let finalMessage = `📋 نسخ: ${itemPath}`
-
-          if (itemPath === 'src/data/characters.ts') {
-            finalContent = btoa(unescape(encodeURIComponent(generateCharactersTS(contentData.characters))))
-            finalMessage = '🎮 تحديث الشخصيات'
-          } else if (itemPath === 'src/data/dialogue.ts') {
-            finalContent = btoa(unescape(encodeURIComponent(generateDialogueTS(contentData.levels))))
-            finalMessage = '🎮 تحديث المستويات'
-          } else if (itemPath === 'src/data/gameMeta.ts') {
-            finalContent = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
-            finalMessage = '🎮 تحديث الإعدادات'
-          } else if (itemPath === 'vite.config.ts') {
-            const decoded = decodeURIComponent(escape(atob(content)))
-            const updated = decoded.replace(/base:\s*['"]\/[^'"]*['"]/, `base: '/${targetRepo}/'`)
-            finalContent = btoa(unescape(encodeURIComponent(updated)))
-            finalMessage = '⚙ تحديث base path في vite.config.ts'
-          } else if (itemPath === 'package.json') {
-            const decoded = decodeURIComponent(escape(atob(content)))
-            const updated = decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`)
-            finalContent = btoa(unescape(encodeURIComponent(updated)))
-            finalMessage = '📦 تحديث اسم الحزمة في package.json'
-          } else if (itemPath === 'package-lock.json') {
-            const decoded = decodeURIComponent(escape(atob(content)))
-            const updated = decoded.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`)
-            finalContent = btoa(unescape(encodeURIComponent(updated)))
-            finalMessage = '📦 تحديث اسم الحزمة في package-lock.json'
-          } else if (itemPath === 'README.md') {
-            const decoded = decodeURIComponent(escape(atob(content)))
-            const updated = decoded
-              .replace(/YoussefAhamedKamal/g, targetOwner)
-              .replace(/cyber-guardians-mobile/g, targetRepo)
-            finalContent = btoa(unescape(encodeURIComponent(updated)))
-            finalMessage = '📝 تحديث الروابط في README.md'
-          }
-
-          await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${itemPath}`, 'PUT', {
-            message: finalMessage,
-            content: finalContent,
-            branch: targetBranch,
-            sha: undefined,
-          })
-          results.push(`✅ ${itemPath}`)
-        } catch (e: any) {
-          results.push(`❌ ${itemPath}: ${e.message}`)
-        }
+    try {
+      if (item.path === 'src/data/characters.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateCharactersTS(contentData.characters))))
+      } else if (item.path === 'src/data/dialogue.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateDialogueTS(contentData.levels))))
+      } else if (item.path === 'src/data/gameMeta.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
+      } else if (item.path === 'vite.config.ts') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(updateViteBasePath(decoded, targetRepo))))
+      } else if (item.path === 'package.json') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`))))
+      } else if (item.path === 'package-lock.json') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`))))
+      } else if (item.path === 'README.md' && isFromMain) {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(
+          decoded.replace(/YoussefAhamedKamal/g, targetOwner).replace(/cyber-guardians-mobile/g, targetRepo)
+        )))
       }
+
+      const newBlob = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/blobs`, 'POST', {
+        content: contentBase64,
+        encoding: 'base64',
+      })
+      treeItems.push({ path: item.path, mode: item.mode || '100644', type: 'blob', sha: newBlob.sha })
+      results.push(`✅ ${item.path}`)
+    } catch (e: any) {
+      results.push(`❌ ${item.path}: ${e.message}`)
     }
   }
 
-  await copyRecursive('')
+  if (treeItems.length === 0) {
+    results.push('❌ لا توجد ملفات لنسخها')
+    return results
+  }
+
+  // === Step 3: Get parent commit SHA (if target repo already has commits) ===
+  let parentSha: string | null = null
+  try {
+    const branchData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'GET')
+    parentSha = branchData.object.sha
+  } catch { /* new repo — orphan commit */ }
+
+  // === Step 4: Create tree in target repo ===
+  let newTreeSha: string
+  try {
+    const treeData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/trees`, 'POST', { tree: treeItems })
+    newTreeSha = treeData.sha
+  } catch (e: any) {
+    results.push(`❌ فشل إنشاء الشجرة: ${e.message}`)
+    return results
+  }
+
+  // === Step 5: Create commit ===
+  let commitSha: string
+  try {
+    const commitData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/commits`, 'POST', {
+      message: '🎮 نسخ كامل للمستودع مع تحديث المحتوى',
+      tree: newTreeSha,
+      parents: parentSha ? [parentSha] : [],
+    })
+    commitSha = commitData.sha
+  } catch (e: any) {
+    results.push(`❌ فشل إنشاء commit: ${e.message}`)
+    return results
+  }
+
+  // === Step 6: Update branch reference ===
+  try {
+    if (parentSha) {
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'PATCH', { sha: commitSha, force: true })
+    } else {
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs`, 'POST', { ref: `refs/heads/${targetBranch}`, sha: commitSha })
+    }
+  } catch (e: any) {
+    results.push(`❌ فشل تحديث الفرع: ${e.message}`)
+  }
+
   return results
 }
 
