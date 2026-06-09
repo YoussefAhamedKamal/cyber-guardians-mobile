@@ -79,7 +79,8 @@ export const useAIStore = create<AIStore>()(
       switchStudentSession: (id) => set({ activeStudentSessionId: id }),
       deleteStudentSession: (id) => set((s) => {
         const sessions = s.studentSessions.filter((x) => x.id !== id)
-        const activeId = s.activeStudentSessionId === id ? (sessions[0]?.id || '') : s.activeStudentSessionId
+        let activeId = s.activeStudentSessionId === id ? (sessions[0]?.id || '') : s.activeStudentSessionId
+        if (sessions.length === 0) { const fresh = createSession(); sessions.push(fresh); activeId = fresh.id }
         return { studentSessions: sessions, activeStudentSessionId: activeId }
       }),
       renameStudentSession: (id, name) => set((s) => ({ studentSessions: s.studentSessions.map((x) => x.id === id ? { ...x, name } : x) })),
@@ -101,7 +102,8 @@ export const useAIStore = create<AIStore>()(
       switchFacultySession: (id) => set({ activeFacultySessionId: id }),
       deleteFacultySession: (id) => set((s) => {
         const sessions = s.facultySessions.filter((x) => x.id !== id)
-        const activeId = s.activeFacultySessionId === id ? (sessions[0]?.id || '') : s.activeFacultySessionId
+        let activeId = s.activeFacultySessionId === id ? (sessions[0]?.id || '') : s.activeFacultySessionId
+        if (sessions.length === 0) { const fresh = createSession(); sessions.push(fresh); activeId = fresh.id }
         return { facultySessions: sessions, activeFacultySessionId: activeId }
       }),
       renameFacultySession: (id, name) => set((s) => ({ facultySessions: s.facultySessions.map((x) => x.id === id ? { ...x, name } : x) })),

@@ -405,8 +405,6 @@ function SessionBar({ type }: { type: 'student' | 'faculty' }) {
   const startRename = (id: string, name: string) => { setEditingId(id); setEditName(name) }
   const saveRename = () => { if (editingId && editName.trim()) { type === 'student' ? ai.renameStudentSession(editingId, editName.trim()) : ai.renameFacultySession(editingId, editName.trim()); setEditingId(null) } }
 
-  if (sessions.length === 0) return null
-
   return (
     <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto', flexShrink: 0 }}>
       {sessions.map((s) => (
@@ -460,6 +458,10 @@ function StudentChat() {
   const session = ai.getActiveStudentSession()
   const messages = session?.messages || []
 
+  useEffect(() => {
+    if (ai.studentSessions.length === 0) ai.createStudentSession('جلسة جديدة')
+  }, [])
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
@@ -475,6 +477,7 @@ function StudentChat() {
 
   const handleSend = async () => {
     const text = input.trim(); if ((!text && pendingAttachments.length === 0) || ai.loading) return
+    if (!ai.getActiveStudentSession()) ai.createStudentSession()
     setInput('')
     const userMsg: AIMessage = { role: 'user', content: text || 'ملف مرفق', attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined }
     setPendingAttachments([])
@@ -576,6 +579,10 @@ function FacultyAIChat() {
   const session = ai.getActiveFacultySession()
   const msgHistory = session?.messages || []
 
+  useEffect(() => {
+    if (ai.facultySessions.length === 0) ai.createFacultySession('جلسة هيئة التدريس')
+  }, [])
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgHistory, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
@@ -601,6 +608,7 @@ function FacultyAIChat() {
 
   const handleSend = async () => {
     const text = input.trim(); if ((!text && pendingAttachments.length === 0) || ai.loading) return
+    if (!ai.getActiveFacultySession()) ai.createFacultySession()
     setInput(''); setApplyStatus([])
     const userMsg: AIMessage = { role: 'user', content: text || 'ملف مرفق', attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined }
     setPendingAttachments([])
