@@ -100,7 +100,7 @@ function escapeStr(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')
 }
 
-function generateCharactersTS(characters: Record<string, any>): string {
+export function generateCharactersTS(characters: Record<string, any>): string {
   const lines: string[] = [
     "import type { Character } from '@/types'\n",
     "export const characters: Record<string, Character> = {",
@@ -123,7 +123,7 @@ function generateCharactersTS(characters: Record<string, any>): string {
   return lines.join('\n') + '\n'
 }
 
-function generateDialogueTS(levels: any[]): string {
+export function generateDialogueTS(levels: any[]): string {
   const lines: string[] = [
     "import type { LevelData } from '@/types'\n",
     "export const levels: LevelData[] = [",
@@ -173,7 +173,7 @@ function generateDialogueTS(levels: any[]): string {
   return lines.join('\n') + '\n'
 }
 
-function generateGameMetaTS(meta: Record<string, unknown>): string {
+export function generateGameMetaTS(meta: Record<string, unknown>): string {
   const lines: string[] = [
     "import type { GameMeta } from '@/types'\n",
     "export const gameMeta: GameMeta = ",
@@ -181,6 +181,20 @@ function generateGameMetaTS(meta: Record<string, unknown>): string {
     '',
   ]
   return lines.join('\n')
+}
+
+function updateViteBasePath(content: string, repoName: string): string {
+  const baseRegex = /base\s*[:=]\s*['"`][^'"`]*['"`]/
+  if (baseRegex.test(content)) {
+    return content.replace(/(base\s*[:=]\s*)['"`][^'"`]*['"`]/, `$1'/${repoName}/'`)
+  }
+  const withConfig = content.replace(/(defineConfig\s*\(\s*\{)/, `$1\n  base: '/${repoName}/',`)
+  if (withConfig !== content) return withConfig
+  return content.replace(/(export\s+default\s+)/, `const BASE_PATH = '/${repoName}/';\n\n$1`)
+}
+
+function decodeB64UTF8(b64: string): string {
+  try { return decodeURIComponent(escape(atob(b64))) } catch { try { return atob(b64) } catch { return b64 } }
 }
 
 export async function pushContentToGitHub(
@@ -310,6 +324,214 @@ export async function enableGitHubPages(owner: string, repo: string, branch = 'm
       return `✅ GitHub Pages مفعّل مسبقاً — https://${owner}.github.io/${repo}/`
     }
     return `⚠️ Pages: ${e.message}`
+  }
+}
+
+export async function listRepoContents(owner: string, repo: string, path = ''): Promise<string[]> {
+  const data = await apiFetch(`/repos/${owner}/${repo}/contents/${path}`, 'GET')
+  if (Array.isArray(data)) {
+    return data.map((f: any) => `${f.type === 'dir' ? '📁' : '📄'} ${f.name}`)
+  }
+  return []
+}
+
+export async function createNewRepo(name: string, description: string): Promise<{ owner: string; repo: string; url: string }> {
+  const data = await apiFetch('/user/repos', 'POST', {
+    name,
+    description,
+    auto_init: false,
+    private: false,
+  })
+  return { owner: data.owner.login, repo: data.name, url: data.html_url }
+}
+
+export async function createNewBranch(owner: string, repo: string, branchName: string, baseSha: string): Promise<void> {
+  const baseRef = await apiFetch(`/repos/${owner}/${repo}/git/refs/heads/main`, 'GET')
+  await apiFetch(`/repos/${owner}/${repo}/git/refs`, 'POST', {
+    ref: `refs/heads/${branchName}`,
+    sha: baseRef.object.sha,
+  })
+}
+
+export async function pushAllContentToNewRepo(
+  newOwner: string,
+  newRepo: string,
+  branchName: string,
+  contentData: {
+    gameMeta: Record<string, unknown>
+    levels: unknown[]
+    characters: Record<string, unknown>
+  }
+): Promise<string[]> {
+  const results: string[] = []
+  const msg = '🎮 إعداد اللعبة — رفع أولي للمحتوى'
+
+  const tsCharacters = generateCharactersTS(contentData.characters)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/characters.ts`, 'PUT', {
+      message: `${msg} — الشخصيات`,
+      content: btoa(unescape(encodeURIComponent(tsCharacters))),
+      branch: branchName,
+    })
+    results.push('✅ characters.ts')
+  } catch (e: any) { results.push(`❌ characters.ts: ${e.message}`) }
+
+  const tsDialogue = generateDialogueTS(contentData.levels)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/dialogue.ts`, 'PUT', {
+      message: `${msg} — المستويات`,
+      content: btoa(unescape(encodeURIComponent(tsDialogue))),
+      branch: branchName,
+    })
+    results.push('✅ dialogue.ts')
+  } catch (e: any) { results.push(`❌ dialogue.ts: ${e.message}`) }
+
+  const tsMeta = generateGameMetaTS(contentData.gameMeta)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/gameMeta.ts`, 'PUT', {
+      message: `${msg} — الإعدادات`,
+      content: btoa(unescape(encodeURIComponent(tsMeta))),
+      branch: branchName,
+    })
+    results.push('✅ gameMeta.ts')
+  } catch (e: any) { results.push(`❌ gameMeta.ts: ${e.message}`) }
+
+  return results
+}
+
+export async function copyEntireRepo(
+  sourceOwner: string,
+  sourceRepo: string,
+  targetOwner: string,
+  targetRepo: string,
+  targetBranch: string,
+  contentData: {
+    gameMeta: Record<string, unknown>
+    levels: unknown[]
+    characters: Record<string, unknown>
+  }
+): Promise<string[]> {
+  const results: string[] = []
+  const isFromMain = sourceOwner === MAIN_REPO.owner && sourceRepo === MAIN_REPO.repo
+
+  // === Step 1: Get source tree (recursive) ===
+  let sourceTree: Array<{ path: string; mode: string; type: string; sha: string; size: number }>
+  try {
+    const refData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/refs/heads/main`, 'GET')
+    const commitData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/commits/${refData.object.sha}`, 'GET')
+    const treeData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/trees/${commitData.tree.sha}?recursive=1`, 'GET')
+    sourceTree = treeData.tree
+  } catch (e: any) {
+    results.push(`❌ فشل قراءة شجرة المصدر: ${e.message}`)
+    return results
+  }
+
+  // === Step 2: Create blobs in target repo and build tree ===
+  const treeItems: Array<{ path: string; mode: string; type: string; sha: string }> = []
+
+  for (const item of sourceTree) {
+    if (item.type !== 'blob') continue
+
+    let contentBase64: string
+    try {
+      const blobData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/blobs/${item.sha}`, 'GET')
+      contentBase64 = blobData.content
+    } catch (e: any) {
+      results.push(`⚠️ ${item.path}: فشل تحميل (${e.message})`)
+      continue
+    }
+
+    try {
+      if (item.path === 'src/data/characters.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateCharactersTS(contentData.characters))))
+      } else if (item.path === 'src/data/dialogue.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateDialogueTS(contentData.levels))))
+      } else if (item.path === 'src/data/gameMeta.ts') {
+        contentBase64 = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
+      } else if (item.path === 'vite.config.ts') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(updateViteBasePath(decoded, targetRepo))))
+      } else if (item.path === 'package.json') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`))))
+      } else if (item.path === 'package-lock.json') {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`))))
+      } else if (item.path === 'README.md' && isFromMain) {
+        const decoded = decodeURIComponent(escape(atob(contentBase64)))
+        contentBase64 = btoa(unescape(encodeURIComponent(
+          decoded.replace(/YoussefAhamedKamal/g, targetOwner).replace(/cyber-guardians-mobile/g, targetRepo)
+        )))
+      }
+
+      const newBlob = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/blobs`, 'POST', {
+        content: contentBase64,
+        encoding: 'base64',
+      })
+      treeItems.push({ path: item.path, mode: item.mode || '100644', type: 'blob', sha: newBlob.sha })
+      results.push(`✅ ${item.path}`)
+    } catch (e: any) {
+      results.push(`❌ ${item.path}: ${e.message}`)
+    }
+  }
+
+  if (treeItems.length === 0) {
+    results.push('❌ لا توجد ملفات لنسخها')
+    return results
+  }
+
+  // === Step 3: Get parent commit SHA (if target repo already has commits) ===
+  let parentSha: string | null = null
+  try {
+    const branchData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'GET')
+    parentSha = branchData.object.sha
+  } catch { /* new repo — orphan commit */ }
+
+  // === Step 4: Create tree in target repo ===
+  let newTreeSha: string
+  try {
+    const treeData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/trees`, 'POST', { tree: treeItems })
+    newTreeSha = treeData.sha
+  } catch (e: any) {
+    results.push(`❌ فشل إنشاء الشجرة: ${e.message}`)
+    return results
+  }
+
+  // === Step 5: Create commit ===
+  let commitSha: string
+  try {
+    const commitData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/commits`, 'POST', {
+      message: '🎮 نسخ كامل للمستودع مع تحديث المحتوى',
+      tree: newTreeSha,
+      parents: parentSha ? [parentSha] : [],
+    })
+    commitSha = commitData.sha
+  } catch (e: any) {
+    results.push(`❌ فشل إنشاء commit: ${e.message}`)
+    return results
+  }
+
+  // === Step 6: Update branch reference ===
+  try {
+    if (parentSha) {
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'PATCH', { sha: commitSha, force: true })
+    } else {
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs`, 'POST', { ref: `refs/heads/${targetBranch}`, sha: commitSha })
+    }
+  } catch (e: any) {
+    results.push(`❌ فشل تحديث الفرع: ${e.message}`)
+  }
+
+  return results
+}
+
+export async function setupDirectEdit(): Promise<{ owner: string; repo: string; pagesUrl: string }> {
+  const config = loadConfig()
+  await enableGitHubPages(config.owner, config.repo, config.branch)
+  return {
+    owner: config.owner,
+    repo: config.repo,
+    pagesUrl: `https://${config.owner}.github.io/${config.repo}/`,
   }
 }
 

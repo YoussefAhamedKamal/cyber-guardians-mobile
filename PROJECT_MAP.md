@@ -96,7 +96,8 @@ src/
 ├── ai/
 │   ├── AIPanel.tsx                  # AI Assistant panel: SessionBar + StudentChat + FacultyAIChat + FacultyDataEditor + AISettings + GitHub Sync
 │   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama + unlimited max_tokens
-│   ├── github.ts                    # GitHub API: push files/changes, list files, create/update files, test connection
+│   ├── github.ts                    # GitHub API: push files/changes, list files, create/update files, test connection + Git Data API
+│   ├── googleDrive.ts               # Google Drive API: OAuth 2.0 + رفع محتوى + رفع مشروع كامل
 │   └── prompts.ts                   # System prompts: طالب + هيئة تدريس (مع تعليمات JSON لأضافة/تعديل/حذف gameMeta + levels + characters)
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
@@ -298,13 +299,33 @@ src/
    - ☑️ `workflow` —(Update GitHub Action workflows)
 3. انسخ الـ Token
 
-**الخطوة 2: نسخ المستودع (Fork)**
+**الخطوة 2: إعداد GitHub (خياران)**
+
+**🟢 الخيار 1: التعديل المباشر في المستودع الرئيسي**
 1. في اللعبة: افتح AI Panel ← هيئة تدريس ← ⚙ GitHub
 2. الصق الـ Token
-3. اضغط **📋 نسخ المستودع وتفعيل Pages**
-4. سيحصل على:
-   - مستودع منسوخ في حسابه: `username/cyber-guardians-mobile`
-   - رابط اللعبة: `https://username.github.io/cyber-guardians-mobile/`
+3. اضغط **🟢 التعديل المباشر**
+4. يُفعّل GitHub Pages على المستودع الرئيسي
+
+**🟡 الخيار 2: إنشاء مستودع جديد**
+1. في اللعبة: افتح AI Panel ← هيئة تدريس ← ⚙ GitHub
+2. الصق الـ Token
+3. اكتب اسم المستودع الجديد
+4. اضغط **🟡 إنشاء مستودع جديد**
+5. سيحصل على:
+   - مستودع جديد في حسابه: `username/الاسم-الجديد`
+   - رابط اللعبة: `https://username.github.io/الاسم-الجديد/`
+
+**مميزات النسخ الجديد (Git Data API):**
+- ✅ **commit واحد لكل الملفات** عبر Git Trees/Blobs/Commits API — أسرع وأكثر موثوقية
+- ✅ ينسخ **كل الملفات** بدون استثناء — صور، فيديوهات، خطوط، خريطة (via Blob API)
+- ✅ يُحدّث `vite.config.ts` تلقائياً (base path — يدعم جميع أنواع الاقتباسات + يضيف base إن لم يكن موجوداً)
+- ✅ يُحدّث `package.json` و `package-lock.json` تلقائياً
+- ✅ يُحدّث `README.md` بالروابط الجديدة
+- ✅ لا يوجد `SKIP_EXTENSIONS` أو `MAX_FILE_SIZE` — كل ملف يُرفع
+- ✅ عملية ذرية — كل شيء ينجح أو يفشل معاً (لا ملفات مفقودة)
+- ✅ يفعّل GitHub Pages تلقائياً
+- ✅ **auto_init: false** — commit واحد فقط (لا إلغاء deploy)
 
 **الخطوة 3: رفع التعديلات**
 1.عدّل اللعبة عبر AI أو المحرر
@@ -319,7 +340,14 @@ src/
 | `src/data/characters.ts` | الشخصيات (الأسماء، الأدوار، الألوان، الشخصية) |
 | `src/data/dialogue.ts` | المستويات (الحوارات، التحديات، الإعدادات) |
 | `src/data/gameMeta.ts` | إعدادات اللعبة العامة (العنوان، الصعوبة، النقاط) |
-| `src/data/LAST_SYNC.txt` | توقيت آخر مزامنة |
+
+**ملفات تُحدّث تلقائياً عند النسخ:**
+| الملف | ماذا يُحدّث |
+|---|---|
+| `vite.config.ts` | `base: '/الاسم-الجديد/'` |
+| `package.json` | `"name": "الاسم-الجديد"` |
+| `package-lock.json` | `"name": "الاسم-الجديد"` |
+| `README.md` | الروابط + اسم المالك |
 
 ---
 
@@ -573,8 +601,15 @@ src/
 - [x] **نظام الجلسات** — تم: جلسات متعددة لكل وضع (طالب/هيئة تدريس) مع إنشاء/切换/إعادة تسمية/حذف
 - [x] **رفع الملفات** — تم: دعم ملفات نصية + صور + فيديو + صوت مع إرفاق متعدد + مؤشرات حالة الرفع (⏳✅❌)
 - [x] **إصلاح أخطاء الجلسات** — تم: SessionBar يظهر دائماً + إنشاء تلقائي للجلسة + حماية الرسائل
-- [x] **GitHub Integration** — تم: Fork + GitHub Pages + رفع ملفات TypeScript + إعدادات Token/Owner/Repo/Branch + تعليمات عربية
+- [x] **GitHub Integration** — تم: التعديل المباشر + إنشاء مستودع جديد + نسخ كامل + تحديث base path تلقائياً + تجاهل ملفات كبيرة
 - [x] **رفع ملفات إلى AI مع مؤشرات الحالة** — تم: ⏳ رفع / ✅ نجاح / ❌ خطأ على كل مرفق
+- [x] **Git Data API** — تم: إعادة كتابة `copyEntireRepo` باستخدام Git Trees/Blobs/Commits API ← commit واحد لكل الملفات، عملية ذرية، لا SKIP_DIRS
+- [x] **إصلاح base path في vite.config.ts** — تم: دعم جميع أنواع الاقتباسات (`'`, `"`, `` ` ``) + إضافة `base` إن لم يكن موجوداً
+- [x] **Google Drive Backup** — تم: رفع محتوى JSON أو المشروع كامل إلى Google Drive
+- [x] **إزالة SKIP_EXTENSIONS** — تم: `copyEntireRepo` يرفع كل الملفات حتى الوسائط (via Blob API)
+- [x] **إلغاء deploy المكرر** — تم: `auto_init: false` في `createNewRepo` ← commit واحد فقط
+- [x] **تمرير نتائج الرفع** — تم: scrollable box + عداد ✅/❌/⚠️ لكل ملف
+- [x] **Google Drive instructions** — تم: إرشادات كاملة في واجهة الإعدادات
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
@@ -595,19 +630,38 @@ src/
 ### المكونات
 | الملف | الوظيفة |
 |---|---|
-| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection |
-| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + زر Fork + زر Push + تعليمات |
+| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection + Git Data API |
+| `src/ai/googleDrive.ts` | Google Drive API: OAuth 2.0 + رفع محتوى JSON + رفع مشروع كامل (بما في ذلك الوسائط) |
+| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive + زر Fork + زر Push + تعليمات + scrollable results |
 
-### الدوال
+### دوال GitHub
 | الدالة | الوظيفة |
 |---|---|
-| `forkMainRepo()` | نسخ المستودع الرئيسي (`ykamal-1/cyber-guardians-mobile`) إلى حساب المستخدم |
-| `enableGitHubPages()` | تفعيل GitHub Pages على المستودع المنسوخ |
-| `setupForkWithPages()` | Fork + انتظار التجهيز + تفعيل Pages (دالة مجمعة) |
+| `forkMainRepo()` | نسخ المستودع الرئيسي إلى حساب المستخدم |
+| `enableGitHubPages()` | تفعيل GitHub Pages على المستودع |
+| `setupForkWithPages()` | Fork + انتظار التجهيز + تفعيل Pages |
 | `pushContentToGitHub()` | رفع ملفات TypeScript: characters.ts + dialogue.ts + gameMeta.ts |
+| `copyEntireRepo()` | **Git Data API** — نسخ كل ملفات المستودع في commit واحد: Trees + Blobs + Commits (بدون SKIP) |
 | `testGitHubConnection()` | اختبار الاتصال بالـ API |
 | `getGitHubUsername()` | الحصول على اسم المستخدم من Token |
 | `waitForForkReady()` | انتظار حتى يكون المستودع المنسوخ جاهزاً |
+| `createNewRepo()` | إنشاء مستودع جديد (auto_init: false) |
+| `setupDirectEdit()` | تفعيل التعديل المباشر + GitHub Pages |
+| `updateViteBasePath()` | تحديث base path في vite.config.ts (يدعم `'`, `"`, `` ` `` ويضيف base إن لم يكن موجوداً) |
+| `generateCharactersTS()` | توليد كود TypeScript للشخصيات |
+| `generateDialogueTS()` | توليد كود TypeScript للمستويات |
+| `generateGameMetaTS()` | توليد كود TypeScript لإعدادات اللعبة |
+
+### دوال Google Drive
+| الدالة | الوظيفة |
+|---|---|
+| `loadGIS()` | تحميل مكتبة Google Identity Services |
+| `initGoogleDrive(clientId)` | تهيئة OAuth client |
+| `loginToDrive()` | تسجيل الدخول بحساب Google |
+| `logout()` | تسجيل الخروج |
+| `createFolder(name)` | إنشاء مجلد في Drive |
+| `uploadContentToDrive()` | رفع بيانات اللعبة (JSON): gameMeta + levels + characters |
+| `uploadFullRepoToDrive()` | رفع المشروع كامل من GitHub إلى Drive مع الحفاظ على هيكل المجلدات |
 
 ### الإعدادات المحفوظة
 | المفتاح | المحتوى |
@@ -615,6 +669,6 @@ src/
 | `cg-github-config` | Token + Owner + Repo + Branch (في localStorage) |
 
 ### المستودع الرئيسي
-- **Owner**: `ykamal-1`
+- **Owner**: `YoussefAhamedKamal`
 - **Repo**: `cyber-guardians-mobile`
 - **النسخ**: كل عضو هيئة تدريس يحصل على نسخة في حسابه
