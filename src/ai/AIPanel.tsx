@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, MAIN_REPO } from './github'
+import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, MAIN_REPO } from './github'
 import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
@@ -260,6 +260,20 @@ function AISettings() {
           setGhForking(false)
         }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
           {ghForking ? '⏳ جارٍ النسخ والتفعيل...' : '📋 نسخ المستودع وتفعيل Pages'}
+        </button>
+
+        <button onClick={async () => {
+          if (!ghConfig.token || !ghConfig.owner || !ghConfig.repo) { setGhTestStatus('❌ أدخل Token وOwner وRepo أولاً'); return }
+          setGhTesting(true); setGhTestStatus('⏳ جارٍ فحص المحتوى...')
+          setGitHubConfig(ghConfig)
+          try {
+            const files = await listRepoContents(ghConfig.owner, ghConfig.repo)
+            if (files.length === 0) { setGhTestStatus('❌ المستودع فارغ! لا يوجد ملفات') }
+            else { setGhTestStatus(`✅ الملفات (${files.length}):\n${files.join('\n')}`) }
+          } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
+          setGhTesting(false)
+        }} disabled={ghTesting || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghTesting ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: ghTesting ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghTesting ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
+          {ghTesting ? '⏳...' : '🔍 تحقق من المحتوى'}
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>

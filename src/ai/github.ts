@@ -313,6 +313,14 @@ export async function enableGitHubPages(owner: string, repo: string, branch = 'm
   }
 }
 
+export async function listRepoContents(owner: string, repo: string, path = ''): Promise<string[]> {
+  const data = await apiFetch(`/repos/${owner}/${repo}/contents/${path}`, 'GET')
+  if (Array.isArray(data)) {
+    return data.map((f: any) => `${f.type === 'dir' ? '📁' : '📄'} ${f.name}`)
+  }
+  return []
+}
+
 export async function setupForkWithPages(): Promise<{ owner: string; repo: string; url: string; pagesUrl: string }> {
   const result = await forkMainRepo()
   await waitForForkReady(result.owner, result.repo)
