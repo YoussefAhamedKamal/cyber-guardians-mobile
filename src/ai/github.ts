@@ -399,7 +399,7 @@ export async function copyEntireRepo(
 ): Promise<string[]> {
   const results: string[] = []
   const SKIP_FILES = ['.gitignore', 'node_modules', '.env', '.env.local']
-  const SKIP_DIRS = ['node_modules', '.git', 'dist', '.github', 'scripts']
+  const SKIP_DIRS = ['node_modules', '.git', 'dist']
 
   async function copyRecursive(path: string): Promise<void> {
     let items: any[]
