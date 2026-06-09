@@ -399,7 +399,8 @@ export async function copyEntireRepo(
 ): Promise<string[]> {
   const results: string[] = []
   const SKIP_FILES = ['.gitignore', 'node_modules', '.env', '.env.local']
-  const SKIP_DIRS = ['node_modules', '.git', 'dist']
+  const SKIP_DIRS = ['node_modules', '.git', 'dist', 'public']
+  const SKIP_EXTENSIONS = ['.mp4', '.mp3', '.wav', '.webp', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ttf', '.woff', '.woff2', '.eot', '.map', '.lock']
 
   async function copyRecursive(path: string): Promise<void> {
     let items: any[]
@@ -410,6 +411,7 @@ export async function copyEntireRepo(
 
     for (const item of items) {
       if (SKIP_DIRS.includes(item.name) || SKIP_FILES.includes(item.name)) continue
+      if (SKIP_EXTENSIONS.some(ext => item.name.toLowerCase().endsWith(ext))) continue
 
       const itemPath = path ? `${path}/${item.name}` : item.name
 
