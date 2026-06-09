@@ -6,5 +6,5 @@ export type {
   FirewallPort, CipherChallenge, VulnCode, IncidentStep,
   ChallengeResult, ChallengeState,
 } from './game'
-export type { GameSettings } from './settings'
+export type { GameSettings, GameMeta } from './settings'
 export type { AIMessage } from './ai'

@@ -1,7 +1,25 @@
 import { useContentStore } from '@/store/contentStore'
 import { levels as defaultLevels } from './dialogue'
 import { characters as defaultCharacters } from './characters'
-import type { LevelData, Character } from '@/types'
+import type { LevelData, Character, GameMeta } from '@/types'
+
+const DEFAULT_GAME_META: GameMeta = {
+  gameTitle: 'Cyber Guardians',
+  gameSubtitle: 'حراس الأمن السيبراني',
+  gameVersion: '1.0.0',
+  defaultLanguage: 'ar',
+  difficulty: 'medium',
+  dailyRewardEnabled: true,
+  dailyRewardPoints: 100,
+  adsEnabled: false,
+  iapEnabled: false,
+  platformNotes: '',
+}
+
+export function getGameMeta(): GameMeta {
+  const store = useContentStore.getState()
+  return store.gameMeta || DEFAULT_GAME_META
+}
 
 export function getLevels(): LevelData[] {
   const store = useContentStore.getState()

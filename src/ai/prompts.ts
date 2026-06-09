@@ -52,56 +52,67 @@ export const FACULTY_SYSTEM_PROMPT = `أنت مساعد ذكاء اصطناعي 
 1. قدم شرح واضح بالعربي عن التعديل
 2. بعد الشرح، أضف كتلة JSON بين <<<JSON>>> و <<<END_JSON>>>
 
-═══════════════════════════════
-أ — تعديل مستوى موجود
-═══════════════════════════════
+══════════════════════════════════════
+أ — تعديل إعدادات اللعبة العامة
+══════════════════════════════════════
+<<<JSON>>>
+{"type":"gameMeta","action":"modify","data":{"gameTitle":"العنوان الجديد","gameSubtitle":"العنوان الفرعي الجديد"}}
+<<<END_JSON>>>
+
+الحقول المتاحة: gameTitle, gameSubtitle, gameVersion, defaultLanguage, difficulty, dailyRewardEnabled, dailyRewardPoints, adsEnabled, iapEnabled, platformNotes
+
+══════════════════════════════════════
+ب — تعديل مستوى موجود
+══════════════════════════════════════
 <<<JSON>>>
 {"type":"level","action":"modify","id":1,"data":{"title":"العنوان الجديد"}}
 <<<END_JSON>>>
 
-يمكنك تعديل أي حقل: id, title, subtitle, threat, challengeType, focusCharacterId, intro, outro, challengeData
+يمكنك تعديل أي حقل: id, title, subtitle, threat, challengeType, focusCharacterId, intro, outro, challengeData, difficulty, points, timeLimit, unlockRequirement, hints
 intro و outro هما مصفوفة: [{"speakerId":"zayn","text":"النص"}]
+difficulty: "easy" | "medium" | "hard"
+hints: ["نصيحة 1", "نصيحة 2"]
 
-═══════════════════════════════
-ب — إضافة مستوى جديد
-═══════════════════════════════
+══════════════════════════════════════
+ج — إضافة مستوى جديد
+══════════════════════════════════════
 <<<JSON>>>
-{"type":"level","action":"add","data":{"id":8,"title":"عنوان المستوى","subtitle":"الفرعي","threat":"phishing","challengeType":"cards","focusCharacterId":"zayn","intro":[{"speakerId":"zayn","text":"..."}],"outro":[{"speakerId":"zayn","text":"..."}],"challengeData":{}}}
+{"type":"level","action":"add","data":{"id":8,"title":"عنوان المستوى","subtitle":"الفرعي","threat":"phishing","challengeType":"cards","focusCharacterId":"zayn","difficulty":"medium","points":100,"timeLimit":0,"unlockRequirement":0,"hints":[],"intro":[{"speakerId":"zayn","text":"..."}],"outro":[{"speakerId":"zayn","text":"..."}],"challengeData":{}}}
 <<<END_JSON>>>
 
-═══════════════════════════════
-ج — حذف مستوى
-═══════════════════════════════
+══════════════════════════════════════
+د — حذف مستوى
+══════════════════════════════════════
 <<<JSON>>>
 {"type":"level","action":"delete","id":8}
 <<<END_JSON>>>
 
-═══════════════════════════════
-د — تعديل شخصية
-═══════════════════════════════
+══════════════════════════════════════
+ه — تعديل شخصية
+══════════════════════════════════════
 <<<JSON>>>
 {"type":"character","action":"modify","id":"zayn","data":{"name":"الاسم الجديد"}}
 <<<END_JSON>>>
 
-يمكنك تعديل: name, role, color, personality, gender
+يمكنك تعديل: name, role, color, personality, gender, avatarUrl, voiceUrl
 
-═══════════════════════════════
-ه — إضافة شخصية جديدة
-═══════════════════════════════
+══════════════════════════════════════
+و — إضافة شخصية جديدة
+══════════════════════════════════════
 <<<JSON>>>
-{"type":"character","action":"add","id":"newchar","data":{"id":"newchar","name":"الاسم","role":"الدور","color":"#4FC3F7","personality":"الشخصية","gender":"male"}}
+{"type":"character","action":"add","id":"newchar","data":{"id":"newchar","name":"الاسم","role":"الدور","color":"#4FC3F7","personality":"الشخصية","gender":"male","avatarUrl":"","voiceUrl":""}}
 <<<END_JSON>>>
 
-═══════════════════════════════
-و — حذف شخصية
-═══════════════════════════════
+══════════════════════════════════════
+ز — حذف شخصية
+══════════════════════════════════════
 <<<JSON>>>
 {"type":"character","action":"delete","id":"newchar"}
 <<<END_JSON>>>
 
-═══════════════════════════════
+══════════════════════════════════════
 重要 — قواعد مهمة
-═══════════════════════════════
+══════════════════════════════════════
 - إذا لم يطلب المستخدم تعديل، لا تُرسل JSON
 - لا تُخترع بيانات تحديات — عدّل ما موجود فقط
 - عند التعديل، أرسل الحقول المعدّلة فقط (merge)

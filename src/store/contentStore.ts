@@ -1,9 +1,23 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { LevelData, Character } from '@/types'
+import type { LevelData, Character, GameMeta } from '@/types'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 
+const DEFAULT_GAME_META: GameMeta = {
+  gameTitle: 'Cyber Guardians',
+  gameSubtitle: 'حراس الأمن السيبراني',
+  gameVersion: '1.0.0',
+  defaultLanguage: 'ar',
+  difficulty: 'medium',
+  dailyRewardEnabled: true,
+  dailyRewardPoints: 100,
+  adsEnabled: false,
+  iapEnabled: false,
+  platformNotes: '',
+}
+
 interface ContentStore {
+  gameMeta: GameMeta
   levelOverrides: Record<number, Partial<LevelData>>
   characterOverrides: Record<string, Partial<Character>>
   newLevels: LevelData[]
@@ -11,6 +25,7 @@ interface ContentStore {
   newCharacters: Record<string, Character>
   deletedCharacters: string[]
 
+  setGameMeta: (data: Partial<GameMeta>) => void
   setLevelOverride: (id: number, data: Partial<LevelData>) => void
   setCharacterOverride: (id: string, data: Partial<Character>) => void
   addLevel: (level: LevelData) => void
@@ -19,18 +34,25 @@ interface ContentStore {
   deleteCharacter: (id: string) => void
   resetLevel: (id: number) => void
   resetCharacter: (id: string) => void
+  resetGameMeta: () => void
   resetAll: () => void
 }
 
 export const useContentStore = create<ContentStore>()(
   persist(
     (set) => ({
+      gameMeta: { ...DEFAULT_GAME_META },
       levelOverrides: {},
       characterOverrides: {},
       newLevels: [],
       deletedLevels: [],
       newCharacters: {},
       deletedCharacters: [],
+
+      setGameMeta: (data) =>
+        set((s) => ({
+          gameMeta: { ...s.gameMeta, ...data },
+        })),
 
       setLevelOverride: (id, data) =>
         set((s) => ({
@@ -88,7 +110,10 @@ export const useContentStore = create<ContentStore>()(
           }
         }),
 
+      resetGameMeta: () => set({ gameMeta: { ...DEFAULT_GAME_META } }),
+
       resetAll: () => set({
+        gameMeta: { ...DEFAULT_GAME_META },
         levelOverrides: {},
         characterOverrides: {},
         newLevels: [],

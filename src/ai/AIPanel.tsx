@@ -6,8 +6,8 @@ import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 import { AI_PROVIDERS } from '@/types/ai'
-import { getLevels, getCharacters } from '@/data/gameData'
-import type { AIMessage, LevelData, Character } from '@/types'
+import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
+import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
 
 const FAB_POS_KEY = 'cg-ai-fab-pos'
 const PANEL_STATE_KEY = 'cg-ai-panel-state'
@@ -466,7 +466,10 @@ function applyUpdates(updates: any[]): string[] {
   const store = useContentStore.getState(); const results: string[] = []
   for (const u of updates) {
     try {
-      if (u.type === 'level') {
+      if (u.type === 'gameMeta') {
+        if (u.action === 'modify' && u.data) { store.setGameMeta(u.data); results.push(`✅ تعديل إعدادات اللعبة`) }
+        else if (u.action === 'reset') { store.resetGameMeta(); results.push(`✅ إعادة ضبط إعدادات اللعبة`) }
+      } else if (u.type === 'level') {
         if (u.action === 'add' && u.data) { store.addLevel(u.data as LevelData); results.push(`✅ إضافة المستوى "${u.data.title || u.data.id}"`) }
         else if (u.action === 'delete' && typeof u.id === 'number') { store.deleteLevel(u.id); results.push(`✅ حذف المستوى ${u.id}`) }
         else if (u.action === 'modify' && typeof u.id === 'number' && u.data) { store.setLevelOverride(u.id, u.data); results.push(`✅ تعديل المستوى ${u.id}`) }
@@ -495,11 +498,12 @@ function FacultyAIChat() {
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); setStreaming('')
-    const levels = getLevels(); const chars = getCharacters()
-    const levelsJson = levels.map((l) => `المستوى ${l.id}: ${l.title}`).join('\n')
-    const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role })), null, 2)
+    const levels = getLevels(); const chars = getCharacters(); const meta = getGameMeta()
+    const levelsJson = levels.map((l) => `المستوى ${l.id}: ${l.title} (${l.difficulty || 'medium'}, ${l.points || 0} نقطة)`).join('\n')
+    const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role, gender: c.gender })), null, 2)
+    const metaJson = JSON.stringify(meta, null, 2)
     const lastUser = msgs.filter((m) => m.role === 'user').pop()
-    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${lastUser?.content || ''}` }
+    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nإعدادات اللعبة:\n${metaJson}\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${lastUser?.content || ''}` }
     try {
       const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
       const chatMsgs = msgs.filter((m) => m !== contextMsg)
@@ -573,25 +577,67 @@ function FacultyAIChat() {
 
 function FacultyDataEditor() {
   const contentStore = useContentStore()
-  const levels = getLevels(); const chars = getCharacters()
+  const levels = getLevels(); const chars = getCharacters(); const gameMeta = getGameMeta()
   const [selectedLevel, setSelectedLevel] = useState<number>(levels[0]?.id ?? 1)
   const [editable, setEditable] = useState<LevelData>(() => structuredClone(levels[0]!))
   const [showExport, setShowExport] = useState(false)
-  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame'>('levels')
+  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame' | 'game'>('levels')
+  const [metaEditable, setMetaEditable] = useState<GameMeta>(() => structuredClone(gameMeta))
 
   useEffect(() => { const level = levels.find((l) => l.id === selectedLevel); if (level) setEditable(structuredClone(level)) }, [selectedLevel, contentStore.levelOverrides, contentStore.newLevels, contentStore.deletedLevels])
+  useEffect(() => { setMetaEditable(structuredClone(gameMeta)) }, [contentStore.gameMeta])
 
   const levelDataStr = () => JSON.stringify(editable, null, 2)
-  const fullGameDataStr = () => JSON.stringify({ levels, characters: chars }, null, 2)
+  const fullGameDataStr = () => JSON.stringify({ gameMeta, levels, characters: chars }, null, 2)
   const updateField = (path: string[], value: any) => { setEditable((prev) => { const next = structuredClone(prev); let obj: any = next; for (let i = 0; i < path.length - 1; i++) obj = obj[path[i]!]; obj[path[path.length - 1]!] = value; return next }) }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '12px' }}>
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        {([{ id: 'levels', label: 'المستويات' }, { id: 'characters', label: 'الشخصيات' }, { id: 'fullgame', label: 'الكل' }] as const).map((tab) => (
+        {([{ id: 'game', label: '🎮 اللعبة' }, { id: 'levels', label: 'المستويات' }, { id: 'characters', label: 'الشخصيات' }, { id: 'fullgame', label: 'الكل' }] as const).map((tab) => (
           <button key={tab.id} onClick={() => setEditorTab(tab.id)} style={{ flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer', background: editorTab === tab.id ? 'rgba(79,195,247,0.1)' : 'transparent', color: editorTab === tab.id ? '#4FC3F7' : '#777', fontWeight: editorTab === tab.id ? 700 : 400, borderBottom: editorTab === tab.id ? '2px solid #4FC3F7' : '2px solid transparent', fontSize: '11px' }}>{tab.label}</button>
         ))}
       </div>
+      {editorTab === 'game' && (
+        <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ color: '#aaa' }}>عنوان اللعبة<input value={metaEditable.gameTitle} onChange={(e) => setMetaEditable({ ...metaEditable, gameTitle: e.target.value })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>العنوان الفرعي<input value={metaEditable.gameSubtitle} onChange={(e) => setMetaEditable({ ...metaEditable, gameSubtitle: e.target.value })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>الإصدار<input value={metaEditable.gameVersion} onChange={(e) => setMetaEditable({ ...metaEditable, gameVersion: e.target.value })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>اللغة الافتراضية
+            <select value={metaEditable.defaultLanguage} onChange={(e) => setMetaEditable({ ...metaEditable, defaultLanguage: e.target.value })} style={inputStyle}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label style={{ color: '#aaa' }}>الصعوبة العامة
+            <select value={metaEditable.difficulty} onChange={(e) => setMetaEditable({ ...metaEditable, difficulty: e.target.value as any })} style={inputStyle}>
+              <option value="easy">سهل</option>
+              <option value="medium">متوسط</option>
+              <option value="hard">صعب</option>
+            </select>
+          </label>
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" checked={metaEditable.dailyRewardEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardEnabled: e.target.checked })} />
+            مكافأة يومية
+          </label>
+          {metaEditable.dailyRewardEnabled && (
+            <label style={{ color: '#aaa' }}>نقاط المكافأة اليومية<input type="number" value={metaEditable.dailyRewardPoints} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardPoints: Number(e.target.value) })} style={inputStyle} /></label>
+          )}
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" checked={metaEditable.adsEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, adsEnabled: e.target.checked })} />
+            إعلانات
+          </label>
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" checked={metaEditable.iapEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, iapEnabled: e.target.checked })} />
+            شراء داخل التطبيق
+          </label>
+          <label style={{ color: '#aaa' }}>ملاحظات المنصة<textarea value={metaEditable.platformNotes} onChange={(e) => setMetaEditable({ ...metaEditable, platformNotes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={() => contentStore.setGameMeta(metaEditable)} style={{ ...smallBtnStyle, color: '#81C784' }}>حفظ</button>
+            <button onClick={() => { contentStore.resetGameMeta(); setMetaEditable(structuredClone(getGameMeta())) }} style={{ ...smallBtnStyle, color: '#FFB74D' }}>إعادة ضبط</button>
+          </div>
+        </div>
+      )}
       {editorTab === 'characters' && (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -604,6 +650,15 @@ function FacultyDataEditor() {
                 <label style={{ color: '#aaa', fontSize: '11px' }}>الاسم<input value={ch.name} onChange={(e) => contentStore.setCharacterOverride(id, { name: e.target.value })} style={inputStyle} /></label>
                 <label style={{ color: '#aaa', fontSize: '11px' }}>الدور<input value={ch.role} onChange={(e) => contentStore.setCharacterOverride(id, { role: e.target.value })} style={inputStyle} /></label>
                 <label style={{ color: '#aaa', fontSize: '11px' }}>اللون<input value={ch.color} onChange={(e) => contentStore.setCharacterOverride(id, { color: e.target.value })} style={inputStyle} /></label>
+                <label style={{ color: '#aaa', fontSize: '11px' }}>الشخصية<textarea value={ch.personality} onChange={(e) => contentStore.setCharacterOverride(id, { personality: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
+                <label style={{ color: '#aaa', fontSize: '11px' }}>الجنس
+                  <select value={ch.gender} onChange={(e) => contentStore.setCharacterOverride(id, { gender: e.target.value as any })} style={inputStyle}>
+                    <option value="male">ذكر</option>
+                    <option value="female">أنثى</option>
+                  </select>
+                </label>
+                <label style={{ color: '#aaa', fontSize: '11px' }}>رابط الصورة (Avatar)<input value={ch.avatarUrl || ''} onChange={(e) => contentStore.setCharacterOverride(id, e.target.value ? { avatarUrl: e.target.value } : { avatarUrl: '' } as any)} placeholder="https://..." style={inputStyle} /></label>
+                <label style={{ color: '#aaa', fontSize: '11px' }}>رابط الصوت (Voice)<input value={ch.voiceUrl || ''} onChange={(e) => contentStore.setCharacterOverride(id, e.target.value ? { voiceUrl: e.target.value } : { voiceUrl: '' } as any)} placeholder="https://..." style={inputStyle} /></label>
               </div>
             ))}
           </div>
@@ -626,6 +681,16 @@ function FacultyDataEditor() {
           <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ color: '#aaa' }}>العنوان<input value={editable.title} onChange={(e) => updateField(['title'], e.target.value)} style={inputStyle} /></label>
             <label style={{ color: '#aaa' }}>العنوان الفرعي<input value={editable.subtitle} onChange={(e) => updateField(['subtitle'], e.target.value)} style={inputStyle} /></label>
+            <label style={{ color: '#aaa' }}>الصعوبة
+              <select value={editable.difficulty || 'medium'} onChange={(e) => updateField(['difficulty'], e.target.value)} style={inputStyle}>
+                <option value="easy">سهل</option>
+                <option value="medium">متوسط</option>
+                <option value="hard">صعب</option>
+              </select>
+            </label>
+            <label style={{ color: '#aaa' }}>النقاط<input type="number" value={editable.points || 0} onChange={(e) => updateField(['points'], Number(e.target.value))} style={inputStyle} /></label>
+            <label style={{ color: '#aaa' }}>حد الوقت (ثانية)<input type="number" value={editable.timeLimit || 0} onChange={(e) => updateField(['timeLimit'], Number(e.target.value))} placeholder="0 = بدون حد" style={inputStyle} /></label>
+            <label style={{ color: '#aaa' }}>يتطلب إكمال المستوى<input type="number" value={editable.unlockRequirement || 0} onChange={(e) => updateField(['unlockRequirement'], Number(e.target.value))} placeholder="0 = متاح دائماً" style={inputStyle} /></label>
             <div style={{ color: '#aaa' }}>حوار المقدمة</div>
             {editable.intro.map((line, i) => (
               <div key={i} style={{ display: 'flex', gap: '4px' }}>
@@ -640,6 +705,9 @@ function FacultyDataEditor() {
                 <input value={line.text} onChange={(e) => { const next = [...editable.outro]; next[i] = { speakerId: line.speakerId, text: e.target.value }; updateField(['outro'], next) }} style={{ ...inputStyle, flex: 1 }} />
               </div>
             ))}
+            <label style={{ color: '#aaa' }}>نصائح (مفصولة بسطر جديد)
+              <textarea value={(editable.hints || []).join('\n')} onChange={(e) => updateField(['hints'], e.target.value.split('\n').filter(Boolean))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="hint 1&#10;hint 2" />
+            </label>
           </div>
         </>
       )}

@@ -38,3 +38,16 @@ export interface GameSettings {
   customHeadingFontName: string
   customHeadingFontUrl: string
 }
+
+export interface GameMeta {
+  gameTitle: string
+  gameSubtitle: string
+  gameVersion: string
+  defaultLanguage: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  dailyRewardEnabled: boolean
+  dailyRewardPoints: number
+  adsEnabled: boolean
+  iapEnabled: boolean
+  platformNotes: string
+}

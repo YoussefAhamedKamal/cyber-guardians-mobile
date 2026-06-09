@@ -25,6 +25,8 @@ export interface Character {
   color: string
   personality: string
   gender: 'male' | 'female'
+  avatarUrl?: string
+  voiceUrl?: string
 }
 
 export interface DialogueLine {
@@ -108,6 +110,11 @@ export interface LevelData {
   outro: DialogueLine[]
   focusCharacterId: string
   challengeData: ChallengeData
+  difficulty?: 'easy' | 'medium' | 'hard'
+  points?: number
+  timeLimit?: number
+  unlockRequirement?: number
+  hints?: string[]
 }
 
 export type ChallengeResult = 'success' | 'fail'
