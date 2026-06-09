@@ -396,9 +396,8 @@ function StudentChat() {
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
-  const [messages, setMessages] = useState<AIMessage[]>([])
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [ai.studentMessages, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); setStreaming('')
@@ -406,8 +405,8 @@ function StudentChat() {
       const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
       let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
       for await (const chunk of gen) { full += chunk; setStreaming(full) }
-      setMessages((prev) => [...prev, { role: 'assistant', content: full }])
-    } catch (err: any) { setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }]) }
+      ai.addStudentMessage({ role: 'assistant', content: full })
+    } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
     ai.setLoading(false); setStreaming('')
   }
 
@@ -415,29 +414,30 @@ function StudentChat() {
     const text = input.trim(); if (!text || ai.loading) return
     setInput('')
     const userMsg: AIMessage = { role: 'user', content: text }
-    const newMsgs = [...messages, userMsg]
-    setMessages(newMsgs)
-    await sendMessage(newMsgs)
+    ai.addStudentMessage(userMsg)
+    await sendMessage([...ai.studentMessages, userMsg])
   }
 
   const handleEdit = async (idx: number, content: string) => {
-    const newMsgs = [...messages]; newMsgs[idx] = { role: 'user', content }
-    const trimmed = newMsgs.slice(0, idx + 1)
-    setMessages(trimmed)
-    await sendMessage(trimmed)
+    const trimmed = ai.studentMessages.slice(0, idx)
+    ai.clearStudentMessages()
+    trimmed.forEach((m) => ai.addStudentMessage(m))
+    ai.addStudentMessage({ role: 'user', content })
+    await sendMessage([...trimmed, { role: 'user', content }])
   }
 
   const handleRegenerate = async (idx: number) => {
-    const trimmed = messages.slice(0, idx)
-    setMessages(trimmed)
+    const trimmed = ai.studentMessages.slice(0, idx)
+    ai.clearStudentMessages()
+    trimmed.forEach((m) => ai.addStudentMessage(m))
     await sendMessage(trimmed)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
-        {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
-        {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
+        {ai.studentMessages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
+        {ai.studentMessages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: streaming }} />}
         <div ref={bottomRef} />
       </div>
@@ -488,11 +488,10 @@ function FacultyAIChat() {
   const ai = useAIStore()
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
-  const [msgHistory, setMsgHistory] = useState<AIMessage[]>([])
   const [applyStatus, setApplyStatus] = useState<string[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgHistory, streaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [ai.facultyMessages, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); setStreaming('')
@@ -507,9 +506,9 @@ function FacultyAIChat() {
       let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
       for await (const chunk of gen) { full += chunk; setStreaming(full) }
       const { updates, cleanText } = parseAIUpdates(full)
-      setMsgHistory((prev) => [...prev, { role: 'assistant', content: cleanText || full }])
+      ai.addFacultyMessage({ role: 'assistant', content: cleanText || full })
       if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
-    } catch (err: any) { setMsgHistory((prev) => [...prev, { role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }]) }
+    } catch (err: any) { ai.addFacultyMessage({ role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }) }
     ai.setLoading(false); setStreaming('')
   }
 
@@ -517,22 +516,23 @@ function FacultyAIChat() {
     const text = input.trim(); if (!text || ai.loading) return
     setInput(''); setApplyStatus([])
     const userMsg: AIMessage = { role: 'user', content: text }
-    const newMsgs = [...msgHistory, userMsg]
-    setMsgHistory(newMsgs)
-    await sendMessage(newMsgs)
+    ai.addFacultyMessage(userMsg)
+    await sendMessage([...ai.facultyMessages, userMsg])
   }
 
   const handleEdit = async (idx: number, content: string) => {
-    const newMsgs = [...msgHistory]; newMsgs[idx] = { role: 'user', content }
-    const trimmed = newMsgs.slice(0, idx + 1)
-    setMsgHistory(trimmed)
+    const trimmed = ai.facultyMessages.slice(0, idx)
+    ai.clearFacultyMessages()
+    trimmed.forEach((m) => ai.addFacultyMessage(m))
+    ai.addFacultyMessage({ role: 'user', content })
     setApplyStatus([])
-    await sendMessage(trimmed)
+    await sendMessage([...trimmed, { role: 'user', content }])
   }
 
   const handleRegenerate = async (idx: number) => {
-    const trimmed = msgHistory.slice(0, idx)
-    setMsgHistory(trimmed)
+    const trimmed = ai.facultyMessages.slice(0, idx)
+    ai.clearFacultyMessages()
+    trimmed.forEach((m) => ai.addFacultyMessage(m))
     setApplyStatus([])
     await sendMessage(trimmed)
   }
@@ -545,14 +545,14 @@ function FacultyAIChat() {
         </div>
       )}
       <div style={{ flex: 1, overflow: 'auto', padding: '10px' }}>
-        {msgHistory.length === 0 && !streaming && (
+        {ai.facultyMessages.length === 0 && !streaming && (
           <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>
             <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎓</div>
             اسأل عن أي تعديل في اللعبة<br/>
             <span style={{ fontSize: '11px', color: '#555' }}>مثال: غيّر عنوان المستوى الأول، أضف شخصية جديدة، احذف مستوى 7</span>
           </div>
         )}
-        {msgHistory.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
+        {ai.facultyMessages.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: getDisplayText(streaming) }} />}
         <div ref={bottomRef} />
       </div>
