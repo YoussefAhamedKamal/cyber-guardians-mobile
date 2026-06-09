@@ -615,6 +615,8 @@ src/
 - [x] **Supply Chain Audit** — تم: فحص 5 تبعيات (0 عالية المخاطر)
 - [x] **CodeQL Fix: Insecure Randomness** — تم: `Math.random()` → `crypto.randomUUID()` في `createSession()`
 - [x] **CodeQL Fix: Clear Text Storage** — تم: تشفير API Keys بـ AES-GCM قبل تخزينها في `localStorage`
+- [x] **Images to AI Vision API** — تم: تحويل الصور المرفوعة إلى OpenAI Vision format (array of content parts)
+- [x] **BGM hide on maximize** — تم: إخفاء زر BGM عند تكبير نافذة AI
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
