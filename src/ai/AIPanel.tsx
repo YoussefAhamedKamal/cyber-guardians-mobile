@@ -149,12 +149,15 @@ function AISettings() {
   }, [ai.providerId, ai.modelId, provider])
 
   const handleTestConnection = async () => {
-    const model = ai.modelId.trim()
-    if (!model) { setTestStatus('⚠️ أدخل اسم النموذج أولاً'); return }
-    setTesting(true)
-    setTestStatus('⏳ جارٍ الاتصال...')
-    const result = await testConnection(ai.providerId, model, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
-    setTestStatus(result)
+    setTesting(true); setTestStatus('⏳ جارٍ اختبار الاتصال...')
+    setGitHubConfig(ghConfig)
+    try {
+      const username = await getGitHubUsername()
+      setGhConfig({ ...ghConfig, owner: username })
+      setGitHubConfig({ ...ghConfig, owner: username })
+      const r = await testGitHubConnection()
+      setTestStatus(r)
+    } catch (e: any) { setTestStatus(`❌ ${e.message}`) }
     setTesting(false)
   }
 
@@ -246,7 +249,9 @@ function AISettings() {
           setGhForking(true); setGhTestStatus('⏳ جارٍ التحقق والنسخ...')
           setGitHubConfig(ghConfig)
           try {
-            const resolvedOwner = await resolveGithubOwner(ghConfig.owner)
+            const username = await getGitHubUsername()
+            setGhConfig({ ...ghConfig, owner: username })
+            setGitHubConfig({ ...ghConfig, owner: username })
             const result = await setupForkWithPages()
             setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
             setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
@@ -264,7 +269,7 @@ function AISettings() {
           <label style={{ color: '#fff', fontWeight: 500 }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button onClick={() => { setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
-            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); try { const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
+            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }); const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
           </div>
           {ghTestStatus && (
             <div style={{
@@ -890,8 +895,10 @@ function FacultyDataEditor() {
     setForking(true); setGithubStatus('⏳ جارٍ التحقق من الحساب...')
     setGitHubConfig(ghConfig)
     try {
-      const resolvedOwner = await resolveGithubOwner(ghConfig.owner)
-      setGithubStatus(`⏳ جارٍ نسخ المستودع من ${MAIN_REPO.owner}/${MAIN_REPO.repo} إلى ${resolvedOwner}...`)
+      const username = await getGitHubUsername()
+      setGhConfig({ ...ghConfig, owner: username })
+      setGitHubConfig({ ...ghConfig, owner: username })
+      setGithubStatus(`⏳ جارٍ نسخ المستودع من ${MAIN_REPO.owner}/${MAIN_REPO.repo} إلى ${username}...`)
       const result = await setupForkWithPages()
       setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
       setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
@@ -952,9 +959,9 @@ function FacultyDataEditor() {
             <div style={{ color: '#81C784', fontWeight: 600, marginTop: '6px', marginBottom: '4px' }}>الخطوة 3: ارفع التعديلات</div>
             <div>عدّل اللعبة ثم اضغط <span style={{ color: '#81C784' }}>🔄 رفع إلى GitHub</span> ← تُرفع الملفات + يُعاد البناء تلقائياً</div>
 
-            <div style={{ marginTop: '6px', padding: '4px 6px', background: 'rgba(255,183,77,0.1)', borderRadius: '4px', color: '#FFB74D' }}>
-              ⚠️ المالك = <b>اسم المستخدم</b> أو <b>الإيميل</b> المرتبط بحساب GitHub
-            </div>
+              <div style={{ marginTop: '6px', padding: '4px 6px', background: 'rgba(76,175,80,0.1)', borderRadius: '4px', color: '#81C784' }}>
+                💡 المالك يُكتشف تلقائياً من التوكن — لا حاجة لكتابته
+              </div>
           </div>
 
           {/* Fork button */}
@@ -971,9 +978,9 @@ function FacultyDataEditor() {
             <button onClick={async () => {
               setGitHubConfig(ghConfig)
               try {
-                const resolved = await resolveGithubOwner(ghConfig.owner)
-                setGhConfig({ ...ghConfig, owner: resolved })
-                setGitHubConfig({ ...ghConfig, owner: resolved })
+                const username = await getGitHubUsername()
+                setGhConfig({ ...ghConfig, owner: username })
+                setGitHubConfig({ ...ghConfig, owner: username })
                 const r = await testGitHubConnection()
                 setGithubStatus(r)
               } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
