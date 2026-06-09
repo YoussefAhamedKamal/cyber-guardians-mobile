@@ -321,6 +321,90 @@ export async function listRepoContents(owner: string, repo: string, path = ''): 
   return []
 }
 
+export async function createNewRepo(name: string, description: string): Promise<{ owner: string; repo: string; url: string }> {
+  const data = await apiFetch('/user/repos', 'POST', {
+    name,
+    description,
+    auto_init: false,
+    private: false,
+  })
+  return { owner: data.owner.login, repo: data.name, url: data.html_url }
+}
+
+export async function createNewBranch(owner: string, repo: string, branchName: string, baseSha: string): Promise<void> {
+  const baseRef = await apiFetch(`/repos/${owner}/${repo}/git/refs/heads/main`, 'GET')
+  await apiFetch(`/repos/${owner}/${repo}/git/refs`, 'POST', {
+    ref: `refs/heads/${branchName}`,
+    sha: baseRef.object.sha,
+  })
+}
+
+export async function pushAllContentToNewRepo(
+  newOwner: string,
+  newRepo: string,
+  branchName: string,
+  contentData: {
+    gameMeta: Record<string, unknown>
+    levels: unknown[]
+    characters: Record<string, unknown>
+  }
+): Promise<string[]> {
+  const results: string[] = []
+  const msg = '🎮 إعداد اللعبة — رفع أولي للمحتوى'
+
+  const tsCharacters = generateCharactersTS(contentData.characters)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/characters.ts`, 'PUT', {
+      message: `${msg} — الشخصيات`,
+      content: btoa(unescape(encodeURIComponent(tsCharacters))),
+      branch: branchName,
+    })
+    results.push('✅ characters.ts')
+  } catch (e: any) { results.push(`❌ characters.ts: ${e.message}`) }
+
+  const tsDialogue = generateDialogueTS(contentData.levels)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/dialogue.ts`, 'PUT', {
+      message: `${msg} — المستويات`,
+      content: btoa(unescape(encodeURIComponent(tsDialogue))),
+      branch: branchName,
+    })
+    results.push('✅ dialogue.ts')
+  } catch (e: any) { results.push(`❌ dialogue.ts: ${e.message}`) }
+
+  const tsMeta = generateGameMetaTS(contentData.gameMeta)
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/src/data/gameMeta.ts`, 'PUT', {
+      message: `${msg} — الإعدادات`,
+      content: btoa(unescape(encodeURIComponent(tsMeta))),
+      branch: branchName,
+    })
+    results.push('✅ gameMeta.ts')
+  } catch (e: any) { results.push(`❌ gameMeta.ts: ${e.message}`) }
+
+  const readme = `# Cyber Guardians Mobile\n\nتم إنشاء هذا المستودع عبر اللعبة.\n\n## الروابط\n- 🌐 اللعبة: https://${newOwner}.github.io/${newRepo}/\n- 📦 المستودع: https://github.com/${newOwner}/${newRepo}\n`
+  try {
+    await apiFetch(`/repos/${newOwner}/${newRepo}/contents/README.md`, 'PUT', {
+      message: `${msg} — README`,
+      content: btoa(unescape(encodeURIComponent(readme))),
+      branch: branchName,
+    })
+    results.push('✅ README.md')
+  } catch (e: any) { results.push(`❌ README.md: ${e.message}`) }
+
+  return results
+}
+
+export async function setupDirectEdit(): Promise<{ owner: string; repo: string; pagesUrl: string }> {
+  const config = loadConfig()
+  await enableGitHubPages(config.owner, config.repo, config.branch)
+  return {
+    owner: config.owner,
+    repo: config.repo,
+    pagesUrl: `https://${config.owner}.github.io/${config.repo}/`,
+  }
+}
+
 export async function setupForkWithPages(): Promise<{ owner: string; repo: string; url: string; pagesUrl: string }> {
   const result = await forkMainRepo()
   await waitForForkReady(result.owner, result.repo)

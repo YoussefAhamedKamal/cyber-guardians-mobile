@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, MAIN_REPO } from './github'
+import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, pushAllContentToNewRepo, setupDirectEdit, MAIN_REPO } from './github'
 import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
@@ -129,6 +129,7 @@ function ResizeHandle({ position, onResizeStart }: { position: string; onResizeS
 
 function AISettings() {
   const ai = useAIStore()
+  const contentStore = useContentStore()
   const provider = AI_PROVIDERS.find((p) => p.id === ai.providerId)
   const [testStatus, setTestStatus] = useState<string | null>(null)
   const [testing, setTesting] = useState(false)
@@ -237,44 +238,70 @@ function AISettings() {
             ☑️ <b style={{ color: '#fff' }}>repo</b><br/>
             ☑️ <b style={{ color: '#fff' }}>workflow</b> —(Update GitHub Action workflows)
           </div>
-          <div>2. اضغط <b style={{ color: '#FFB74D' }}>📋 نسخ المستودع وتفعيل Pages</b> ← يُنسخ + يُفعّل النشر</div>
-          <div>3. اضغط <b style={{ color: '#81C784' }}>💾 حفظ</b> ثم <b style={{ color: '#4FC3F7' }}>🔌 اختبار الاتصال</b></div>
-          <div style={{ marginTop: '4px', padding: '3px 6px', background: 'rgba(255,183,77,0.1)', borderRadius: '4px', color: '#FFB74D' }}>
-            ⚠️ Owner = <b>اسم المستخدم</b> (وليس الإيميل)
+          <div>2. اختر أحد الخيارين:</div>
+          <div style={{ padding: '3px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', margin: '3px 0', fontSize: '10px' }}>
+            <b style={{ color: '#81C784' }}>🟢 التعديل المباشر</b> — يعدّل في المستودع الرئيسي<br/>
+            <b style={{ color: '#FFB74D' }}>🟡 إنشاء مستودع جديد</b> — ينشئ نسخة جديدة مع كل الملفات
           </div>
+          <div>3. اضغط <b style={{ color: '#4FC3F7' }}>🔌 اختبار الاتصال</b> للتأكد</div>
         </div>
 
-        <button onClick={async () => {
-          if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
-          setGhForking(true); setGhTestStatus('⏳ جارٍ التحقق والنسخ...')
-          setGitHubConfig(ghConfig)
-          try {
-            const username = await getGitHubUsername()
-            setGhConfig({ ...ghConfig, owner: username })
-            setGitHubConfig({ ...ghConfig, owner: username })
-            const result = await setupForkWithPages()
-            setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-            setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-            setGhTestStatus(`✅ جاهز! ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
-          } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
-          setGhForking(false)
-        }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
-          {ghForking ? '⏳ جارٍ النسخ والتفعيل...' : '📋 نسخ المستودع وتفعيل Pages'}
-        </button>
+        {/* خيار 1: التعديل المباشر */}
+        <div style={{ background: 'rgba(129,199,132,0.1)', border: '1px solid rgba(129,199,132,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+          <div style={{ color: '#81C784', fontWeight: 700, fontSize: '11px', marginBottom: '6px' }}>🟢 الخيار 1: التعديل المباشر في المستودع الرئيسي</div>
+          <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>يعدّل الملفات مباشرة في مستودعك الرئيسي بدون إنشاء نسخة جديدة</div>
+          <button onClick={async () => {
+            if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
+            setGhForking(true); setGhTestStatus('⏳ جارٍ إعداد التعديل المباشر...')
+            setGitHubConfig(ghConfig)
+            try {
+              const username = await getGitHubUsername()
+              setGhConfig({ ...ghConfig, owner: username })
+              setGitHubConfig({ ...ghConfig, owner: username })
+              const result = await setupDirectEdit()
+              setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+              setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+              setGhTestStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات مباشرة`)
+            } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
+            setGhForking(false)
+          }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+            {ghForking ? '⏳ جارٍ الإعداد...' : '🟢 التعديل المباشر'}
+          </button>
+        </div>
 
-        <button onClick={async () => {
-          if (!ghConfig.token || !ghConfig.owner || !ghConfig.repo) { setGhTestStatus('❌ أدخل Token وOwner وRepo أولاً'); return }
-          setGhTesting(true); setGhTestStatus('⏳ جارٍ فحص المحتوى...')
-          setGitHubConfig(ghConfig)
-          try {
-            const files = await listRepoContents(ghConfig.owner, ghConfig.repo)
-            if (files.length === 0) { setGhTestStatus('❌ المستودع فارغ! لا يوجد ملفات') }
-            else { setGhTestStatus(`✅ الملفات (${files.length}):\n${files.join('\n')}`) }
-          } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
-          setGhTesting(false)
-        }} disabled={ghTesting || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghTesting ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: ghTesting ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghTesting ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
-          {ghTesting ? '⏳...' : '🔍 تحقق من المحتوى'}
-        </button>
+        {/* خيار 2: إنشاء مستودع جديد */}
+        <div style={{ background: 'rgba(255,183,77,0.1)', border: '1px solid rgba(255,183,77,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+          <div style={{ color: '#FFB74D', fontWeight: 700, fontSize: '11px', marginBottom: '6px' }}>🟡 الخيار 2: إنشاء مستودع جديد مع كل الملفات</div>
+          <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>ينشئ مستودعاً جديداً ويرفع كل ملفات اللعبة إليه في فرع جديد</div>
+          <label style={{ color: '#fff', fontSize: '10px', display: 'block', marginBottom: '4px' }}>اسم المستودع الجديد:<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="my-cyber-guardians" style={{ ...inputStyle, fontSize: '11px' }} /></label>
+          <button onClick={async () => {
+            if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
+            if (!ghConfig.repo) { setGhTestStatus('❌ أدخل اسم المستودع الجديد'); return }
+            setGhForking(true); setGhTestStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
+            setGitHubConfig(ghConfig)
+            try {
+              const username = await getGitHubUsername()
+              setGhConfig({ ...ghConfig, owner: username })
+              setGitHubConfig({ ...ghConfig, owner: username })
+              setGhTestStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
+              const newRepo = await createNewRepo(ghConfig.repo, 'Cyber Guardians Mobile — نسخة مخصصة')
+              setGhTestStatus(`⏳ جارٍ رفع الملفات إلى ${newRepo.owner}/${newRepo.repo}...`)
+              const contentData = {
+                gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
+                levels: (contentStore.newLevels || []) as unknown[],
+                characters: contentStore.newCharacters as Record<string, unknown>,
+              }
+              const results = await pushAllContentToNewRepo(newRepo.owner, newRepo.repo, 'main', contentData)
+              setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+              setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+              await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
+              setGhTestStatus(`✅ تم الإنشاء!\n📦 ${newRepo.owner}/${newRepo.repo}\n🌐 https://${newRepo.owner}.github.io/${newRepo.repo}/\n\n${results.join('\n')}`)
+            } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
+            setGhForking(false)
+          }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+            {ghForking ? '⏳ جارٍ الإنشاء والرفع...' : '🟡 إنشاء مستودع جديد'}
+          </button>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
           <label style={{ color: '#fff', fontWeight: 500 }}>Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
@@ -964,24 +991,67 @@ function FacultyDataEditor() {
               ☑️ <b style={{ color: '#fff' }}>workflow</b> —(Update GitHub Action workflows)
             </div>
             <div>3. انسخ الـ Token والصقه أدناه</div>
-
-            <div style={{ color: '#81C784', fontWeight: 600, marginTop: '6px', marginBottom: '4px' }}>الخطوة 2: انسخ المستودع وفعّل النشر</div>
-            <div>اضغط زر <span style={{ color: '#FFB74D' }}>📋 نسخ المستودع وتفعيل Pages</span></div>
-            <div>← يُنسخ المشروع كاملاً + يُفعّل GitHub Pages تلقائياً</div>
-            <div>← ستحصل على رابط مثل: <span style={{ color: '#4FC3F7' }}>username.github.io/cyber-guardians-mobile/</span></div>
-
-            <div style={{ color: '#81C784', fontWeight: 600, marginTop: '6px', marginBottom: '4px' }}>الخطوة 3: ارفع التعديلات</div>
-            <div>عدّل اللعبة ثم اضغط <span style={{ color: '#81C784' }}>🔄 رفع إلى GitHub</span> ← تُرفع الملفات + يُعاد البناء تلقائياً</div>
-
-              <div style={{ marginTop: '6px', padding: '4px 6px', background: 'rgba(76,175,80,0.1)', borderRadius: '4px', color: '#81C784' }}>
-                💡 المالك يُكتشف تلقائياً من التوكن — لا حاجة لكتابته
-              </div>
+            <div style={{ marginTop: '6px', padding: '4px 6px', background: 'rgba(76,175,80,0.1)', borderRadius: '4px', color: '#81C784' }}>
+              💡 المالك يُكتشف تلقائياً من التوكن — لا حاجة لكتابته
+            </div>
           </div>
 
-          {/* Fork button */}
-          <button onClick={handleFork} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
-            {forking ? '⏳ جارٍ النسخ والتفعيل...' : '📋 نسخ المستودع وتفعيل Pages'}
-          </button>
+          {/* خيار 1: التعديل المباشر */}
+          <div style={{ background: 'rgba(129,199,132,0.1)', border: '1px solid rgba(129,199,132,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+            <div style={{ color: '#81C784', fontWeight: 700, fontSize: '11px', marginBottom: '4px' }}>🟢 التعديل المباشر في المستودع الرئيسي</div>
+            <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>يعدّل الملفات مباشرة في مستودعك الرئيسي</div>
+            <button onClick={async () => {
+              if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
+              setForking(true); setGithubStatus('⏳ جارٍ إعداد التعديل المباشر...')
+              setGitHubConfig(ghConfig)
+              try {
+                const username = await getGitHubUsername()
+                setGhConfig({ ...ghConfig, owner: username })
+                setGitHubConfig({ ...ghConfig, owner: username })
+                const result = await setupDirectEdit()
+                setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+                setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+                setGithubStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
+              } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
+              setForking(false)
+            }} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+              {forking ? '⏳...' : '🟢 التعديل المباشر'}
+            </button>
+          </div>
+
+          {/* خيار 2: إنشاء مستودع جديد */}
+          <div style={{ background: 'rgba(255,183,77,0.1)', border: '1px solid rgba(255,183,77,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+            <div style={{ color: '#FFB74D', fontWeight: 700, fontSize: '11px', marginBottom: '4px' }}>🟡 إنشاء مستودع جديد مع كل الملفات</div>
+            <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>ينشئ مستودعاً جديداً ويرفع كل ملفات اللعبة</div>
+            <label style={{ color: '#fff', fontSize: '10px', display: 'block', marginBottom: '4px' }}>اسم المستودع الجديد:<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="my-cyber-guardians" style={{ ...inputStyle, fontSize: '11px' }} /></label>
+            <button onClick={async () => {
+              if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
+              if (!ghConfig.repo) { setGithubStatus('❌ أدخل اسم المستودع الجديد'); return }
+              setForking(true); setGithubStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
+              setGitHubConfig(ghConfig)
+              try {
+                const username = await getGitHubUsername()
+                setGhConfig({ ...ghConfig, owner: username })
+                setGitHubConfig({ ...ghConfig, owner: username })
+                setGithubStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
+                const newRepo = await createNewRepo(ghConfig.repo, 'Cyber Guardians Mobile — نسخة مخصصة')
+                setGithubStatus(`⏳ جارٍ رفع الملفات...`)
+                const contentData = {
+                  gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
+                  levels: (contentStore.newLevels || []) as unknown[],
+                  characters: contentStore.newCharacters as Record<string, unknown>,
+                }
+                const results = await pushAllContentToNewRepo(newRepo.owner, newRepo.repo, 'main', contentData)
+                await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
+                setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+                setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+                setGithubStatus(`✅ تم الإنشاء!\n📦 ${newRepo.owner}/${newRepo.repo}\n🌐 https://${newRepo.owner}.github.io/${newRepo.repo}/\n\n${results.join('\n')}`)
+              } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
+              setForking(false)
+            }} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+              {forking ? '⏳ جارٍ الإنشاء والرفع...' : '🟡 إنشاء مستودع جديد'}
+            </button>
+          </div>
 
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>GitHub Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="ykamal-1 أو email@github.com" style={inputStyle} /></label>
