@@ -253,6 +253,31 @@ export async function getGitHubUsername(): Promise<string> {
   return data.login
 }
 
+export async function resolveGithubOwner(input: string): Promise<string> {
+  const trimmed = input.trim()
+  if (!trimmed) throw new Error('أدخل اسم المستخدم أو الإيميل')
+
+  if (!trimmed.includes('@')) {
+    try {
+      await apiFetch(`/users/${trimmed}`, 'GET')
+      return trimmed
+    } catch {
+      throw new Error(`المستخدم "${trimmed}" غير موجود على GitHub`)
+    }
+  }
+
+  try {
+    const data = await apiFetch(`/search/users?q=${encodeURIComponent(trimmed)}+in:email`, 'GET')
+    if (data.items && data.items.length > 0) {
+      return data.items[0].login
+    }
+    throw new Error(`لم يتم العثور على حساب GitHub لهذا الإيميل: ${trimmed}`)
+  } catch (e: any) {
+    if (e.message.includes('لم يتم العثور')) throw e
+    throw new Error(`خطأ في البحث: ${e.message}`)
+  }
+}
+
 export async function forkMainRepo(): Promise<{ owner: string; repo: string; url: string }> {
   const data = await apiFetch(`/repos/${MAIN_REPO.owner}/${MAIN_REPO.repo}/forks`, 'POST')
   return {
