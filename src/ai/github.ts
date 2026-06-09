@@ -443,6 +443,18 @@ export async function copyEntireRepo(
             const updated = decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`)
             finalContent = btoa(unescape(encodeURIComponent(updated)))
             finalMessage = '📦 تحديث اسم الحزمة في package.json'
+          } else if (itemPath === 'package-lock.json') {
+            const decoded = decodeURIComponent(escape(atob(content)))
+            const updated = decoded.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`)
+            finalContent = btoa(unescape(encodeURIComponent(updated)))
+            finalMessage = '📦 تحديث اسم الحزمة في package-lock.json'
+          } else if (itemPath === 'README.md') {
+            const decoded = decodeURIComponent(escape(atob(content)))
+            const updated = decoded
+              .replace(/YoussefAhamedKamal/g, targetOwner)
+              .replace(/cyber-guardians-mobile/g, targetRepo)
+            finalContent = btoa(unescape(encodeURIComponent(updated)))
+            finalMessage = '📝 تحديث الروابط في README.md'
           }
 
           await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${itemPath}`, 'PUT', {
