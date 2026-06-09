@@ -3,22 +3,19 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { AIMessage, AIState, ChatSession } from '@/types/ai'
 import { DEFAULT_AI_STATE, AI_PROVIDERS } from '@/types/ai'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
+import { loadEncryptedKeys, saveEncryptedKeys } from '@/utils/apiKeyCrypto'
 
 const STORAGE_KEY = 'cg-ai-state'
 
-function loadApiKeys(): Record<string, string> {
-  try { const raw = localStorage.getItem('cg-ai-keys'); return raw ? JSON.parse(raw) : {} } catch { return {} }
-}
-function saveApiKeys(keys: Record<string, string>) { localStorage.setItem('cg-ai-keys', JSON.stringify(keys)) }
-
 function createSession(name?: string): ChatSession {
-  return { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name || 'جلسة جديدة', messages: [], createdAt: Date.now() }
+  return { id: crypto.randomUUID(), name: name || 'جلسة جديدة', messages: [], createdAt: Date.now() }
 }
 
 interface AIStore extends AIState {
   setProvider: (id: string) => void
   setModel: (id: string) => void
   setApiKey: (providerId: string, key: string) => void
+  setApiKeys: (keys: Record<string, string>) => void
   getApiKey: (providerId: string) => string
   setCustomBaseUrl: (url: string) => void
   setFacultyPin: (pin: string) => void
@@ -51,7 +48,7 @@ export const useAIStore = create<AIStore>()(
   persist(
     (set, get) => ({
       ...DEFAULT_AI_STATE,
-      apiKeys: loadApiKeys(),
+      apiKeys: {},
 
       setProvider: (id) => {
         const provider = AI_PROVIDERS.find((p) => p.id === id)
@@ -59,7 +56,12 @@ export const useAIStore = create<AIStore>()(
         else { const firstModel = provider?.models[0]; set({ providerId: id, modelId: firstModel?.id || get().modelId }) }
       },
       setModel: (id) => set({ modelId: id }),
-      setApiKey: (providerId, key) => { const keys = { ...get().apiKeys, [providerId]: key }; set({ apiKeys: keys }); saveApiKeys(keys) },
+      setApiKey: (providerId, key) => {
+        const keys = { ...get().apiKeys, [providerId]: key }
+        set({ apiKeys: keys })
+        saveEncryptedKeys(keys)
+      },
+      setApiKeys: (keys) => set({ apiKeys: keys }),
       getApiKey: (providerId) => get().apiKeys[providerId] || '',
       setCustomBaseUrl: (url) => set({ customBaseUrl: url }),
       setFacultyPin: (pin) => set({ facultyPin: pin }),
@@ -136,3 +138,9 @@ export const useAIStore = create<AIStore>()(
     }
   )
 )
+
+loadEncryptedKeys().then((keys) => {
+  if (Object.keys(keys).length > 0) {
+    useAIStore.getState().setApiKeys(keys)
+  }
+})

@@ -154,6 +154,7 @@ src/
 ├── utils/
 │   ├── constants.ts                 # قيم افتراضية + FONT_OPTIONS + HEADING_FONT_OPTIONS + MONO_FONT_OPTIONS
 │   ├── indexedDBStorage.ts          # تخزين Zustand في IndexedDB + تثاقل من localStorage
+│   ├── apiKeyCrypto.ts              # تشفير/فك API keys بـ AES-GCM (Web Crypto API)
 │   └── helpers.ts
 │
 └── __tests__/                       # 70 اختبار ✅
@@ -610,6 +611,10 @@ src/
 - [x] **إلغاء deploy المكرر** — تم: `auto_init: false` في `createNewRepo` ← commit واحد فقط
 - [x] **تمرير نتائج الرفع** — تم: scrollable box + عداد ✅/❌/⚠️ لكل ملف
 - [x] **Google Drive instructions** — تم: إرشادات كاملة في واجهة الإعدادات
+- [x] **Semgrep SAST Scan** — تم: فحص شامل بـ 10 rulesets (0 ثغرات)
+- [x] **Supply Chain Audit** — تم: فحص 5 تبعيات (0 عالية المخاطر)
+- [x] **CodeQL Fix: Insecure Randomness** — تم: `Math.random()` → `crypto.randomUUID()` في `createSession()`
+- [x] **CodeQL Fix: Clear Text Storage** — تم: تشفير API Keys بـ AES-GCM قبل تخزينها في `localStorage`
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
@@ -672,3 +677,69 @@ src/
 - **Owner**: `YoussefAhamedKamal`
 - **Repo**: `cyber-guardians-mobile`
 - **النسخ**: كل عضو هيئة تدريس يحصل على نسخة في حسابه
+
+---
+
+## [SECURITY_SCAN]
+
+**تاريخ الفحص:** 2026-06-10
+**الأدوات:** Semgrep 1.165.0 + Supply Chain Risk Audit
+**الوضع:** Important only (MEDIUM/HIGH/CRITICAL)
+
+### نتائج Semgrep (SAST)
+| القاعدة | التصنيف | النتائج |
+|---------|---------|---------|
+| `p/security-audit` | ثغرات عامة | 0 |
+| `p/secrets` | مفاتيح سرية | 0 |
+| `p/typescript` | TypeScript | 0 |
+| `p/react` | React | 0 |
+| `p/javascript` | JavaScript | 0 |
+| `p/nodejs` | Node.js | 0 |
+| `p/yaml` | YAML | 0 (ruleset 404) |
+| `p/github-actions` | CI/CD | 0 |
+| Trail of Bits | Third-party | 0 |
+| elttam | Third-party | 0 |
+| Apiiro | Malicious code | 0 |
+| **المجموع** | | **0 ثغرات** |
+
+### ملاحظات الفحص
+- **Syntax errors وهمية:** ملفان بهما syntax errors من `p/security-audit` بسبب JS parser:
+  - `src/ai/AIPanel.tsx:330` ← رمز `→` في نص JSX
+  - `src/data/dialogue.ts:80` ← `import('@/types')` (TypeScript type import)
+  - **ليست أخطاء حقيقية** — TypeScript compiler لا يشتكي منهما
+
+### نتائج Supply Chain
+| الحزمة | الإصدار | المخاطر | نجوم | آخر تحديث |
+|--------|---------|---------|------|-----------|
+| react | ^19.1.0 | منخفض | 245k ⭐ | 2026-06-09 |
+| react-dom | ^19.1.0 | منخفض | 245k ⭐ | 2026-06-09 |
+| react-markdown | ^10.1.0 | منخفض | 15.7k ⭐ | 2026-06-09 |
+| remark-gfm | ^4.0.1 | منخفض | 1.2k ⭐ | 2026-06-07 |
+| zustand | ^5.0.13 | منخفض | 58k ⭐ | 2026-06-09 |
+
+**الخلاصة:** لا توجد تبعيات عالية المخاطر. كل الحزم نشيطة ومدعومة من منظمات (Meta, remarkjs, pmndrs). `npm audit` يظهر 0 vulnerabilities.
+
+### CodeQL Alerts (مُصلحة)
+| Alert | الخط | الحالة | الإصلاح |
+|-------|------|--------|---------|
+| Clear text storage | `aiStore.ts:12` | ✅ | `AES-GCM` + sessionStorage key |
+| Insecure randomness | `aiStore.ts:76` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:84` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:99` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:107` | ✅ | `crypto.randomUUID()` |
+
+### توصيات
+1. تفعيل **Dependabot** على المستودع
+2. إضافة `npm audit` إلى CI pipeline
+3. تثبيت الإصدارات (`package-lock.json` موجود أساساً)
+4. فحص دوري بـ Semgrep بعد كل تحديث كبير
+
+### مخرجات الفحص
+```
+static_analysis_semgrep_1/
+├── rulesets.txt
+├── raw/                ← 14 ملف SARIF + 14 JSON
+└── results/
+    ├── results.sarif
+    └── supply-chain-audit.md
+```
