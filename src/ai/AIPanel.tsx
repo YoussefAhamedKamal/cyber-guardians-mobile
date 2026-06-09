@@ -5,6 +5,8 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
+import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, MAIN_REPO } from './github'
+import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
@@ -133,6 +135,10 @@ function AISettings() {
   const [customModel, setCustomModel] = useState(
     () => provider?.models.find((m) => m.id === ai.modelId) ? '' : ai.modelId
   )
+  const [ghConfig, setGhConfig] = useState<GitHubConfig>(() => getGitHubConfig())
+  const [ghTestStatus, setGhTestStatus] = useState<string | null>(null)
+  const [ghTesting, setGhTesting] = useState(false)
+  const [ghForking, setGhForking] = useState(false)
 
   useEffect(() => {
     if (provider?.models.some(m => m.id === ai.modelId)) {
@@ -215,6 +221,59 @@ function AISettings() {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
         <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🔐 تغيير رمز هيئة التدريس</div>
         <FacultyPinChanger />
+      </div>
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
+        <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🔗 إعدادات GitHub</div>
+
+        {/* Instructions */}
+        <div style={{ background: 'rgba(79,195,247,0.08)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: '6px', padding: '8px', marginBottom: '8px', fontSize: '10px', lineHeight: 1.6, color: '#aaa' }}>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, marginBottom: '4px' }}>📖 خطوات الاستخدام</div>
+          <div>1. احصل على <b style={{ color: '#fff' }}>Token</b> من GitHub (Settings → Developer settings → Tokens) بصلاحية:</div>
+          <div style={{ padding: '3px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', margin: '3px 0', direction: 'ltr', textAlign: 'left', fontSize: '10px' }}>
+            ☑️ <b style={{ color: '#fff' }}>repo</b><br/>
+            ☑️ <b style={{ color: '#fff' }}>workflow</b> —(Update GitHub Action workflows)
+          </div>
+          <div>2. اضغط <b style={{ color: '#FFB74D' }}>📋 نسخ المستودع وتفعيل Pages</b> ← يُنسخ + يُفعّل النشر</div>
+          <div>3. اضغط <b style={{ color: '#81C784' }}>💾 حفظ</b> ثم <b style={{ color: '#4FC3F7' }}>🔌 اختبار الاتصال</b></div>
+          <div style={{ marginTop: '4px', padding: '3px 6px', background: 'rgba(255,183,77,0.1)', borderRadius: '4px', color: '#FFB74D' }}>
+            ⚠️ Owner = <b>اسم المستخدم</b> (وليس الإيميل)
+          </div>
+        </div>
+
+        <button onClick={async () => {
+          if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
+          setGhForking(true); setGhTestStatus('⏳ جارٍ النسخ وتفعيل Pages...')
+          setGitHubConfig(ghConfig)
+          try {
+            const result = await setupForkWithPages()
+            setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+            setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+            setGhTestStatus(`✅ جاهز! ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
+          } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
+          setGhForking(false)
+        }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
+          {ghForking ? '⏳ جارٍ النسخ والتفعيل...' : '📋 نسخ المستودع وتفعيل Pages'}
+        </button>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+          <label style={{ color: '#fff', fontWeight: 500 }}>Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
+          <label style={{ color: '#fff', fontWeight: 500 }}>Owner (اسم المستخدم)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="ykamal-1" style={inputStyle} /></label>
+          <label style={{ color: '#fff', fontWeight: 500 }}>Repo (اسم المستودع)<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="cyber-guardians-mobile" style={inputStyle} /></label>
+          <label style={{ color: '#fff', fontWeight: 500 }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={() => { setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
+            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); const r = await testGitHubConnection(); setGhTestStatus(r); setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
+          </div>
+          {ghTestStatus && (
+            <div style={{
+              padding: '6px 8px', borderRadius: '6px', fontSize: '11px', textAlign: 'center',
+              background: ghTestStatus.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)',
+              border: `1px solid ${ghTestStatus.startsWith('✅') ? 'rgba(129,199,132,0.3)' : 'rgba(229,115,115,0.3)'}`,
+              color: ghTestStatus.startsWith('✅') ? '#81C784' : '#E57373',
+            }}>{ghTestStatus}</div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -434,17 +493,25 @@ function FileUploadButton({ onFiles }: { onFiles: (files: File[]) => void }) {
   )
 }
 
-function readFiles(files: File[]): Promise<ChatAttachment[]> {
-  return Promise.all(files.map((file) => new Promise<ChatAttachment>((resolve) => {
+function readFiles(files: File[], onStatus?: (idx: number, status: 'success' | 'error', error?: string) => void): Promise<ChatAttachment[]> {
+  return Promise.all(files.map((file, idx) => new Promise<ChatAttachment>((resolve) => {
     const reader = new FileReader()
     reader.onload = () => {
       const content = reader.result as string
-      if (file.type.startsWith('image/')) { resolve({ name: file.name, type: 'image', content, mimeType: file.type }) }
-      else if (file.type.startsWith('video/')) { resolve({ name: file.name, type: 'video', content: `[فيديو: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)]`, mimeType: file.type }) }
-      else if (file.type.startsWith('audio/')) { resolve({ name: file.name, type: 'audio', content: `[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`, mimeType: file.type }) }
-      else { resolve({ name: file.name, type: 'text', content, mimeType: file.type }) }
+      const att: ChatAttachment = file.type.startsWith('image/')
+        ? { name: file.name, type: 'image', content, mimeType: file.type, uploadStatus: 'success' }
+        : file.type.startsWith('video/')
+        ? { name: file.name, type: 'video', content: `[فيديو: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)]`, mimeType: file.type, uploadStatus: 'success' }
+        : file.type.startsWith('audio/')
+        ? { name: file.name, type: 'audio', content: `[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`, mimeType: file.type, uploadStatus: 'success' }
+        : { name: file.name, type: 'text', content, mimeType: file.type, uploadStatus: 'success' }
+      onStatus?.(idx, 'success')
+      resolve(att)
     }
-    reader.onerror = () => resolve({ name: file.name, type: 'file', content: `[ملف: ${file.name}]`, mimeType: file.type })
+    reader.onerror = () => {
+      onStatus?.(idx, 'error', 'فشل قراءة الملف')
+      resolve({ name: file.name, type: 'file', content: `[ملف: ${file.name}]`, mimeType: file.type, uploadStatus: 'error', uploadError: 'فشل قراءة الملف' })
+    }
     if (file.type.startsWith('image/')) reader.readAsDataURL(file); else reader.readAsText(file)
   })))
 }
@@ -485,7 +552,19 @@ function StudentChat() {
     await sendMessage([...messages, userMsg])
   }
 
-  const handleFiles = async (files: File[]) => { const attachments = await readFiles(files); setPendingAttachments((prev) => [...prev, ...attachments]) }
+  const handleFiles = async (files: File[]) => {
+    const pending = files.map((f) => ({ name: f.name, type: 'file' as const, content: '', mimeType: f.type, uploadStatus: 'uploading' as const }))
+    setPendingAttachments((prev) => [...prev, ...pending])
+    const attachments = await readFiles(files)
+    setPendingAttachments((prev) => {
+      const next = [...prev]
+      for (let i = 0; i < pending.length; i++) {
+        const idx = next.length - pending.length + i
+        if (idx >= 0 && idx < next.length) next[idx] = attachments[i]!
+      }
+      return next
+    })
+  }
   const removeAttachment = (idx: number) => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
 
   const handleEdit = async (idx: number, content: string) => {
@@ -503,6 +582,13 @@ function StudentChat() {
     await sendMessage(trimmed)
   }
 
+  const uploadIcon = (a: ChatAttachment) => {
+    if (a.uploadStatus === 'uploading') return '⏳'
+    if (a.uploadStatus === 'error') return '❌'
+    if (a.uploadStatus === 'success') return a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'
+    return a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SessionBar type="student" />
@@ -515,8 +601,15 @@ function StudentChat() {
       {pendingAttachments.length > 0 && (
         <div style={{ display: 'flex', gap: '4px', padding: '4px 8px', flexWrap: 'wrap', flexShrink: 0 }}>
           {pendingAttachments.map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(79,195,247,0.1)', fontSize: '10px', color: '#4FC3F7' }}>
-              {a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'} {a.name}
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px',
+              background: a.uploadStatus === 'error' ? 'rgba(229,115,115,0.1)' : a.uploadStatus === 'success' ? 'rgba(129,199,132,0.1)' : 'rgba(79,195,247,0.1)',
+              fontSize: '10px',
+              color: a.uploadStatus === 'error' ? '#E57373' : a.uploadStatus === 'success' ? '#81C784' : '#4FC3F7',
+            }}>
+              {uploadIcon(a)} {a.name}
+              {a.uploadStatus === 'success' && <span style={{ fontSize: '8px', color: '#81C784' }}>✓</span>}
+              {a.uploadStatus === 'error' && <span title={a.uploadError} style={{ fontSize: '8px', color: '#E57373' }}>!</span>}
               <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '10px' }}>✕</button>
             </div>
           ))}
@@ -616,7 +709,19 @@ function FacultyAIChat() {
     await sendMessage([...msgHistory, userMsg])
   }
 
-  const handleFiles = async (files: File[]) => { const attachments = await readFiles(files); setPendingAttachments((prev) => [...prev, ...attachments]) }
+  const handleFiles = async (files: File[]) => {
+    const pending = files.map((f) => ({ name: f.name, type: 'file' as const, content: '', mimeType: f.type, uploadStatus: 'uploading' as const }))
+    setPendingAttachments((prev) => [...prev, ...pending])
+    const attachments = await readFiles(files)
+    setPendingAttachments((prev) => {
+      const next = [...prev]
+      for (let i = 0; i < pending.length; i++) {
+        const idx = next.length - pending.length + i
+        if (idx >= 0 && idx < next.length) next[idx] = attachments[i]!
+      }
+      return next
+    })
+  }
   const removeAttachment = (idx: number) => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
 
   const handleEdit = async (idx: number, content: string) => {
@@ -659,8 +764,15 @@ function FacultyAIChat() {
       {pendingAttachments.length > 0 && (
         <div style={{ display: 'flex', gap: '4px', padding: '4px 8px', flexWrap: 'wrap', flexShrink: 0 }}>
           {pendingAttachments.map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(206,147,216,0.1)', fontSize: '10px', color: '#CE93D8' }}>
-              {a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'} {a.name}
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px',
+              background: a.uploadStatus === 'error' ? 'rgba(229,115,115,0.1)' : a.uploadStatus === 'success' ? 'rgba(129,199,132,0.1)' : 'rgba(206,147,216,0.1)',
+              fontSize: '10px',
+              color: a.uploadStatus === 'error' ? '#E57373' : a.uploadStatus === 'success' ? '#81C784' : '#CE93D8',
+            }}>
+              {a.uploadStatus === 'uploading' ? '⏳' : a.uploadStatus === 'error' ? '❌' : a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'} {a.name}
+              {a.uploadStatus === 'success' && <span style={{ fontSize: '8px', color: '#81C784' }}>✓</span>}
+              {a.uploadStatus === 'error' && <span title={a.uploadError} style={{ fontSize: '8px', color: '#E57373' }}>!</span>}
               <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '10px' }}>✕</button>
             </div>
           ))}
@@ -692,6 +804,12 @@ function FacultyDataEditor() {
   const [metaEditable, setMetaEditable] = useState<GameMeta>(() => structuredClone(gameMeta))
   const [rawJson, setRawJson] = useState('')
   const [rawError, setRawError] = useState('')
+  const [githubSyncing, setGithubSyncing] = useState(false)
+  const [githubStatus, setGithubStatus] = useState<string | null>(null)
+  const [showGitHubSettings, setShowGitHubSettings] = useState(false)
+  const [ghConfig, setGhConfig] = useState<GitHubConfig>(() => getGitHubConfig())
+  const [forking, setForking] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
 
   useEffect(() => { const level = levels.find((l) => l.id === selectedLevel); if (level) setEditable(structuredClone(level)) }, [selectedLevel, contentStore.levelOverrides, contentStore.newLevels, contentStore.deletedLevels])
   useEffect(() => { setMetaEditable(structuredClone(gameMeta)) }, [contentStore.gameMeta])
@@ -745,6 +863,42 @@ function FacultyDataEditor() {
     input.click()
   }
 
+  const handleGitHubSync = async () => {
+    if (!isGitHubConfigured()) { setShowGitHubSettings(true); return }
+    setGithubSyncing(true); setGithubStatus('⏳ جارٍ رفع الملفات إلى GitHub...')
+    try {
+      const results = await pushContentToGitHub({ gameMeta: gameMeta as unknown as Record<string, unknown>, levels, characters: chars })
+      const allOk = results.every((r) => r.startsWith('✅'))
+      setGithubStatus(allOk
+        ? `✅ تم الرفع بنجاح — الملفات المعدّلة:\n${results.join('\n')}\n\n💡 أعد بناء المشروع لتطبيق التغييرات`
+        : `⚠️ بعض الملفات فشلت:\n${results.join('\n')}`)
+    } catch (e: any) {
+      setGithubStatus(`❌ ${e.message}`)
+    }
+    setGithubSyncing(false)
+  }
+
+  const handleSaveGitHubConfig = () => {
+    setGitHubConfig(ghConfig)
+    setShowGitHubSettings(false)
+    setGithubStatus('✅ تم حفظ إعدادات GitHub')
+  }
+
+  const handleFork = async () => {
+    if (!ghConfig.token) { setGithubStatus('❌ أدخل GitHub Token أولاً'); return }
+    setForking(true); setGithubStatus('⏳ جارٍ نسخ المستودع وتفعيل GitHub Pages...')
+    setGitHubConfig(ghConfig)
+    try {
+      const result = await setupForkWithPages()
+      setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+      setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+      setGithubStatus(`✅ جاهز!\n📦 المستودع: ${result.owner}/${result.repo}\n🌐 اللعبة: ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات`)
+    } catch (e: any) {
+      setGithubStatus(`❌ فشل: ${e.message}`)
+    }
+    setForking(false)
+  }
+
   const tabs = [
     { id: 'game', label: '🎮 اللعبة' },
     { id: 'levels', label: 'المستويات' },
@@ -766,7 +920,64 @@ function FacultyDataEditor() {
       <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <button onClick={handleExport} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '10px' }}>📤 تصدير JSON</button>
         <button onClick={handleImport} style={{ ...smallBtnStyle, color: '#CE93D8', fontSize: '10px' }}>📥 استيراد JSON</button>
+        <button onClick={handleGitHubSync} disabled={githubSyncing} style={{ ...smallBtnStyle, color: githubSyncing ? '#666' : '#81C784', fontSize: '10px', opacity: githubSyncing ? 0.5 : 1 }}>
+          {githubSyncing ? '⏳ جارٍ...' : '🔄 رفع إلى GitHub'}
+        </button>
+        <button onClick={() => setShowGitHubSettings(!showGitHubSettings)} style={{ ...smallBtnStyle, color: '#FFB74D', fontSize: '10px' }}>⚙ GitHub</button>
       </div>
+      {showGitHubSettings && (
+        <div style={{ padding: '8px', background: 'rgba(255,183,77,0.06)', borderBottom: '1px solid rgba(255,183,77,0.15)', flexShrink: 0, fontSize: '11px', maxHeight: '400px', overflow: 'auto' }}>
+          <div style={{ color: '#FFB74D', fontWeight: 700, marginBottom: '6px', fontSize: '10px' }}>⚙ إعدادات GitHub</div>
+
+          {/* Instructions */}
+          <div style={{ background: 'rgba(79,195,247,0.08)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: '6px', padding: '8px', marginBottom: '8px', fontSize: '10px', lineHeight: 1.6, color: '#aaa' }}>
+            <div style={{ color: '#4FC3F7', fontWeight: 700, marginBottom: '4px', fontSize: '11px' }}>📖 كيف تستخدم GitHub؟</div>
+            <div style={{ color: '#81C784', fontWeight: 600, marginBottom: '4px' }}>الخطوة 1: احصل على Token</div>
+            <div>1. اذهب إلى <span style={{ color: '#4FC3F7' }}>github.com → Settings → Developer settings → Tokens</span></div>
+            <div>2. أنشئ Token جديد وفعّل الصلاحيات:</div>
+            <div style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', margin: '4px 0', direction: 'ltr', textAlign: 'left' }}>
+              ☑️ <b style={{ color: '#fff' }}>repo</b> —(full control of private repositories)<br/>
+              ☑️ <b style={{ color: '#fff' }}>workflow</b> —(Update GitHub Action workflows)
+            </div>
+            <div>3. انسخ الـ Token والصقه أدناه</div>
+
+            <div style={{ color: '#81C784', fontWeight: 600, marginTop: '6px', marginBottom: '4px' }}>الخطوة 2: انسخ المستودع وفعّل النشر</div>
+            <div>اضغط زر <span style={{ color: '#FFB74D' }}>📋 نسخ المستودع وتفعيل Pages</span></div>
+            <div>← يُنسخ المشروع كاملاً + يُفعّل GitHub Pages تلقائياً</div>
+            <div>← ستحصل على رابط مثل: <span style={{ color: '#4FC3F7' }}>username.github.io/cyber-guardians-mobile/</span></div>
+
+            <div style={{ color: '#81C784', fontWeight: 600, marginTop: '6px', marginBottom: '4px' }}>الخطوة 3: ارفع التعديلات</div>
+            <div>عدّل اللعبة ثم اضغط <span style={{ color: '#81C784' }}>🔄 رفع إلى GitHub</span> ← تُرفع الملفات + يُعاد البناء تلقائياً</div>
+
+            <div style={{ marginTop: '6px', padding: '4px 6px', background: 'rgba(255,183,77,0.1)', borderRadius: '4px', color: '#FFB74D' }}>
+              ⚠️ المالك = <b>اسم المستخدم</b> (وليس الإيميل). مثال: ykamal-1
+            </div>
+          </div>
+
+          {/* Fork button */}
+          <button onClick={handleFork} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', marginBottom: '8px', opacity: !ghConfig.token ? 0.5 : 1 }}>
+            {forking ? '⏳ جارٍ النسخ والتفعيل...' : '📋 نسخ المستودع وتفعيل Pages'}
+          </button>
+
+          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>GitHub Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
+          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Owner (اسم المستخدم)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="ykamal-1" style={inputStyle} /></label>
+          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Repo (اسم المستودع)<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="cyber-guardians-mobile" style={inputStyle} /></label>
+          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
+          <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
+            <button onClick={handleSaveGitHubConfig} style={{ ...smallBtnStyle, color: '#81C784' }}>💾 حفظ</button>
+            <button onClick={async () => { setGitHubConfig(ghConfig); const r = await testGitHubConnection(); setGithubStatus(r) }} style={{ ...smallBtnStyle, color: '#4FC3F7' }}>🔌 اختبار الاتصال</button>
+          </div>
+        </div>
+      )}
+      {githubStatus && (
+        <div style={{
+          padding: '6px 8px', fontSize: '10px', whiteSpace: 'pre-wrap',
+          background: githubStatus.startsWith('✅') ? 'rgba(129,199,132,0.08)' : 'rgba(229,115,115,0.08)',
+          borderBottom: `1px solid ${githubStatus.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)'}`,
+          color: githubStatus.startsWith('✅') ? '#81C784' : githubStatus.startsWith('⚠️') ? '#FFB74D' : '#E57373',
+          flexShrink: 0, cursor: 'pointer',
+        }} onClick={() => setGithubStatus(null)}>{githubStatus}</div>
+      )}
       {editorTab === 'game' && (
         <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginTop: '4px' }}>عام</div>

@@ -20,7 +20,7 @@
 | Audio | Web Audio API (Procedural) | — | BGM (procedural/file) + SFX (7 أنواع) |
 | 3D Characters | useGLTF (RobotExpressive) + Float + useAnimations | — | نماذج محملة من الإنترنت مع حركات |
 | 3D Environment | Stars + Particles + Grid | — | خلفية نجمية مع جزيئات عائمة |
-| Testing | Vitest | 4.1.7 | 35 اختبار ✅ |
+| Testing | Vitest | 4.1.7 | 70 اختبار ✅ |
 | Deploy | GitHub Actions → GitHub Pages | — | نشر آلي مع workflow_dispatch |
 | AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
 
@@ -94,8 +94,9 @@ src/
 ├── main.tsx                         # Entry point
 │
 ├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel: SessionBar + StudentChat + FacultyAIChat + FacultyDataEditor + AISettings
+│   ├── AIPanel.tsx                  # AI Assistant panel: SessionBar + StudentChat + FacultyAIChat + FacultyDataEditor + AISettings + GitHub Sync
 │   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama + unlimited max_tokens
+│   ├── github.ts                    # GitHub API: push files/changes, list files, create/update files, test connection
 │   └── prompts.ts                   # System prompts: طالب + هيئة تدريس (مع تعليمات JSON لأضافة/تعديل/حذف gameMeta + levels + characters)
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
@@ -144,7 +145,7 @@ src/
 ├── types/
 │   ├── index.ts
 │   ├── settings.ts                  # GameSettings + GameMeta (28 حcampo)
-│   ├── ai.ts                        # AIMessage, ChatAttachment, ChatSession, AIState, AI_PROVIDERS
+│   ├── ai.ts                        # AIMessage, ChatAttachment (uploadStatus), ChatSession, AIState, AI_PROVIDERS, UploadStatus
 │   ├── game.ts                      # LevelData (مُوسّع) + Character (مُوسّع) + GameMeta
 │   ├── dialogue.ts
 │   └── characters.ts
@@ -154,7 +155,7 @@ src/
 │   ├── indexedDBStorage.ts          # تخزين Zustand في IndexedDB + تثاقل من localStorage
 │   └── helpers.ts
 │
-└── __tests__/                       # 35 اختبار ✅
+└── __tests__/                       # 70 اختبار ✅
     ├── gameStore.test.ts            # 9 tests
     ├── settingsStore.test.ts        # 6 tests
     ├── storage.test.ts              # 5 tests
@@ -176,7 +177,10 @@ src/
 | **Streaming** | نعم | عرض الردود بشكل تدريجي |
 | **Markdown Rendering** | نعم | عرض ردود AI بصيغة Markdown مع جداول وقوائم وأكواد (react-markdown + remark-gfm) |
 | **Session Management** | نعم | جلسات متعددة لكل وضع (طالب/هيئة تدريس) — إنشاء/切换/إعادة تسمية/حذف |
-| **File Upload** | نعم | رفع ملفات (نص، صور، فيديو، صوت) مع إمكانية إرفاق عدة ملفات |
+| **File Upload** | نعم | رفع ملفات (نص، صور، فيديو، صوت) مع إمكانية إرفاق عدة ملفات + مؤشر حالة الرفع (⏳ رفع / ✅ نجاح / ❌ خطأ) |
+| **GitHub Sync** | نعم | رفع ملفات TypeScript المعدّلة مباشرة إلى GitHub (characters.ts + dialogue.ts + gameMeta.ts) |
+| **GitHub Fork** | نعم | نسخ المستودع الرئيسي إلى حساب عضو هيئة التدريس + تفعيل GitHub Pages تلقائياً |
+| **Upload Status** | نعم | مؤشرات حالة رفع الملفات: ⏳ رفع / ✅ نجاح / ❌ خطأ مع رسالة الخطأ |
 | **Edit User Message** | نعم | تعديل الرسالة وإعادة إرسالها |
 | **Regenerate Response** | نعم | إعادة توليد رد AI من نفس السياق |
 | **Copy Response** | نعم | نسخ رد AI إلى الحافظة |
@@ -283,6 +287,39 @@ src/
 1. ضع Base URL (مثلاً `https://generativelanguage.googleapis.com/v1beta/openai/` لجيميني)
 2. ضع API Key المناسب
 3. اختر النموذج المطلوب
+
+#### 🔄 رفع التعديلات إلى GitHub
+لكل عضو هيئة تدريس نسخته الخاصة من اللعبة على GitHub:
+
+**الخطوة 1: إنشاء GitHub Token**
+1. اذهب إلى `github.com → Settings → Developer settings → Tokens (fine-grained or classic)`
+2. أنشئ Token جديد وفعّل الصلاحيات:
+   - ☑️ `repo` —(full control of private repositories)
+   - ☑️ `workflow` —(Update GitHub Action workflows)
+3. انسخ الـ Token
+
+**الخطوة 2: نسخ المستودع (Fork)**
+1. في اللعبة: افتح AI Panel ← هيئة تدريس ← ⚙ GitHub
+2. الصق الـ Token
+3. اضغط **📋 نسخ المستودع وتفعيل Pages**
+4. سيحصل على:
+   - مستودع منسوخ في حسابه: `username/cyber-guardians-mobile`
+   - رابط اللعبة: `https://username.github.io/cyber-guardians-mobile/`
+
+**الخطوة 3: رفع التعديلات**
+1.عدّل اللعبة عبر AI أو المحرر
+2. اضغط **🔄 رفع إلى GitHub**
+3. الملفات تُرفع تلقائياً: `characters.ts` + `dialogue.ts` + `gameMeta.ts`
+4. GitHub Actions يعيد البناء تلقائياً
+5. التعديلات تظهر على الرابط خلال دقائق
+
+**ملفات تُرفع:**
+| الملف | المحتوى |
+|---|---|
+| `src/data/characters.ts` | الشخصيات (الأسماء، الأدوار، الألوان، الشخصية) |
+| `src/data/dialogue.ts` | المستويات (الحوارات، التحديات، الإعدادات) |
+| `src/data/gameMeta.ts` | إعدادات اللعبة العامة (العنوان، الصعوبة، النقاط) |
+| `src/data/LAST_SYNC.txt` | توقيت آخر مزامنة |
 
 ---
 
@@ -534,8 +571,10 @@ src/
 - [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style
 - [x] **AI Assistant مدمج** — تم: Student Chat + Faculty Editor + دعم OpenAI/OpenRouter/Ollama/API مخصص + تخزين API Keys محلياً
 - [x] **نظام الجلسات** — تم: جلسات متعددة لكل وضع (طالب/هيئة تدريس) مع إنشاء/切换/إعادة تسمية/حذف
-- [x] **رفع الملفات** — تم: دعم ملفات نصية + صور + فيديو + صوت مع إرفاق متعدد
+- [x] **رفع الملفات** — تم: دعم ملفات نصية + صور + فيديو + صوت مع إرفاق متعدد + مؤشرات حالة الرفع (⏳✅❌)
 - [x] **إصلاح أخطاء الجلسات** — تم: SessionBar يظهر دائماً + إنشاء تلقائي للجلسة + حماية الرسائل
+- [x] **GitHub Integration** — تم: Fork + GitHub Pages + رفع ملفات TypeScript + إعدادات Token/Owner/Repo/Branch + تعليمات عربية
+- [x] **رفع ملفات إلى AI مع مؤشرات الحالة** — تم: ⏳ رفع / ✅ نجاح / ❌ خطأ على كل مرفق
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
@@ -548,3 +587,34 @@ src/
 - [ ] **صفحة Credits** — بسيطة يمكن إضافتها
 - [ ] **مشهد البداية (Intro)** — أوامر الفيديو جاهزة في PROMPTS.md
 - [ ] **تقسيم الـ chunk** — ~1.2MB حالياً (Three.js dominates)
+
+---
+
+## [GITHUB_INTEGRATION]
+
+### المكونات
+| الملف | الوظيفة |
+|---|---|
+| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection |
+| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + زر Fork + زر Push + تعليمات |
+
+### الدوال
+| الدالة | الوظيفة |
+|---|---|
+| `forkMainRepo()` | نسخ المستودع الرئيسي (`ykamal-1/cyber-guardians-mobile`) إلى حساب المستخدم |
+| `enableGitHubPages()` | تفعيل GitHub Pages على المستودع المنسوخ |
+| `setupForkWithPages()` | Fork + انتظار التجهيز + تفعيل Pages (دالة مجمعة) |
+| `pushContentToGitHub()` | رفع ملفات TypeScript: characters.ts + dialogue.ts + gameMeta.ts |
+| `testGitHubConnection()` | اختبار الاتصال بالـ API |
+| `getGitHubUsername()` | الحصول على اسم المستخدم من Token |
+| `waitForForkReady()` | انتظار حتى يكون المستودع المنسوخ جاهزاً |
+
+### الإعدادات المحفوظة
+| المفتاح | المحتوى |
+|---|---|
+| `cg-github-config` | Token + Owner + Repo + Branch (في localStorage) |
+
+### المستودع الرئيسي
+- **Owner**: `ykamal-1`
+- **Repo**: `cyber-guardians-mobile`
+- **النسخ**: كل عضو هيئة تدريس يحصل على نسخة في حسابه
