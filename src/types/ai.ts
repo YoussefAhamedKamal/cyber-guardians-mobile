@@ -4,11 +4,15 @@ export interface AIMessage {
   attachments?: ChatAttachment[] | undefined
 }
 
+export type UploadStatus = 'pending' | 'uploading' | 'success' | 'error'
+
 export interface ChatAttachment {
   name: string
   type: 'text' | 'image' | 'video' | 'audio' | 'file'
   content: string
   mimeType: string
+  uploadStatus?: UploadStatus
+  uploadError?: string
 }
 
 export interface ChatSession {
