@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Start Screen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background: #000;
+        }
+
+        /* Game Container - Fixed Size 1200x675 */
+        .game-container {
+            position: relative;
+            width: 1200px;
+            height: 675px;
+            margin: calc((100vh - 675px) / 2) auto;
+            overflow: hidden;
+            background: #0a0e27;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Animated Background Container */
+        .background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Video/GIF Background */
+        .media-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* Dark Overlay */
+        .dark-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: 2;
+        }
+
+        /* CSS Animations Background */
+        .css-bg-gradient {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1128 100%);
+            z-index: 0;
+        }
+
+        /* Floating Orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            animation: orb-float 12s infinite ease-in-out;
+            z-index: 1;
+        }
+
+        .orb-1 {
+            width: 350px;
+            height: 350px;
+            background: rgba(138, 43, 226, 0.25);
+            top: -80px;
+            left: -80px;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 191, 255, 0.2);
+            bottom: -80px;
+            right: -80px;
+            animation-delay: -4s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: rgba(255, 20, 147, 0.18);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -8s;
+        }
+
+        @keyframes orb-float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Grid Lines */
+        .grid-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(100, 180, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 180, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: grid-move 20s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes grid-move {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(60px); }
+        }
+
+        /* Particles */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 3;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: float-particle 15s infinite ease-in-out;
+            box-shadow: 0 0 8px rgba(100, 200, 255, 0.9);
+        }
+
+        @keyframes float-particle {
+            0%, 100% {
+                transform: translateY(675px) translateX(0) scale(0);
+                opacity: 0;
+            }
+            10% { opacity: 1; transform: scale(1); }
+            90% { opacity: 1; }
+            100% {
+                transform: translateY(-10vh) translateX(100px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* ============================================ */
+        /* TOP LEFT: GAME TITLE                         */
+        /* ============================================ */
+
+        .game-title {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: transparent;
+            background: linear-gradient(135deg, #00d4ff 0%, #9d4edd 50%, #ff006e 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 25px rgba(157, 78, 221, 0.7));
+            animation: title-glow 3s ease-in-out infinite alternate;
+            z-index: 30;
+            white-space: nowrap;
+        }
+
+        @keyframes title-glow {
+            0% { filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.7)); }
+            100% { filter: drop-shadow(0 0 35px rgba(157, 78, 221, 1)); }
+        }
+
+        /* ============================================ */
+        /* BOTTOM CENTER: ICON BUTTONS WITH LABELS      */
+        /* Closer together & Correct label positions   */
+        /* ============================================ */
+
+        .nav-buttons-container {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+
+            display: flex;
+            align-items: center;
+            gap: 18px;  /* ← مسافة قصيرة بين الزرين (كانت 48px) */
+
+            z-index: 30;
+        }
+
+        /* Button Wrapper - Contains Icon + Label */
+        .nav-button-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px; /* المسافة بين الزر والنص عند الظهور */
+        }
+
+        /* Individual Icon Button */
+        .nav-icon-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+
+            background: linear-gradient(145deg,
+                rgba(40, 28, 58, 0.95),
+                rgba(25, 18, 38, 0.98)
+            );
+            backdrop-filter: blur(25px);
+
+            border: 2.5px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                0 8px 28px rgba(0, 0, 0, 0.65),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 0 20px rgba(100, 70, 150, 0.18);
+
+            overflow: visible;
+            flex-shrink: 0;
+        }
+
+        /* Hover State */
+        .nav-icon-button:hover {
+            transform: scale(1.12) translateY(-4px);
+            border-color: rgba(180, 150, 230, 0.85);
+            background: linear-gradient(145deg,
+                rgba(138, 80, 200, 0.45),
+                rgba(80, 50, 150, 0.38)
+            );
+            box-shadow:
+                0 14px 42px rgba(138, 80, 200, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.16),
+                0 0 35px rgba(140, 100, 200, 0.45);
+        }
+
+        /* Active State - Blue Glow */
+        .nav-icon-button.active {
+            border-color: rgba(130, 170, 255, 0.78);
+            background: radial-gradient(circle at center,
+                rgba(80, 140, 255, 0.38) 0%,
+                rgba(60, 100, 220, 0.28) 70%,
+                rgba(40, 28, 58, 0.95) 100%
+            );
+            box-shadow:
+                0 10px 36px rgba(80, 140, 255, 0.58),
+                inset 0 0 24px rgba(100, 160, 255, 0.25),
+                0 0 40px rgba(80, 140, 255, 0.35);
+        }
+
+        .nav-icon-button.active:hover {
+            background: radial-gradient(circle at center,
+                rgba(80, 140, 255, 0.52) 0%,
+                rgba(60, 100, 220, 0.42) 70%,
+                rgba(138, 80, 200, 0.45) 100%
+            );
+            box-shadow:
+                0 16px 48px rgba(80, 140, 255, 0.68),
+                inset 0 0 28px rgba(130, 180, 255, 0.32),
+                0 0 50px rgba(80, 140, 255, 0.48);
+        }
+
+        /* Click/Active Animation */
+        .nav-icon-button:active {
+            transform: scale(0.95) translateY(0);
+        }
+
+        /* Icon Styling */
+        .nav-icon-button i {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.92);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .nav-icon-button:hover i {
+            color: #ffffff;
+            transform: scale(1.18);
+            filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.95));
+        }
+
+        .nav-icon-button.active i {
+            color: rgba(200, 230, 255, 0.98);
+            filter: drop-shadow(0 0 12px rgba(130, 180, 255, 0.9));
+        }
+
+        /* ============================================ */
+        /* LABEL TEXT - Different directions per button */
+        /* ============================================ */
+
+        .nav-label-text {
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.95);
+            white-space: nowrap;
+
+            /* Hidden by default */
+            opacity: 0;
+
+            transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+
+            text-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.8),
+                0 0 15px rgba(138, 100, 200, 0.4);
+
+            position: relative;
+        }
+
+        /* ===== BUTTON 1: START GAME (Right side in RTL) ===== */
+        /* Label appears on the RIGHT of the button */
+
+        .nav-button-wrapper:first-child .nav-label-text {
+            /* Hidden state: moved to right and scaled down */
+            transform: translateX(15px) scaleX(0.8);
+        }
+
+        /* Show on hover - appears from RIGHT */
+        .nav-button-wrapper:first-child:hover .nav-label-text,
+        .nav-button-wrapper:first-child .nav-icon-button:hover ~ .nav-label-text {
+            opacity: 1;
+            transform: translateX(0) scaleX(1);
+        }
+
+        /* ===== BUTTON 2: SETTINGS (Left side in RTL) ===== */
+        /* Label appears on the LEFT of the button (correct as before) */
+
+        .nav-button-wrapper:last-child .nav-label-text {
+            /* Hidden state: moved to left and scaled down */
+            transform: translateX(-15px) scaleX(0.8);
+        }
+
+        /* Show on hover - appears from LEFT */
+        .nav-button-wrapper:last-child:hover .nav-label-text,
+        .nav-button-wrapper:last-child .nav-icon-button:hover ~ .nav-label-text {
+            opacity: 1;
+            transform: translateX(0) scaleX(1);
+        }
+
+        /* Delay for smooth effect */
+        .nav-icon-button:hover ~ .nav-label-text {
+            transition-delay: 0.1s;
+        }
+
+        /* Notification Badge */
+        .notification-dot {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #ff5555, #dd2222);
+            border-radius: 50%;
+            border: 2.5px solid rgba(25, 18, 38, 0.98);
+            box-shadow: 0 2px 12px rgba(255, 50, 50, 0.75);
+            animation: pulse-notification 2.5s infinite;
+            z-index: 5;
+        }
+
+        @keyframes pulse-notification {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.72; }
+        }
+
+        /* Version Text */
+        .version-text {
+            position: absolute;
+            bottom: 12px;
+            left: 18px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.08em;
+            z-index: 20;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Responsive for smaller screens */
+        @media (max-width: 1250px) {
+            .game-container {
+                width: 100vw;
+                height: calc(100vw * 675 / 1200);
+                margin: 0;
+                margin-top: calc((100vh - (100vw * 675 / 1200)) / 2);
+            }
+
+            .game-title {
+                top: 20px;
+                left: 20px;
+                font-size: 1.6rem;
+            }
+
+            .nav-buttons-container {
+                bottom: 26px;
+                gap: 14px; /* أصغر على الشاشات المتوسطة */
+            }
+
+            .nav-icon-button {
+                width: 58px;
+                height: 58px;
+            }
+
+            .nav-label-text {
+                font-size: 0.88rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+            }
+
+            .nav-buttons-container {
+                bottom: 24px;
+                gap: 12px; /* أصغر على الجوال */
+            }
+
+            .nav-icon-button {
+                width: 54px;
+                height: 54px;
+            }
+
+            .nav-icon-button i {
+                font-size: 1.3rem;
+            }
+
+            .nav-label-text {
+                display: none !important;
+            }
+
+            .game-title {
+                font-size: 1.3rem;
+                top: 15px;
+                left: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Game Container 1200x675 -->
+    <div class="game-container">
+
+        <!-- Animated Background -->
+        <div class="background-container">
+
+            <!-- Option: Video Background -->
+
+            <video class="media-background" autoplay muted loop playsinline>
+                <source src="/home/ykamal-1/Downloads/لقطات اللعبة/المستوى 2 — الباب المفتوح (كلمات المرور)/original.mp4" type="video/mp4">
+            </video>
+
+
+            <!-- Option: GIF Background -->
+            <!--
+            <img class="media-background" src="your-animation.gif" alt="">
+            -->
+
+            <!-- Default: CSS Animations -->
+            <div class="css-bg-gradient"></div>
+
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+
+            <div class="grid-lines"></div>
+
+            <div class="dark-overlay"></div>
+
+            <div class="particles" id="particles"></div>
+        </div>
+
+        <!-- TOP LEFT: Game Title -->
+        <h1 class="game-title">GAME TITLE</h1>
+
+        <!-- BOTTOM CENTER: Icon Buttons with Labels -->
+        <div class="nav-buttons-container">
+
+            <!-- Button 1: START GAME (Label on RIGHT) -->
+            <div class="nav-button-wrapper">
+                <div class="nav-icon-button active" onclick="handleButtonClick('start')">
+                    <i class="fas fa-play"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                <!-- Label: Appears on the RIGHT when hovered -->
+                <span class="nav-label-text">Start Game</span>
+            </div>
+
+            <!-- Button 2: SETTINGS (Label on LEFT) -->
+            <div class="nav-button-wrapper">
+                <div class="nav-icon-button" onclick="handleButtonClick('settings')">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <!-- Label: Appears on the LEFT when hovered -->
+                <span class="nav-label-text">Settings</span>
+            </div>
+
+        </div>
+
+        <!-- Version -->
+        <div class="version-text">v1.0.0</div>
+
+    </div>
+
+    <script>
+        // Generate Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const count = 40;
+
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+
+                const size = Math.random() * 3 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+
+                const colors = [
+                    'rgba(0, 212, 255, 0.9)',
+                    'rgba(157, 78, 221, 0.9)',
+                    'rgba(255, 0, 110, 0.9)',
+                    'rgba(255, 255, 255, 0.9)'
+                ];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                container.appendChild(particle);
+            }
+        }
+
+        // Handle Button Clicks
+        function handleButtonClick(action) {
+            console.log(`🎮 Button clicked: ${action}`);
+
+            if (event && event.currentTarget) {
+                const btn = event.currentTarget;
+
+                btn.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    btn.style.transform = '';
+                }, 180);
+
+                document.querySelectorAll('.nav-icon-button').forEach(el => el.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            switch(action) {
+                case 'start':
+                    console.log('▶ Starting Game...');
+                    break;
+                case 'settings':
+                    console.log('⚙ Opening Settings...');
+                    break;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleButtonClick('start');
+            if (e.key === 'Escape') handleButtonClick('settings');
+        });
+    </script>
+
+</body>
+</html>

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
@@ -272,16 +274,119 @@ function FacultyPinChanger() {
   )
 }
 
-function Bubble({ msg }: { msg: AIMessage }) {
+function copyToClipboard(text: string) { navigator.clipboard?.writeText(text) }
+
+function downloadFile(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+function downloadMd(content: string, filename: string) { downloadFile(content, `${filename}.md`, 'text/markdown') }
+
+function downloadDocx(content: string, filename: string) {
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;line-height:1.8}pre{background:#f4f4f4;padding:10px;border-radius:4px}code{background:#f4f4f4;padding:2px 4px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`
+  downloadFile(html, `${filename}.doc`, 'application/msword')
+}
+
+function downloadPdf(content: string, filename: string) {
+  const html = `<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;padding:20px;line-height:1.8;font-size:14px}pre{background:#f4f4f4;padding:10px;border-radius:4px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`
+  downloadFile(html, `${filename}.html`, 'text/html')
+}
+
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <div style={{ fontSize: '13px', lineHeight: 1.7, color: '#ddd' }}>
+      <Markdown remarkPlugins={[remarkGfm]} components={{
+        p: ({ children }) => <p style={{ margin: '0 0 8px 0' }}>{children}</p>,
+        h1: ({ children }) => <h1 style={{ fontSize: '18px', margin: '12px 0 8px', color: '#4FC3F7' }}>{children}</h1>,
+        h2: ({ children }) => <h2 style={{ fontSize: '16px', margin: '10px 0 6px', color: '#4FC3F7' }}>{children}</h2>,
+        h3: ({ children }) => <h3 style={{ fontSize: '14px', margin: '8px 0 4px', color: '#CE93D8' }}>{children}</h3>,
+        strong: ({ children }) => <strong style={{ color: '#fff' }}>{children}</strong>,
+        code: ({ className, children }) => {
+          const isBlock = className?.includes('language-')
+          return isBlock
+            ? <pre style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px', overflow: 'auto', direction: 'ltr', textAlign: 'left', fontSize: '12px', margin: '8px 0' }}><code>{children}</code></pre>
+            : <code style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '3px', fontSize: '12px', direction: 'ltr' }}>{children}</code>
+        },
+        ul: ({ children }) => <ul style={{ margin: '4px 0', paddingRight: '20px' }}>{children}</ul>,
+        ol: ({ children }) => <ol style={{ margin: '4px 0', paddingRight: '20px' }}>{children}</ol>,
+        li: ({ children }) => <li style={{ marginBottom: '2px' }}>{children}</li>,
+        a: ({ href, children }) => <a href={href} target="_blank" rel="noopener" style={{ color: '#4FC3F7' }}>{children}</a>,
+        blockquote: ({ children }) => <blockquote style={{ borderRight: '3px solid #CE93D8', paddingRight: '12px', margin: '8px 0', color: '#aaa' }}>{children}</blockquote>,
+        table: ({ children }) => <table style={{ borderCollapse: 'collapse', width: '100%', margin: '8px 0', fontSize: '12px' }}>{children}</table>,
+        th: ({ children }) => <th style={{ border: '1px solid rgba(255,255,255,0.15)', padding: '6px 8px', background: 'rgba(79,195,247,0.1)', color: '#4FC3F7', fontWeight: 700 }}>{children}</th>,
+        td: ({ children }) => <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px' }}>{children}</td>,
+        hr: () => <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '12px 0' }} />,
+      }}>{content}</Markdown>
+    </div>
+  )
+}
+
+function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: number; onEdit?: (idx: number, content: string) => void; onRegenerate?: (idx: number) => void }) {
   const isUser = msg.role === 'user'
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(msg.content)
+  const [copied, setCopied] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+
+  const handleCopy = () => { copyToClipboard(msg.content); setCopied(true); setTimeout(() => setCopied(false), 1500) }
+  const handleSave = () => { onEdit?.(index!, editContent); setIsEditing(false) }
+
   return (
     <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start', marginBottom: '8px' }}>
       <div style={{
         maxWidth: '90%', padding: '10px 14px', borderRadius: '12px',
-        fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
         background: isUser ? 'rgba(79,195,247,0.2)' : 'rgba(255,255,255,0.06)',
         color: '#ddd', border: '1px solid rgba(255,255,255,0.06)',
-      }}>{msg.content}</div>
+        position: 'relative',
+      }}>
+        {isEditing ? (
+          <div>
+            <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={4}
+              style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.2)', color: '#fff', fontSize: '13px', resize: 'vertical', outline: 'none', fontFamily: 'inherit' }} />
+            <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+              <button onClick={handleSave} style={{ padding: '4px 10px', borderRadius: '4px', border: 'none', background: '#81C784', color: '#0a0a1a', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>حفظ</button>
+              <button onClick={() => setIsEditing(false)} style={{ padding: '4px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#aaa', fontSize: '11px', cursor: 'pointer' }}>إلغاء</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {isUser ? (
+              <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
+            ) : (
+              <MarkdownContent content={msg.content} />
+            )}
+          </>
+        )}
+        {/* Action buttons */}
+        {!isEditing && (
+          <div style={{ display: 'flex', gap: '2px', marginTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+            {isUser && index !== undefined && onEdit && (
+              <button onClick={() => setIsEditing(true)} title="تعديل" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', borderRadius: '3px' }}>✏️</button>
+            )}
+            {!isUser && index !== undefined && onRegenerate && (
+              <button onClick={() => onRegenerate(index)} title="إعادة التوليد" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', borderRadius: '3px' }}>🔄</button>
+            )}
+            {!isUser && (
+              <>
+                <button onClick={handleCopy} title="نسخ" style={{ background: 'none', border: 'none', color: copied ? '#81C784' : '#888', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', borderRadius: '3px' }}>{copied ? '✅' : '📋'}</button>
+                <div style={{ position: 'relative' }}>
+                  <button onClick={() => setShowMenu(!showMenu)} title="تنزيل" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', borderRadius: '3px' }}>⬇️</button>
+                  {showMenu && (
+                    <div style={{ position: 'absolute', bottom: '100%', left: 0, background: '#1a1f3a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px', minWidth: '100px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                      <button onClick={() => { downloadMd(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.md Markdown</button>
+                      <button onClick={() => { downloadDocx(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.docx Word</button>
+                      <button onClick={() => { downloadPdf(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.pdf PDF</button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -291,27 +396,48 @@ function StudentChat() {
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<AIMessage[]>([])
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [ai.studentMessages, streaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streaming])
+
+  const sendMessage = async (msgs: AIMessage[]) => {
+    ai.setLoading(true); setStreaming('')
+    try {
+      const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
+      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      for await (const chunk of gen) { full += chunk; setStreaming(full) }
+      setMessages((prev) => [...prev, { role: 'assistant', content: full }])
+    } catch (err: any) { setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }]) }
+    ai.setLoading(false); setStreaming('')
+  }
 
   const handleSend = async () => {
     const text = input.trim(); if (!text || ai.loading) return
-    setInput(''); const userMsg: AIMessage = { role: 'user', content: text }
-    ai.addStudentMessage(userMsg); ai.setLoading(true); setStreaming('')
-    try {
-      const msgs: AIMessage[] = [{ role: 'system', content: STUDENT_SYSTEM_PROMPT }, ...ai.studentMessages, userMsg]
-      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, msgs, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
-      for await (const chunk of gen) { full += chunk; setStreaming(full) }
-      ai.addStudentMessage({ role: 'assistant', content: full })
-    } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
-    ai.setLoading(false); setStreaming('')
+    setInput('')
+    const userMsg: AIMessage = { role: 'user', content: text }
+    const newMsgs = [...messages, userMsg]
+    setMessages(newMsgs)
+    await sendMessage(newMsgs)
+  }
+
+  const handleEdit = async (idx: number, content: string) => {
+    const newMsgs = [...messages]; newMsgs[idx] = { role: 'user', content }
+    const trimmed = newMsgs.slice(0, idx + 1)
+    setMessages(trimmed)
+    await sendMessage(trimmed)
+  }
+
+  const handleRegenerate = async (idx: number) => {
+    const trimmed = messages.slice(0, idx)
+    setMessages(trimmed)
+    await sendMessage(trimmed)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
-        {ai.studentMessages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
-        {ai.studentMessages.map((msg, i) => <Bubble key={i} msg={msg} />)}
+        {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
+        {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: streaming }} />}
         <div ref={bottomRef} />
       </div>
@@ -368,24 +494,47 @@ function FacultyAIChat() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgHistory, streaming])
 
-  const handleSend = async () => {
-    const text = input.trim(); if (!text || ai.loading) return
-    setInput(''); setApplyStatus([])
+  const sendMessage = async (msgs: AIMessage[]) => {
+    ai.setLoading(true); setStreaming('')
     const levels = getLevels(); const chars = getCharacters()
     const levelsJson = levels.map((l) => `المستوى ${l.id}: ${l.title}`).join('\n')
     const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role })), null, 2)
-    const userMsg: AIMessage = { role: 'user', content: text }
-    setMsgHistory((prev) => [...prev, userMsg]); ai.setLoading(true); setStreaming('')
-    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${text}` }
+    const lastUser = msgs.filter((m) => m.role === 'user').pop()
+    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${lastUser?.content || ''}` }
     try {
-      const msgs: AIMessage[] = [{ role: 'system', content: FACULTY_SYSTEM_PROMPT }, ...msgHistory, contextMsg]
-      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, msgs, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
+      const chatMsgs = msgs.filter((m) => m !== contextMsg)
+      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
       for await (const chunk of gen) { full += chunk; setStreaming(full) }
       const { updates, cleanText } = parseAIUpdates(full)
       setMsgHistory((prev) => [...prev, { role: 'assistant', content: cleanText || full }])
       if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
     } catch (err: any) { setMsgHistory((prev) => [...prev, { role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }]) }
     ai.setLoading(false); setStreaming('')
+  }
+
+  const handleSend = async () => {
+    const text = input.trim(); if (!text || ai.loading) return
+    setInput(''); setApplyStatus([])
+    const userMsg: AIMessage = { role: 'user', content: text }
+    const newMsgs = [...msgHistory, userMsg]
+    setMsgHistory(newMsgs)
+    await sendMessage(newMsgs)
+  }
+
+  const handleEdit = async (idx: number, content: string) => {
+    const newMsgs = [...msgHistory]; newMsgs[idx] = { role: 'user', content }
+    const trimmed = newMsgs.slice(0, idx + 1)
+    setMsgHistory(trimmed)
+    setApplyStatus([])
+    await sendMessage(trimmed)
+  }
+
+  const handleRegenerate = async (idx: number) => {
+    const trimmed = msgHistory.slice(0, idx)
+    setMsgHistory(trimmed)
+    setApplyStatus([])
+    await sendMessage(trimmed)
   }
 
   return (
@@ -403,7 +552,7 @@ function FacultyAIChat() {
             <span style={{ fontSize: '11px', color: '#555' }}>مثال: غيّر عنوان المستوى الأول، أضف شخصية جديدة، احذف مستوى 7</span>
           </div>
         )}
-        {msgHistory.map((m, i) => <Bubble key={i} msg={m} />)}
+        {msgHistory.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: getDisplayText(streaming) }} />}
         <div ref={bottomRef} />
       </div>

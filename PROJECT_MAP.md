@@ -171,6 +171,11 @@ src/
 | **Faculty PIN Change** | في تبويب Settings | تغيير رمز هيئة التدريس مع التحقق من الرمز الحالي |
 | **AI Providers** | 4 مزودين | OpenAI, OpenRouter (مع نماذج مجانية), Ollama (محلي), API مخصص (OpenAI-compatible) |
 | **Streaming** | نعم | عرض الردود بشكل تدريجي |
+| **Markdown Rendering** | نعم | عرض ردود AI بصيغة Markdown مع جداول وقوائم وأكواد |
+| **Edit User Message** | نعم | تعديل الرسالة وإعادة إرسالها |
+| **Regenerate Response** | نعم | إعادة توليد رد AI من نفس السياق |
+| **Copy Response** | نعم | نسخ رد AI إلى الحافظة |
+| **Download Response** | نعم | تنزيل رد AI بصيغة .md / .docx / .pdf |
 | **API Keys** | localStorage | مشفرة وغير مشاركة مع الـ persist (IndexedDB) |
 | **زر AI FAB** | أعلى اليمين (y: 16px) | زر دائري مع pulse animation عند التحويم |
 | **زر الصوت** | أسفل زر AI (y: 72px) | كتم/تشغيل الموسيقى الخلفية |
