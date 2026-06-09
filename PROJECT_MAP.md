@@ -325,13 +325,14 @@ src/
 ### ملفات أخرى
 | الملف | الحجم | الاستخدام |
 |---|---|---|
-| `public/videos/background.mp4` | 2.5MB | خلفية اللعبة (قديم — احتياطي) |
+| `public/videos/start.mp4` | 5.6MB | فيديو الخلفية الافتراضي للقائمة الرئيسية (بصوت) |
+| `public/videos/original.mp4` | 5.6MB | خلفية اللعبة الرئيسية (قديم — احتياطي) |
 | `public/videos/background_1.mp4` | 1.3MB | خلفية سابقة (احتياطي) |
-| `public/videos/original.mp4` | 1.3MB | خلفية اللعبة الرئيسية (قديم — احتياطي) |
-| `public/videos/start.mp4` | — | فيديو الخلفية الافتراضي للقائمة الرئيسية (بصوت) |
 | `public/startpage5.html` | — | تصميم مرجعي لشاشة البداية (Fortnite/Free Fire style) |
 | `public/videos/output.wav` | 1.4MB | موسيقى خلفية مخصصة |
-| `public/videos/زين.webp` | — | صورة FLUX لشخصية زين |
+| `public/videos/output(new).wav` | 1.4MB | موسيقى خلفية محدثة |
+| `public/videos/output.mp3` | 129KB | نسخة MP3 من الموسيقى |
+| `public/videos/زين.webp` | 2.5MB | صورة FLUX لشخصية زين |
 | `PROMPTS.md` | 475+ سطر | أوامر FLUX + مشاهد انتقالية + مشهد النظام |
 | `.github/workflows/deploy.yml` | — | GitHub Pages deploy (Node.js 24) |
 
