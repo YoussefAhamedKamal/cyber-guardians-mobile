@@ -325,7 +325,7 @@ export async function createNewRepo(name: string, description: string): Promise<
   const data = await apiFetch('/user/repos', 'POST', {
     name,
     description,
-    auto_init: false,
+    auto_init: true,
     private: false,
   })
   return { owner: data.owner.login, repo: data.name, url: data.html_url }
