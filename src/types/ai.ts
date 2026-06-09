@@ -1,6 +1,21 @@
 export interface AIMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
+  attachments?: ChatAttachment[] | undefined
+}
+
+export interface ChatAttachment {
+  name: string
+  type: 'text' | 'image' | 'video' | 'audio' | 'file'
+  content: string
+  mimeType: string
+}
+
+export interface ChatSession {
+  id: string
+  name: string
+  messages: AIMessage[]
+  createdAt: number
 }
 
 export interface AIProviderDef {
@@ -77,8 +92,10 @@ export interface AIState {
   customBaseUrl: string
   facultyPin: string
   facultyUnlocked: boolean
-  studentMessages: AIMessage[]
-  facultyMessages: AIMessage[]
+  studentSessions: ChatSession[]
+  activeStudentSessionId: string
+  facultySessions: ChatSession[]
+  activeFacultySessionId: string
   panelOpen: boolean
   activeTab: 'student' | 'faculty' | 'settings'
   loading: boolean
@@ -90,8 +107,10 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   customBaseUrl: '',
   facultyPin: '1234',
   facultyUnlocked: false,
-  studentMessages: [],
-  facultyMessages: [],
+  studentSessions: [],
+  activeStudentSessionId: '',
+  facultySessions: [],
+  activeFacultySessionId: '',
   panelOpen: false,
   activeTab: 'student',
   loading: false,

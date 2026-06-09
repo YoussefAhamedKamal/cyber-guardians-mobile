@@ -6,6 +6,7 @@ import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 import { AI_PROVIDERS } from '@/types/ai'
+import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
 import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
 
@@ -391,13 +392,75 @@ function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: 
   )
 }
 
+function SessionBar({ type }: { type: 'student' | 'faculty' }) {
+  const ai = useAIStore()
+  const sessions = type === 'student' ? ai.studentSessions : ai.facultySessions
+  const activeId = type === 'student' ? ai.activeStudentSessionId : ai.activeFacultySessionId
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+
+  const create = () => { type === 'student' ? ai.createStudentSession() : ai.createFacultySession() }
+  const switchTo = (id: string) => { type === 'student' ? ai.switchStudentSession(id) : ai.switchFacultySession(id) }
+  const deleteSession = (id: string) => { if (confirm('حذف الجلسة؟')) { type === 'student' ? ai.deleteStudentSession(id) : ai.deleteFacultySession(id) } }
+  const startRename = (id: string, name: string) => { setEditingId(id); setEditName(name) }
+  const saveRename = () => { if (editingId && editName.trim()) { type === 'student' ? ai.renameStudentSession(editingId, editName.trim()) : ai.renameFacultySession(editingId, editName.trim()); setEditingId(null) } }
+
+  if (sessions.length === 0) return null
+
+  return (
+    <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto', flexShrink: 0 }}>
+      {sessions.map((s) => (
+        <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '2px', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '11px', background: s.id === activeId ? 'rgba(79,195,247,0.15)' : 'rgba(255,255,255,0.04)', color: s.id === activeId ? '#4FC3F7' : '#888', border: `1px solid ${s.id === activeId ? 'rgba(79,195,247,0.3)' : 'transparent'}` }} onClick={() => switchTo(s.id)}>
+          {editingId === s.id ? (
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} onBlur={saveRename} onKeyDown={(e) => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') setEditingId(null) }} autoFocus style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '11px', outline: 'none', width: '80px', padding: 0 }} onClick={(e) => e.stopPropagation()} />
+          ) : (
+            <>
+              <span onDoubleClick={() => startRename(s.id, s.name)}>{s.name}</span>
+              <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id) }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
+            </>
+          )}
+        </div>
+      ))}
+      <button onClick={create} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px dashed rgba(255,255,255,0.15)', background: 'transparent', color: '#666', cursor: 'pointer', fontSize: '11px', whiteSpace: 'nowrap' }}>+ جلسة</button>
+    </div>
+  )
+}
+
+function FileUploadButton({ onFiles }: { onFiles: (files: File[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  return (
+    <>
+      <input ref={inputRef} type="file" multiple accept="text/*,image/*,video/*,audio/*,.json,.txt,.md,.csv" style={{ display: 'none' }} onChange={(e) => { const files = Array.from(e.target.files || []); if (files.length) onFiles(files); e.target.value = '' }} />
+      <button onClick={() => inputRef.current?.click()} title="رفع ملف" style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', padding: '4px 6px', borderRadius: '4px' }}>📎</button>
+    </>
+  )
+}
+
+function readFiles(files: File[]): Promise<ChatAttachment[]> {
+  return Promise.all(files.map((file) => new Promise<ChatAttachment>((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const content = reader.result as string
+      if (file.type.startsWith('image/')) { resolve({ name: file.name, type: 'image', content, mimeType: file.type }) }
+      else if (file.type.startsWith('video/')) { resolve({ name: file.name, type: 'video', content: `[فيديو: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)]`, mimeType: file.type }) }
+      else if (file.type.startsWith('audio/')) { resolve({ name: file.name, type: 'audio', content: `[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`, mimeType: file.type }) }
+      else { resolve({ name: file.name, type: 'text', content, mimeType: file.type }) }
+    }
+    reader.onerror = () => resolve({ name: file.name, type: 'file', content: `[ملف: ${file.name}]`, mimeType: file.type })
+    if (file.type.startsWith('image/')) reader.readAsDataURL(file); else reader.readAsText(file)
+  })))
+}
+
 function StudentChat() {
   const ai = useAIStore()
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
+  const session = ai.getActiveStudentSession()
+  const messages = session?.messages || []
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [ai.studentMessages, streaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); setStreaming('')
@@ -411,15 +474,19 @@ function StudentChat() {
   }
 
   const handleSend = async () => {
-    const text = input.trim(); if (!text || ai.loading) return
+    const text = input.trim(); if ((!text && pendingAttachments.length === 0) || ai.loading) return
     setInput('')
-    const userMsg: AIMessage = { role: 'user', content: text }
+    const userMsg: AIMessage = { role: 'user', content: text || 'ملف مرفق', attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined }
+    setPendingAttachments([])
     ai.addStudentMessage(userMsg)
-    await sendMessage([...ai.studentMessages, userMsg])
+    await sendMessage([...messages, userMsg])
   }
 
+  const handleFiles = async (files: File[]) => { const attachments = await readFiles(files); setPendingAttachments((prev) => [...prev, ...attachments]) }
+  const removeAttachment = (idx: number) => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
+
   const handleEdit = async (idx: number, content: string) => {
-    const trimmed = ai.studentMessages.slice(0, idx)
+    const trimmed = messages.slice(0, idx)
     ai.clearStudentMessages()
     trimmed.forEach((m) => ai.addStudentMessage(m))
     ai.addStudentMessage({ role: 'user', content })
@@ -427,7 +494,7 @@ function StudentChat() {
   }
 
   const handleRegenerate = async (idx: number) => {
-    const trimmed = ai.studentMessages.slice(0, idx)
+    const trimmed = messages.slice(0, idx)
     ai.clearStudentMessages()
     trimmed.forEach((m) => ai.addStudentMessage(m))
     await sendMessage(trimmed)
@@ -435,17 +502,29 @@ function StudentChat() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SessionBar type="student" />
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
-        {ai.studentMessages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
-        {ai.studentMessages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
+        {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
+        {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: streaming }} />}
         <div ref={bottomRef} />
       </div>
-      <div style={{ display: 'flex', gap: '6px', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      {pendingAttachments.length > 0 && (
+        <div style={{ display: 'flex', gap: '4px', padding: '4px 8px', flexWrap: 'wrap', flexShrink: 0 }}>
+          {pendingAttachments.map((a, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(79,195,247,0.1)', fontSize: '10px', color: '#4FC3F7' }}>
+              {a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'} {a.name}
+              <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '10px' }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '4px', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <FileUploadButton onFiles={handleFiles} />
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={ai.loading ? '...' : 'اكتب سؤالك...'} disabled={ai.loading}
+          placeholder={ai.loading ? '...' : 'اكتب سؤالك أو ارفع ملف...'} disabled={ai.loading}
           style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px', outline: 'none' }} />
-        <button onClick={handleSend} disabled={ai.loading || !input.trim()} style={{
+        <button onClick={handleSend} disabled={ai.loading || (!input.trim() && pendingAttachments.length === 0)} style={{
           padding: '8px 14px', borderRadius: '8px', border: 'none',
           background: ai.loading ? '#444' : 'linear-gradient(135deg,#4FC3F7,#29B6F6)',
           color: '#0a0a1a', fontWeight: 700, fontSize: '13px', cursor: 'pointer', opacity: ai.loading ? 0.5 : 1,
@@ -492,9 +571,12 @@ function FacultyAIChat() {
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState('')
   const [applyStatus, setApplyStatus] = useState<string[]>([])
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
+  const session = ai.getActiveFacultySession()
+  const msgHistory = session?.messages || []
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [ai.facultyMessages, streaming])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgHistory, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); setStreaming('')
@@ -503,7 +585,8 @@ function FacultyAIChat() {
     const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role, gender: c.gender })), null, 2)
     const metaJson = JSON.stringify(meta, null, 2)
     const lastUser = msgs.filter((m) => m.role === 'user').pop()
-    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nإعدادات اللعبة:\n${metaJson}\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${lastUser?.content || ''}` }
+    const attachmentInfo = lastUser?.attachments?.map((a) => `[مرفق: ${a.name} (${a.type}) — ${a.content.slice(0, 200)}]`).join('\n') || ''
+    const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nإعدادات اللعبة:\n${metaJson}\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${attachmentInfo ? 'المرفقات:\n' + attachmentInfo + '\n\n' : ''}${lastUser?.content || ''}` }
     try {
       const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
       const chatMsgs = msgs.filter((m) => m !== contextMsg)
@@ -517,15 +600,19 @@ function FacultyAIChat() {
   }
 
   const handleSend = async () => {
-    const text = input.trim(); if (!text || ai.loading) return
+    const text = input.trim(); if ((!text && pendingAttachments.length === 0) || ai.loading) return
     setInput(''); setApplyStatus([])
-    const userMsg: AIMessage = { role: 'user', content: text }
+    const userMsg: AIMessage = { role: 'user', content: text || 'ملف مرفق', attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined }
+    setPendingAttachments([])
     ai.addFacultyMessage(userMsg)
-    await sendMessage([...ai.facultyMessages, userMsg])
+    await sendMessage([...msgHistory, userMsg])
   }
 
+  const handleFiles = async (files: File[]) => { const attachments = await readFiles(files); setPendingAttachments((prev) => [...prev, ...attachments]) }
+  const removeAttachment = (idx: number) => setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
+
   const handleEdit = async (idx: number, content: string) => {
-    const trimmed = ai.facultyMessages.slice(0, idx)
+    const trimmed = msgHistory.slice(0, idx)
     ai.clearFacultyMessages()
     trimmed.forEach((m) => ai.addFacultyMessage(m))
     ai.addFacultyMessage({ role: 'user', content })
@@ -534,7 +621,7 @@ function FacultyAIChat() {
   }
 
   const handleRegenerate = async (idx: number) => {
-    const trimmed = ai.facultyMessages.slice(0, idx)
+    const trimmed = msgHistory.slice(0, idx)
     ai.clearFacultyMessages()
     trimmed.forEach((m) => ai.addFacultyMessage(m))
     setApplyStatus([])
@@ -543,29 +630,41 @@ function FacultyAIChat() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SessionBar type="faculty" />
       {applyStatus.length > 0 && (
         <div style={{ padding: '6px 8px', background: 'rgba(129,199,132,0.1)', borderBottom: '1px solid rgba(129,199,132,0.2)', flexShrink: 0 }}>
           {applyStatus.map((s, i) => <div key={i} style={{ fontSize: '11px', color: '#81C784' }}>{s}</div>)}
         </div>
       )}
       <div style={{ flex: 1, overflow: 'auto', padding: '10px' }}>
-        {ai.facultyMessages.length === 0 && !streaming && (
+        {msgHistory.length === 0 && !streaming && (
           <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>
             <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎓</div>
             اسأل عن أي تعديل في اللعبة<br/>
             <span style={{ fontSize: '11px', color: '#555' }}>مثال: غيّر عنوان المستوى الأول، أضف شخصية جديدة، احذف مستوى 7</span>
           </div>
         )}
-        {ai.facultyMessages.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
+        {msgHistory.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: getDisplayText(streaming) }} />}
         <div ref={bottomRef} />
       </div>
-      <div style={{ display: 'flex', gap: '6px', padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+      {pendingAttachments.length > 0 && (
+        <div style={{ display: 'flex', gap: '4px', padding: '4px 8px', flexWrap: 'wrap', flexShrink: 0 }}>
+          {pendingAttachments.map((a, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(206,147,216,0.1)', fontSize: '10px', color: '#CE93D8' }}>
+              {a.type === 'image' ? '🖼️' : a.type === 'video' ? '🎬' : a.type === 'audio' ? '🎵' : '📄'} {a.name}
+              <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '10px' }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: '4px', padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <FileUploadButton onFiles={handleFiles} />
         <textarea value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-          placeholder={ai.loading ? '...' : 'اكتب طلبك هنا...'} disabled={ai.loading} rows={2}
+          placeholder={ai.loading ? '...' : 'اكتب طلبك أو ارفع ملف...'} disabled={ai.loading} rows={2}
           style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px', outline: 'none', resize: 'none', fontFamily: 'inherit' }} />
-        <button onClick={handleSend} disabled={ai.loading || !input.trim()} style={{
+        <button onClick={handleSend} disabled={ai.loading || (!input.trim() && pendingAttachments.length === 0)} style={{
           padding: '8px 14px', borderRadius: '8px', border: 'none', alignSelf: 'flex-end',
           background: ai.loading ? '#444' : 'linear-gradient(135deg,#CE93D8,#BA68C8)',
           color: '#0a0a1a', fontWeight: 700, fontSize: '13px', cursor: 'pointer', opacity: ai.loading ? 0.5 : 1,
