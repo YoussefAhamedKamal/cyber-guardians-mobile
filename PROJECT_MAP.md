@@ -154,6 +154,7 @@ src/
 ├── utils/
 │   ├── constants.ts                 # قيم افتراضية + FONT_OPTIONS + HEADING_FONT_OPTIONS + MONO_FONT_OPTIONS
 │   ├── indexedDBStorage.ts          # تخزين Zustand في IndexedDB + تثاقل من localStorage
+│   ├── apiKeyCrypto.ts              # تشفير/فك API keys بـ AES-GCM (Web Crypto API)
 │   └── helpers.ts
 │
 └── __tests__/                       # 70 اختبار ✅
@@ -612,6 +613,8 @@ src/
 - [x] **Google Drive instructions** — تم: إرشادات كاملة في واجهة الإعدادات
 - [x] **Semgrep SAST Scan** — تم: فحص شامل بـ 10 rulesets (0 ثغرات)
 - [x] **Supply Chain Audit** — تم: فحص 5 تبعيات (0 عالية المخاطر)
+- [x] **CodeQL Fix: Insecure Randomness** — تم: `Math.random()` → `crypto.randomUUID()` في `createSession()`
+- [x] **CodeQL Fix: Clear Text Storage** — تم: تشفير API Keys بـ AES-GCM قبل تخزينها في `localStorage`
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
@@ -715,6 +718,15 @@ src/
 | zustand | ^5.0.13 | منخفض | 58k ⭐ | 2026-06-09 |
 
 **الخلاصة:** لا توجد تبعيات عالية المخاطر. كل الحزم نشيطة ومدعومة من منظمات (Meta, remarkjs, pmndrs). `npm audit` يظهر 0 vulnerabilities.
+
+### CodeQL Alerts (مُصلحة)
+| Alert | الخط | الحالة | الإصلاح |
+|-------|------|--------|---------|
+| Clear text storage | `aiStore.ts:12` | ✅ | `AES-GCM` + sessionStorage key |
+| Insecure randomness | `aiStore.ts:76` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:84` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:99` | ✅ | `crypto.randomUUID()` |
+| Insecure randomness | `aiStore.ts:107` | ✅ | `crypto.randomUUID()` |
 
 ### توصيات
 1. تفعيل **Dependabot** على المستودع
