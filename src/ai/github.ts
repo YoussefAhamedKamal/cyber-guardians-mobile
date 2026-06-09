@@ -1,6 +1,6 @@
 const GITHUB_CONFIG_KEY = 'cg-github-config'
 
-export const MAIN_REPO = { owner: 'ykamal-1', repo: 'cyber-guardians-mobile' }
+export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
 
 export interface GitHubConfig {
   token: string
