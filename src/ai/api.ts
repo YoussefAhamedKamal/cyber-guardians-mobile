@@ -5,10 +5,22 @@ function getProvider(providerId: string): AIProviderDef | undefined {
   return AI_PROVIDERS.find((p) => p.id === providerId)
 }
 
+function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
+  const imageAtts = m.attachments?.filter((a) => a.type === 'image' && a.content)
+  if (!imageAtts || imageAtts.length === 0) return m.content
+
+  const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = []
+  if (m.content) parts.push({ type: 'text', text: m.content })
+  for (const att of imageAtts) {
+    parts.push({ type: 'image_url', image_url: { url: att.content } })
+  }
+  return parts
+}
+
 function buildBody(modelId: string, messages: AIMessage[], _customBaseUrl: string, maxTokens?: number) {
   const body: Record<string, any> = {
     model: modelId,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
   }
   if (maxTokens && maxTokens > 0) {

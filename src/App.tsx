@@ -3,6 +3,7 @@ import { useResponsive } from '@/hooks'
 import { Button, ProgressBar, DialogueBox, BackgroundVideo, SettingsPanel, CelebrationVideo, MenuScreen } from '@/components/ui'
 import { useGameStore, useSettingsStore } from '@/store'
 import { AIPanel } from '@/ai/AIPanel'
+import { useAIStore } from '@/store'
 import { getLevels } from '@/data/gameData'
 import { ChallengeRenderer } from '@/challenges'
 import { audio } from '@/systems/ProceduralAudio'
@@ -28,6 +29,7 @@ function isValidLevel(id: number): id is LevelId {
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('menu')
+  const panelMaximized = useAIStore((s) => s.panelMaximized)
   const [dialogueIndex, setDialogueIndex] = useState(0)
   const responsive = useResponsive()
   const game = useGameStore()
@@ -283,10 +285,11 @@ export function App() {
         title={settings.bgmMuted || settings.muted ? 'تشغيل الموسيقى الخلفية' : 'كتم الموسيقى الخلفية'}
         style={{
           position: 'fixed', top: '72px', right: '16px', zIndex: 9999,
+          display: panelMaximized ? 'none' : 'inline-flex',
           width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)',
           background: (settings.bgmMuted || settings.muted) ? 'rgba(255,82,82,0.2)' : 'rgba(79,195,247,0.2)',
           color: '#fff', fontSize: '20px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(6px)',
         }}
       >

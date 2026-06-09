@@ -567,7 +567,12 @@ function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: 
         ) : (
           <>
             {isUser ? (
-              <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
+              <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {msg.content}
+                {msg.attachments?.filter((a) => a.type === 'image').map((att, i) => (
+                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} />
+                ))}
+              </div>
             ) : (
               <MarkdownContent content={msg.content} />
             )}
@@ -1422,9 +1427,11 @@ export function AIPanel() {
       const h = Math.min(window.innerHeight * 0.8, 600)
       setPanelState(s ?? { x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2, w, h })
       setIsMaximized(false)
+      ai.setPanelMaximized(false)
     } else {
       savePanelState(panelState)
       setIsMaximized(true)
+      ai.setPanelMaximized(true)
     }
   }
 
@@ -1438,7 +1445,7 @@ export function AIPanel() {
       <AIFab onClick={() => ai.setPanelOpen(!ai.panelOpen)} />
       {ai.panelOpen && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => ai.setPanelOpen(false)} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => { ai.setPanelOpen(false); ai.setPanelMaximized(false) }} />
           <div style={{
             ...panelStyle,
             background: 'linear-gradient(180deg, #0d1128 0%, #1a1f3a 100%)',
