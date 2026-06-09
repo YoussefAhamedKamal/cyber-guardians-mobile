@@ -94,9 +94,9 @@ src/
 ├── main.tsx                         # Entry point
 │
 ├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel: StudentChat + FacultyEditor + Settings
-│   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama
-│   └── prompts.ts                   # System prompts: طالب + هيئة تدريس
+│   ├── AIPanel.tsx                  # AI Assistant panel: SessionBar + StudentChat + FacultyAIChat + FacultyDataEditor + AISettings
+│   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama + unlimited max_tokens
+│   └── prompts.ts                   # System prompts: طالب + هيئة تدريس (مع تعليمات JSON لأضافة/تعديل/حذف gameMeta + levels + characters)
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
 │   ├── ChallengeRenderer.tsx        # Router حسب type
@@ -127,7 +127,8 @@ src/
 ├── store/
 │   ├── gameStore.ts                 # Zustand + persist (IndexedDB) — Set serialization fix
 │   ├── settingsStore.ts            # 28 حقل إعدادات (18 قديم + 10 جديد)
-│   └── aiStore.ts                  # AI state: provider, model, API keys, messages, faculty PIN
+│   ├── contentStore.ts             # محتوى مخصص (gameMeta + level overrides + new levels + deleted levels + character overrides)
+│   └── aiStore.ts                  # AI state: provider, model, API keys, faculty PIN, sessions (student + faculty) + CRUD
 │
 ├── systems/
 │   ├── ProceduralAudio.ts           # BGM (procedural/file) + SFX (7 أنواع) — autoplay fix
@@ -142,7 +143,9 @@ src/
 │
 ├── types/
 │   ├── index.ts
-│   ├── settings.ts                  # 28 حقل
+│   ├── settings.ts                  # GameSettings + GameMeta (28 حcampo)
+│   ├── ai.ts                        # AIMessage, ChatAttachment, ChatSession, AIState, AI_PROVIDERS
+│   ├── game.ts                      # LevelData (مُوسّع) + Character (مُوسّع) + GameMeta
 │   ├── dialogue.ts
 │   └── characters.ts
 │
@@ -171,15 +174,17 @@ src/
 | **Faculty PIN Change** | في تبويب Settings | تغيير رمز هيئة التدريس مع التحقق من الرمز الحالي |
 | **AI Providers** | 4 مزودين | OpenAI, OpenRouter (مع نماذج مجانية), Ollama (محلي), API مخصص (OpenAI-compatible) |
 | **Streaming** | نعم | عرض الردود بشكل تدريجي |
-| **Markdown Rendering** | نعم | عرض ردود AI بصيغة Markdown مع جداول وقوائم وأكواد |
+| **Markdown Rendering** | نعم | عرض ردود AI بصيغة Markdown مع جداول وقوائم وأكواد (react-markdown + remark-gfm) |
+| **Session Management** | نعم | جلسات متعددة لكل وضع (طالب/هيئة تدريس) — إنشاء/切换/إعادة تسمية/حذف |
+| **File Upload** | نعم | رفع ملفات (نص، صور، فيديو، صوت) مع إمكانية إرفاق عدة ملفات |
 | **Edit User Message** | نعم | تعديل الرسالة وإعادة إرسالها |
 | **Regenerate Response** | نعم | إعادة توليد رد AI من نفس السياق |
 | **Copy Response** | نعم | نسخ رد AI إلى الحافظة |
 | **Download Response** | نعم | تنزيل رد AI بصيغة .md / .docx / .pdf |
 | **API Keys** | localStorage | مشفرة وغير مشاركة مع الـ persist (IndexedDB) |
-| **زر AI FAB** | أعلى اليمين (y: 16px) | زر دائري مع pulse animation عند التحويم |
+| **زر AI FAB** | أعلى اليمين (y: 16px) | زر دائري مع pulse animation عند التحويم + سحب مخصص |
 | **زر الصوت** | أسفل زر AI (y: 72px) | كتم/تشغيل الموسيقى الخلفية |
-| **لوحة AI** | منتصف الشاشة | تظهر عند الضغط على زر AI، تختفي عند الإغلاق |
+| **لوحة AI** | منتصف الشاشة | تظهر عند الضغط على زر AI، قابلة للسحب والتغيير الحجم + maximize/minimize |
 | **إغلاق اللوحة** | 3 طرق | زر ✕، النافذة المعتمة، زر AI مرة أخرى (toggle) |
 | **إرشادات الاستخدام** | — | موجودة أدناه |
 
@@ -234,6 +239,23 @@ src/
 | **⚙ JSON خام** | تحرير جميع البيانات كـ JSON مباشرة مع التحقق من الصحة |
 
 ### إرشادات استخدام AI Assistant
+
+#### نظام الجلسات
+- كل وضع (طالب/هيئة تدريس) لديه جلسات مستقلة
+- جلسة تُنشأ تلقائياً عند فتح المحادثة لأول مرة
+- يمكن إنشاء جلسات جديدة، التبديل بينها، إعادة تسميتها، أو حذفها
+- كل جلسة تحتفظ برسائلها بشكل مستقل
+- عند حذف آخر جلسة، تُنشأ جلسة جديدة تلقائياً
+- جميع الجلسات تُحفظ في IndexedDB وتظهر عند إعادة التحميل
+
+#### رفع الملفات
+- 📎 زر رفع الملفات في شريط الإدخال
+- دعم: ملفات نصية، صور (base64)، فيديو، صوت
+- الصور تُرسل للـ AI كـ base64 (مدعومة في نماذج الرؤية)
+- الفيديو/الصوت يُرسلان كmetadata نصية
+- النصوص (JSON, CSV, etc.) تُرسل كمحتوى كامل
+- يمكن إرفاق عدة ملفات قبل الإرسال
+- المرفقات تظهر فوق شريط الإدخال مع إمكانية الحذف
 
 #### 🆓 OpenCode Zen (نماذج مجانية)
 افتح إعدادات AI ← اختر OpenRouter ← اختر أحد النماذج المجانية:
@@ -379,8 +401,8 @@ src/
 | `public/videos/original.mp4` | 5.6MB | خلفية اللعبة الرئيسية (قديم — احتياطي) |
 | `public/videos/background_1.mp4` | 1.3MB | خلفية سابقة (احتياطي) |
 | `public/startpage5.html` | — | تصميم مرجعي لشاشة البداية (Fortnite/Free Fire style) |
-| `public/videos/output.wav` | 1.4MB | موسيقى خلفية مخصصة |
-| `public/videos/output(new).wav` | 1.4MB | موسيقى خلفية محدثة |
+| `public/videos/output.wav` | 1.4MB | موسيقى خلفية أصلية |
+| `public/videos/output(new).wav` | 1.4MB | موسيقى خلفية الافتراضية الحالية (يتم استخدامها في `App.tsx`) |
 | `public/videos/output.mp3` | 129KB | نسخة MP3 من الموسيقى |
 | `public/videos/زين.webp` | 2.5MB | صورة FLUX لشخصية زين |
 | `PROMPTS.md` | 475+ سطر | أوامر FLUX + مشاهد انتقالية + مشهد النظام |
@@ -509,8 +531,11 @@ src/
 - [x] **إصلاح Set serialization** — تم
 - [x] **إصلاح autoplay الصوت** — تم
 - [x] **توليد فيديوهات الشخصيات** — تم (zayn.mp4, nora.mp4, omar.mp4, layla.mp4, tariq.mp4, system.mp4, celebration.mp4)
-- [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style — عنوان top-left بتدرج + توهج، كرات ضبابية عائمة، شبكة منظور 3D، جسيمات متصاعدة، أزرار دائرية بحواف زجاجية ونصوص تظهر عند التحويم
+- [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style
 - [x] **AI Assistant مدمج** — تم: Student Chat + Faculty Editor + دعم OpenAI/OpenRouter/Ollama/API مخصص + تخزين API Keys محلياً
+- [x] **نظام الجلسات** — تم: جلسات متعددة لكل وضع (طالب/هيئة تدريس) مع إنشاء/切换/إعادة تسمية/حذف
+- [x] **رفع الملفات** — تم: دعم ملفات نصية + صور + فيديو + صوت مع إرفاق متعدد
+- [x] **إصلاح أخطاء الجلسات** — تم: SessionBar يظهر دائماً + إنشاء تلقائي للجلسة + حماية الرسائل
 
 ### معلق / غير مربوط
 - [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
