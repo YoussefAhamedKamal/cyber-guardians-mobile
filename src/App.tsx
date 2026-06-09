@@ -52,7 +52,7 @@ export function App() {
       return
     }
     const vol = settings.muted || settings.bgmMuted ? 0 : settings.bgmVolume
-    const bgSrc = settings.customBgUrl || `${BASE_URL}videos/output.wav`
+    const bgSrc = settings.customBgUrl || `${BASE_URL}videos/output(new).wav`
     const stop = audio.playFileBg(bgSrc, vol)
     return () => stop()
   }, [screen, settings.bgmVolume, settings.bgmMuted, settings.muted, settings.customBgUrl])
