@@ -14,6 +14,15 @@ const DEFAULT_GAME_META: GameMeta = {
   adsEnabled: false,
   iapEnabled: false,
   platformNotes: '',
+  layoutWidth: 1200,
+  layoutHeight: 675,
+  layoutMode: 'responsive',
+  hudPosition: 'top',
+  menuStyle: 'cards',
+  animationSpeed: 'normal',
+  bgVolume: 0.7,
+  sfxVolume: 1.0,
+  voiceVolume: 1.0,
 }
 
 interface ContentStore {

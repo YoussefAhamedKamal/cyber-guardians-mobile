@@ -115,6 +115,9 @@ export interface LevelData {
   timeLimit?: number
   unlockRequirement?: number
   hints?: string[]
+  backgroundImage?: string
+  backgroundMusic?: string
+  soundEffects?: string[]
 }
 
 export type ChallengeResult = 'success' | 'fail'

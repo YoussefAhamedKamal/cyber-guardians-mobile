@@ -581,8 +581,10 @@ function FacultyDataEditor() {
   const [selectedLevel, setSelectedLevel] = useState<number>(levels[0]?.id ?? 1)
   const [editable, setEditable] = useState<LevelData>(() => structuredClone(levels[0]!))
   const [showExport, setShowExport] = useState(false)
-  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame' | 'game'>('levels')
+  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame' | 'game' | 'raw'>('levels')
   const [metaEditable, setMetaEditable] = useState<GameMeta>(() => structuredClone(gameMeta))
+  const [rawJson, setRawJson] = useState('')
+  const [rawError, setRawError] = useState('')
 
   useEffect(() => { const level = levels.find((l) => l.id === selectedLevel); if (level) setEditable(structuredClone(level)) }, [selectedLevel, contentStore.levelOverrides, contentStore.newLevels, contentStore.deletedLevels])
   useEffect(() => { setMetaEditable(structuredClone(gameMeta)) }, [contentStore.gameMeta])
@@ -591,46 +593,121 @@ function FacultyDataEditor() {
   const fullGameDataStr = () => JSON.stringify({ gameMeta, levels, characters: chars }, null, 2)
   const updateField = (path: string[], value: any) => { setEditable((prev) => { const next = structuredClone(prev); let obj: any = next; for (let i = 0; i < path.length - 1; i++) obj = obj[path[i]!]; obj[path[path.length - 1]!] = value; return next }) }
 
+  const handleRawSave = () => {
+    try {
+      const parsed = JSON.parse(rawJson)
+      if (parsed.gameMeta) contentStore.setGameMeta(parsed.gameMeta)
+      if (parsed.levels) {
+        contentStore.resetAll()
+        for (const l of parsed.levels) contentStore.addLevel(l)
+      }
+      if (parsed.characters) {
+        for (const [id, c] of Object.entries(parsed.characters)) contentStore.addCharacter(id, c as Character)
+      }
+      setRawError('')
+      alert('✅ تم حفظ البيانات بنجاح')
+    } catch (e: any) { setRawError('❌ خطأ في JSON: ' + e.message) }
+  }
+
+  const handleExport = () => {
+    const data = JSON.stringify({ gameMeta, levels, characters: chars }, null, 2)
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = `cyber-guardians-backup-${Date.now()}.json`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = () => {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]; if (!file) return
+      const text = await file.text()
+      try {
+        const parsed = JSON.parse(text)
+        if (parsed.gameMeta) contentStore.setGameMeta(parsed.gameMeta)
+        if (parsed.levels) {
+          contentStore.resetAll()
+          for (const l of parsed.levels) contentStore.addLevel(l)
+        }
+        if (parsed.characters) {
+          for (const [id, c] of Object.entries(parsed.characters)) contentStore.addCharacter(id, c as Character)
+        }
+        alert('✅ تم الاستيراد بنجاح')
+      } catch { alert('❌ ملف JSON غير صالح') }
+    }
+    input.click()
+  }
+
+  const tabs = [
+    { id: 'game', label: '🎮 اللعبة' },
+    { id: 'levels', label: 'المستويات' },
+    { id: 'characters', label: 'الشخصيات' },
+    { id: 'raw', label: '⚙ JSON' },
+    { id: 'fullgame', label: 'الكل' },
+  ] as const
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '12px' }}>
-      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        {([{ id: 'game', label: '🎮 اللعبة' }, { id: 'levels', label: 'المستويات' }, { id: 'characters', label: 'الشخصيات' }, { id: 'fullgame', label: 'الكل' }] as const).map((tab) => (
-          <button key={tab.id} onClick={() => setEditorTab(tab.id)} style={{ flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer', background: editorTab === tab.id ? 'rgba(79,195,247,0.1)' : 'transparent', color: editorTab === tab.id ? '#4FC3F7' : '#777', fontWeight: editorTab === tab.id ? 700 : 400, borderBottom: editorTab === tab.id ? '2px solid #4FC3F7' : '2px solid transparent', fontSize: '11px' }}>{tab.label}</button>
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
+        {tabs.map((tab) => (
+          <button key={tab.id} onClick={() => {
+            setEditorTab(tab.id)
+            if (tab.id === 'raw') setRawJson(JSON.stringify({ gameMeta, levels, characters: chars }, null, 2))
+          }} style={{ flex: 1, padding: '8px 4px', border: 'none', cursor: 'pointer', background: editorTab === tab.id ? 'rgba(79,195,247,0.1)' : 'transparent', color: editorTab === tab.id ? '#4FC3F7' : '#777', fontWeight: editorTab === tab.id ? 700 : 400, borderBottom: editorTab === tab.id ? '2px solid #4FC3F7' : '2px solid transparent', fontSize: '11px' }}>{tab.label}</button>
         ))}
+      </div>
+      <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+        <button onClick={handleExport} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '10px' }}>📤 تصدير JSON</button>
+        <button onClick={handleImport} style={{ ...smallBtnStyle, color: '#CE93D8', fontSize: '10px' }}>📥 استيراد JSON</button>
       </div>
       {editorTab === 'game' && (
         <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginTop: '4px' }}>عام</div>
           <label style={{ color: '#aaa' }}>عنوان اللعبة<input value={metaEditable.gameTitle} onChange={(e) => setMetaEditable({ ...metaEditable, gameTitle: e.target.value })} style={inputStyle} /></label>
           <label style={{ color: '#aaa' }}>العنوان الفرعي<input value={metaEditable.gameSubtitle} onChange={(e) => setMetaEditable({ ...metaEditable, gameSubtitle: e.target.value })} style={inputStyle} /></label>
           <label style={{ color: '#aaa' }}>الإصدار<input value={metaEditable.gameVersion} onChange={(e) => setMetaEditable({ ...metaEditable, gameVersion: e.target.value })} style={inputStyle} /></label>
           <label style={{ color: '#aaa' }}>اللغة الافتراضية
             <select value={metaEditable.defaultLanguage} onChange={(e) => setMetaEditable({ ...metaEditable, defaultLanguage: e.target.value })} style={inputStyle}>
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
+              <option value="ar">العربية</option><option value="en">English</option>
             </select>
           </label>
           <label style={{ color: '#aaa' }}>الصعوبة العامة
             <select value={metaEditable.difficulty} onChange={(e) => setMetaEditable({ ...metaEditable, difficulty: e.target.value as any })} style={inputStyle}>
-              <option value="easy">سهل</option>
-              <option value="medium">متوسط</option>
-              <option value="hard">صعب</option>
+              <option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option>
             </select>
           </label>
-          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={metaEditable.dailyRewardEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardEnabled: e.target.checked })} />
-            مكافأة يومية
+          <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginTop: '8px' }}>المكافآت والإعلانات</div>
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={metaEditable.dailyRewardEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardEnabled: e.target.checked })} /> مكافأة يومية</label>
+          {metaEditable.dailyRewardEnabled && <label style={{ color: '#aaa' }}>نقاط المكافأة<input type="number" value={metaEditable.dailyRewardPoints} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardPoints: Number(e.target.value) })} style={inputStyle} /></label>}
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={metaEditable.adsEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, adsEnabled: e.target.checked })} /> إعلانات</label>
+          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" checked={metaEditable.iapEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, iapEnabled: e.target.checked })} /> شراء داخل التطبيق</label>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginTop: '8px' }}>التخطيط والواجهة</div>
+          <label style={{ color: '#aaa' }}>عرض الشاشة<input type="number" value={metaEditable.layoutWidth} onChange={(e) => setMetaEditable({ ...metaEditable, layoutWidth: Number(e.target.value) })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>ارتفاع الشاشة<input type="number" value={metaEditable.layoutHeight} onChange={(e) => setMetaEditable({ ...metaEditable, layoutHeight: Number(e.target.value) })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>نمط التخطيط
+            <select value={metaEditable.layoutMode} onChange={(e) => setMetaEditable({ ...metaEditable, layoutMode: e.target.value as any })} style={inputStyle}>
+              <option value="fixed">ثابت</option><option value="responsive">متجاوب</option>
+            </select>
           </label>
-          {metaEditable.dailyRewardEnabled && (
-            <label style={{ color: '#aaa' }}>نقاط المكافأة اليومية<input type="number" value={metaEditable.dailyRewardPoints} onChange={(e) => setMetaEditable({ ...metaEditable, dailyRewardPoints: Number(e.target.value) })} style={inputStyle} /></label>
-          )}
-          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={metaEditable.adsEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, adsEnabled: e.target.checked })} />
-            إعلانات
+          <label style={{ color: '#aaa' }}>موضع عناصر التحكم
+            <select value={metaEditable.hudPosition} onChange={(e) => setMetaEditable({ ...metaEditable, hudPosition: e.target.value as any })} style={inputStyle}>
+              <option value="top">أعلى</option><option value="bottom">أسفل</option><option value="left">يسار</option><option value="right">يمين</option>
+            </select>
           </label>
-          <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" checked={metaEditable.iapEnabled} onChange={(e) => setMetaEditable({ ...metaEditable, iapEnabled: e.target.checked })} />
-            شراء داخل التطبيق
+          <label style={{ color: '#aaa' }}>نمط القائمة
+            <select value={metaEditable.menuStyle} onChange={(e) => setMetaEditable({ ...metaEditable, menuStyle: e.target.value as any })} style={inputStyle}>
+              <option value="grid">شبكة</option><option value="list">قائمة</option><option value="cards">بطاقات</option>
+            </select>
           </label>
+          <label style={{ color: '#aaa' }}>سرعة الرسوم المتحركة
+            <select value={metaEditable.animationSpeed} onChange={(e) => setMetaEditable({ ...metaEditable, animationSpeed: e.target.value as any })} style={inputStyle}>
+              <option value="slow">بطيء</option><option value="normal">عادي</option><option value="fast">سريع</option>
+            </select>
+          </label>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginTop: '8px' }}>الصوت</div>
+          <label style={{ color: '#aaa' }}>صوت الموسيقى<input type="range" min="0" max="1" step="0.1" value={metaEditable.bgVolume} onChange={(e) => setMetaEditable({ ...metaEditable, bgVolume: Number(e.target.value) })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>صوت المؤثرات<input type="range" min="0" max="1" step="0.1" value={metaEditable.sfxVolume} onChange={(e) => setMetaEditable({ ...metaEditable, sfxVolume: Number(e.target.value) })} style={inputStyle} /></label>
+          <label style={{ color: '#aaa' }}>صوت الأصوات<input type="range" min="0" max="1" step="0.1" value={metaEditable.voiceVolume} onChange={(e) => setMetaEditable({ ...metaEditable, voiceVolume: Number(e.target.value) })} style={inputStyle} /></label>
           <label style={{ color: '#aaa' }}>ملاحظات المنصة<textarea value={metaEditable.platformNotes} onChange={(e) => setMetaEditable({ ...metaEditable, platformNotes: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button onClick={() => contentStore.setGameMeta(metaEditable)} style={{ ...smallBtnStyle, color: '#81C784' }}>حفظ</button>
@@ -653,14 +730,27 @@ function FacultyDataEditor() {
                 <label style={{ color: '#aaa', fontSize: '11px' }}>الشخصية<textarea value={ch.personality} onChange={(e) => contentStore.setCharacterOverride(id, { personality: e.target.value })} rows={2} style={{ ...inputStyle, resize: 'vertical' }} /></label>
                 <label style={{ color: '#aaa', fontSize: '11px' }}>الجنس
                   <select value={ch.gender} onChange={(e) => contentStore.setCharacterOverride(id, { gender: e.target.value as any })} style={inputStyle}>
-                    <option value="male">ذكر</option>
-                    <option value="female">أنثى</option>
+                    <option value="male">ذكر</option><option value="female">أنثى</option>
                   </select>
                 </label>
+                <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '10px', marginTop: '6px' }}>الأصول</div>
                 <label style={{ color: '#aaa', fontSize: '11px' }}>رابط الصورة (Avatar)<input value={ch.avatarUrl || ''} onChange={(e) => contentStore.setCharacterOverride(id, e.target.value ? { avatarUrl: e.target.value } : { avatarUrl: '' } as any)} placeholder="https://..." style={inputStyle} /></label>
                 <label style={{ color: '#aaa', fontSize: '11px' }}>رابط الصوت (Voice)<input value={ch.voiceUrl || ''} onChange={(e) => contentStore.setCharacterOverride(id, e.target.value ? { voiceUrl: e.target.value } : { voiceUrl: '' } as any)} placeholder="https://..." style={inputStyle} /></label>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      {editorTab === 'raw' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '6px 8px', background: 'rgba(255,200,50,0.08)', borderBottom: '1px solid rgba(255,200,50,0.15)', fontSize: '10px', color: '#FFB74D', flexShrink: 0 }}>
+            ⚠️ تحرير JSON مباشرة — تأكد من صحة البيانات قبل الحفظ
+          </div>
+          <textarea value={rawJson} onChange={(e) => setRawJson(e.target.value)} style={{ flex: 1, padding: '8px', margin: 0, border: 'none', background: 'rgba(0,0,0,0.3)', color: '#888', fontSize: '10px', fontFamily: 'monospace', direction: 'ltr', textAlign: 'left', resize: 'none', outline: 'none' }} />
+          {rawError && <div style={{ padding: '4px 8px', color: '#E57373', fontSize: '11px', flexShrink: 0 }}>{rawError}</div>}
+          <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            <button onClick={handleRawSave} style={{ ...smallBtnStyle, color: '#81C784' }}>💾 حفظ JSON</button>
+            <button onClick={() => setRawJson(JSON.stringify({ gameMeta, levels, characters: chars }, null, 2))} style={{ ...smallBtnStyle, color: '#4FC3F7' }}>🔄 إعادة تحميل</button>
           </div>
         </div>
       )}
@@ -683,14 +773,17 @@ function FacultyDataEditor() {
             <label style={{ color: '#aaa' }}>العنوان الفرعي<input value={editable.subtitle} onChange={(e) => updateField(['subtitle'], e.target.value)} style={inputStyle} /></label>
             <label style={{ color: '#aaa' }}>الصعوبة
               <select value={editable.difficulty || 'medium'} onChange={(e) => updateField(['difficulty'], e.target.value)} style={inputStyle}>
-                <option value="easy">سهل</option>
-                <option value="medium">متوسط</option>
-                <option value="hard">صعب</option>
+                <option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option>
               </select>
             </label>
             <label style={{ color: '#aaa' }}>النقاط<input type="number" value={editable.points || 0} onChange={(e) => updateField(['points'], Number(e.target.value))} style={inputStyle} /></label>
             <label style={{ color: '#aaa' }}>حد الوقت (ثانية)<input type="number" value={editable.timeLimit || 0} onChange={(e) => updateField(['timeLimit'], Number(e.target.value))} placeholder="0 = بدون حد" style={inputStyle} /></label>
             <label style={{ color: '#aaa' }}>يتطلب إكمال المستوى<input type="number" value={editable.unlockRequirement || 0} onChange={(e) => updateField(['unlockRequirement'], Number(e.target.value))} placeholder="0 = متاح دائماً" style={inputStyle} /></label>
+            <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '10px', marginTop: '4px' }}>الأصول البصرية والصوتية</div>
+            <label style={{ color: '#aaa', fontSize: '11px' }}>خلفية المستوى (رابط صورة)<input value={editable.backgroundImage || ''} onChange={(e) => updateField(['backgroundImage'], e.target.value || undefined)} placeholder="https://..." style={inputStyle} /></label>
+            <label style={{ color: '#aaa', fontSize: '11px' }}>موسيقى الخلفية (رابط)<input value={editable.backgroundMusic || ''} onChange={(e) => updateField(['backgroundMusic'], e.target.value || undefined)} placeholder="https://..." style={inputStyle} /></label>
+            <label style={{ color: '#aaa', fontSize: '11px' }}>مؤثرات صوتية (روابط مفصولة بسطر)<textarea value={(editable.soundEffects || []).join('\n')} onChange={(e) => updateField(['soundEffects'], e.target.value.split('\n').filter(Boolean))} rows={2} style={{ ...inputStyle, resize: 'vertical' }} placeholder="https://sound1.mp3&#10;https://sound2.mp3" /></label>
+            <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '10px', marginTop: '4px' }}>الحوارات</div>
             <div style={{ color: '#aaa' }}>حوار المقدمة</div>
             {editable.intro.map((line, i) => (
               <div key={i} style={{ display: 'flex', gap: '4px' }}>

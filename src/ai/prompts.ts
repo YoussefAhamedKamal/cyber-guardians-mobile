@@ -56,28 +56,33 @@ export const FACULTY_SYSTEM_PROMPT = `أنت مساعد ذكاء اصطناعي 
 أ — تعديل إعدادات اللعبة العامة
 ══════════════════════════════════════
 <<<JSON>>>
-{"type":"gameMeta","action":"modify","data":{"gameTitle":"العنوان الجديد","gameSubtitle":"العنوان الفرعي الجديد"}}
+{"type":"gameMeta","action":"modify","data":{"gameTitle":"العنوان الجديد","layoutWidth":1280,"layoutHeight":720,"menuStyle":"grid","animationSpeed":"fast"}}
 <<<END_JSON>>>
 
-الحقول المتاحة: gameTitle, gameSubtitle, gameVersion, defaultLanguage, difficulty, dailyRewardEnabled, dailyRewardPoints, adsEnabled, iapEnabled, platformNotes
+الحقول المتاحة:
+عام: gameTitle, gameSubtitle, gameVersion, defaultLanguage, difficulty
+مكافآت: dailyRewardEnabled, dailyRewardPoints, adsEnabled, iapEnabled, platformNotes
+التخطيط: layoutWidth, layoutHeight, layoutMode (fixed/responsive), hudPosition (top/bottom/left/right), menuStyle (grid/list/cards), animationSpeed (slow/normal/fast)
+الصوت: bgVolume, sfxVolume, voiceVolume (0-1)
 
 ══════════════════════════════════════
 ب — تعديل مستوى موجود
 ══════════════════════════════════════
 <<<JSON>>>
-{"type":"level","action":"modify","id":1,"data":{"title":"العنوان الجديد"}}
+{"type":"level","action":"modify","id":1,"data":{"title":"العنوان الجديد","difficulty":"hard","points":200,"backgroundImage":"https://example.com/bg.jpg","backgroundMusic":"https://example.com/music.mp3"}}
 <<<END_JSON>>>
 
-يمكنك تعديل أي حقل: id, title, subtitle, threat, challengeType, focusCharacterId, intro, outro, challengeData, difficulty, points, timeLimit, unlockRequirement, hints
+يمكنك تعديل أي حقل: id, title, subtitle, threat, challengeType, focusCharacterId, intro, outro, challengeData, difficulty, points, timeLimit, unlockRequirement, hints, backgroundImage, backgroundMusic, soundEffects
 intro و outro هما مصفوفة: [{"speakerId":"zayn","text":"النص"}]
 difficulty: "easy" | "medium" | "hard"
 hints: ["نصيحة 1", "نصيحة 2"]
+soundEffects: ["https://sound1.mp3", "https://sound2.mp3"]
 
 ══════════════════════════════════════
 ج — إضافة مستوى جديد
 ══════════════════════════════════════
 <<<JSON>>>
-{"type":"level","action":"add","data":{"id":8,"title":"عنوان المستوى","subtitle":"الفرعي","threat":"phishing","challengeType":"cards","focusCharacterId":"zayn","difficulty":"medium","points":100,"timeLimit":0,"unlockRequirement":0,"hints":[],"intro":[{"speakerId":"zayn","text":"..."}],"outro":[{"speakerId":"zayn","text":"..."}],"challengeData":{}}}
+{"type":"level","action":"add","data":{"id":8,"title":"عنوان المستوى","subtitle":"الفرعي","threat":"phishing","challengeType":"cards","focusCharacterId":"zayn","difficulty":"medium","points":100,"timeLimit":0,"unlockRequirement":0,"hints":[],"backgroundImage":"","backgroundMusic":"","soundEffects":[],"intro":[{"speakerId":"zayn","text":"..."}],"outro":[{"speakerId":"zayn","text":"..."}],"challengeData":{}}}
 <<<END_JSON>>>
 
 ══════════════════════════════════════
@@ -91,7 +96,7 @@ hints: ["نصيحة 1", "نصيحة 2"]
 ه — تعديل شخصية
 ══════════════════════════════════════
 <<<JSON>>>
-{"type":"character","action":"modify","id":"zayn","data":{"name":"الاسم الجديد"}}
+{"type":"character","action":"modify","id":"zayn","data":{"name":"الاسم الجديد","avatarUrl":"https://example.com/avatar.png","voiceUrl":"https://example.com/voice.mp3"}}
 <<<END_JSON>>>
 
 يمكنك تعديل: name, role, color, personality, gender, avatarUrl, voiceUrl

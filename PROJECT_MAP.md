@@ -198,6 +198,15 @@ src/
 | `adsEnabled` | صحيح | false |
 | `iapEnabled` | صحيح | false |
 | `platformNotes` | نص | — |
+| `layoutWidth` | رقم | 1200 |
+| `layoutHeight` | رقم | 675 |
+| `layoutMode` | قائمة | responsive (fixed/responsive) |
+| `hudPosition` | قائمة | top (top/bottom/left/right) |
+| `menuStyle` | قائمة | cards (grid/list/cards) |
+| `animationSpeed` | قائمة | normal (slow/normal/fast) |
+| `bgVolume` | رقم | 0.7 (0-1) |
+| `sfxVolume` | رقم | 1.0 (0-1) |
+| `voiceVolume` | رقم | 1.0 (0-1) |
 
 #### حقول المستوى الإضافية
 | الحقل | النوع | الوصف |
@@ -207,12 +216,22 @@ src/
 | `timeLimit` | رقم | حد الوقت بالثانية (0 = بدون حد) |
 | `unlockRequirement` | رقم | المستوى المطلوب إكماله (0 = متاح دائماً) |
 | `hints` | مصفوفة نصوص | نصائح تظهر أثناء التحدي |
+| `backgroundImage` | رابط | صورة خلفية المستوى |
+| `backgroundMusic` | رابط | موسيقى خلفية المستوى |
+| `soundEffects` | مصفوفة روابط | مؤثرات صوتية |
 
 #### حقول الشخصية الإضافية
 | الحقل | النوع | الوصف |
 |---|---|---|
 | `avatarUrl` | رابط | صورة الشخصية |
 | `voiceUrl` | رابط | ملف صوتي للشخصية |
+
+#### أدوات إضافية في محرر البيانات
+| الأداة | الوصف |
+|---|---|
+| **📤 تصدير JSON** | تصدير جميع البيانات (gameMeta + levels + characters) كملف JSON |
+| **📥 استيراد JSON** | استيراد بيانات من ملف JSON (يحل محل جميع البيانات الحالية) |
+| **⚙ JSON خام** | تحرير جميع البيانات كـ JSON مباشرة مع التحقق من الصحة |
 
 ### إرشادات استخدام AI Assistant
 

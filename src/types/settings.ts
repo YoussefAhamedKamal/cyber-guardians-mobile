@@ -50,4 +50,13 @@ export interface GameMeta {
   adsEnabled: boolean
   iapEnabled: boolean
   platformNotes: string
+  layoutWidth: number
+  layoutHeight: number
+  layoutMode: 'fixed' | 'responsive'
+  hudPosition: 'top' | 'bottom' | 'left' | 'right'
+  menuStyle: 'grid' | 'list' | 'cards'
+  animationSpeed: 'slow' | 'normal' | 'fast'
+  bgVolume: number
+  sfxVolume: number
+  voiceVolume: number
 }
