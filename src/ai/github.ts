@@ -433,6 +433,16 @@ export async function copyEntireRepo(
           } else if (itemPath === 'src/data/gameMeta.ts') {
             finalContent = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
             finalMessage = '🎮 تحديث الإعدادات'
+          } else if (itemPath === 'vite.config.ts') {
+            const decoded = decodeURIComponent(escape(atob(content)))
+            const updated = decoded.replace(/base:\s*['"]\/[^'"]*['"]/, `base: '/${targetRepo}/'`)
+            finalContent = btoa(unescape(encodeURIComponent(updated)))
+            finalMessage = '⚙ تحديث base path في vite.config.ts'
+          } else if (itemPath === 'package.json') {
+            const decoded = decodeURIComponent(escape(atob(content)))
+            const updated = decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`)
+            finalContent = btoa(unescape(encodeURIComponent(updated)))
+            finalMessage = '📦 تحديث اسم الحزمة في package.json'
           }
 
           await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${itemPath}`, 'PUT', {
