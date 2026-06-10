@@ -1,8 +1,8 @@
 # Cyber Guardians — PROJECT MAP
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
-> الحالة: **🟢 تشغيل وإنتاج (Live on GitHub Pages)**
-> الإصدار: **1.3.0** — تم إضافة 13 تحسيناً احترافياً
+> الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
+> الإصدار: **1.4.0** — تم إضافة Cloudflare Pages + أمان متقدم
 
 ---
 
@@ -28,7 +28,8 @@
 | Cloud Save | localStorage | — | رفع/تحميل/مزامنة التقدم |
 | Auto Save | مخصص (30s interval) | — | حفظ تلقائي كل 30 ثانية |
 | Testing | Vitest | 4.1.7 | 70 اختبار ✅ |
-| Deploy | GitHub Actions → GitHub Pages | — | نشر آلي مع workflow_dispatch |
+| Deploy | **Cloudflare Pages** (auto-deploy via Git) | — | نشر آلي مع كل push على `main` |
+| Old Deploy | GitHub Actions → GitHub Pages (معطل) | — | كان يستخدم workflow_dispatch |
 | AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
 
 ### قيود تقنية
@@ -37,7 +38,8 @@
 - Path aliases: `@/` → `src/`
 - Resolution: responsive 16:9 (base 1200×675)
 - Chunk size: ~548KB (بعد إضافة code splitting)
-- Deployment base: `/cyber-guardians/`
+- **Deployment base:** `'/'` لـ Cloudflare Pages ← `'/'` (جذر) / GitHub Pages ← `'/repo-name/'`
+- **SPA fallback:** `public/_redirects` (`/* /index.html 200`) لـ Cloudflare
 - Screen transitions: CSS animations (cg-fade-in, cg-fade-out)
 - all screens wrapped in ErrorBoundary + Suspense
 
@@ -197,6 +199,7 @@ src/
 public/
 ├── manifest.json                    # ★ جديد — PWA manifest
 ├── sw.js                            # ★ جديد — Service Worker (cache-first)
+├── _redirects                       # ★ جديد — SPA fallback لـ Cloudflare Pages
 ├── assets/
 ├── ryzes-font/
 ├── videos/
@@ -506,6 +509,11 @@ App.tsx
 
 ## [ORPHANS & PENDING]
 
+### مكتمل — الإضافات الجديدة (v1.4.0)
+- [x] **Cloudflare Pages** — نشر آلي مع كل push على `main`، bandwith غير محدود، HTTPS مجاني
+- [x] **SPA fallback** — `public/_redirects` (`/* /index.html 200`) لتوجيه جميع المسارات
+- [x] **تغيير base path** — `'/'` لـ Cloudflare (مع ملاحظة: GitHub Pages يحتاج `'/repo-name/'`)
+
 ### مكتمل — الإضافات الجديدة (v1.3.0)
 - [x] **Code Splitting** — 7 صفحات lazy-loaded + ChallengeRenderer + AIPanel، حجم الـ chunk: 548KB
 - [x] **PWA** — manifest.json + Service Worker + تسجيل في main.tsx
@@ -560,6 +568,42 @@ App.tsx
 ### المستودع الرئيسي
 - **Owner**: `YoussefAhamedKamal`
 - **Repo**: `cyber-guardians-mobile`
+
+---
+
+## [HOSTING] — ★ جديد (الإصدار 1.4.0)
+
+### المنصة الحالية: Cloudflare Pages
+| الخاصية | الوصف |
+|---------|-------|
+| **الرابط** | `https://cyber-guardians-mobile.pages.dev` |
+| **طريقة النشر** | Auto-deploy via Git (كل push على `main`) |
+| **Bandwidth** | غير محدود |
+| **HTTPS** | مجاني وتلقائي |
+| **Build** | `npm run build` ← مجلد `dist` |
+| **SPA support** | `public/_redirects` (`/* /index.html 200`) |
+
+### ملاحظة مهمة: base path
+```
+Cloudflare Pages: vite.config.ts → base: '/'          (الموقع في الجذر)
+GitHub Pages:     vite.config.ts → base: '/repo-name/' (الموقع تحت مسار المستودع)
+```
+إذا رجعت لـ GitHub Pages، عدّل `base` في `vite.config.ts` إلى `'/cyber-guardians-mobile/'`.
+
+### المقارنة (لمن أراد التغيير مستقبلاً)
+| المنصة | bandwidth | Builds/شهر | ربط مستودع خاص | SPA fallback |
+|--------|:---------:|:-----------:|:--------------:|:------------:|
+| **Cloudflare Pages** | غير محدود | 500 | ✅ | `_redirects` |
+| Netlify | 100GB | 300 | ✅ | `_redirects` |
+| Vercel | 100GB | 6000 | ✅ | `vercel.json` |
+| GitHub Pages | 100GB | 2000 | ❌ (يحتاج Pro) | 404.html |
+
+### GitHub Pages deploy.yml (معطل حالياً)
+```
+.github/workflows/deploy.yml
+  └── push على main → build + publish to Pages
+```
+معطل لأن المستودع خاص و GitHub Pages لا يدعم الخاص في الحساب المجاني.
 
 ---
 
