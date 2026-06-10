@@ -11,6 +11,7 @@ interface SettingsStore extends GameSettings {
   toggleBgmMute: () => void
   setBgmMuted: (v: boolean) => void
   setQuality: (q: GameSettings['qualityPreset']) => void
+  toggleDarkMode: () => void
   setFontSize: (s: number) => void
   setFontFamily: (f: string) => void
   setFontColor: (c: string) => void
@@ -58,6 +59,7 @@ export const useSettingsStore = create<SettingsStore>()(
       toggleBgmMute: () => set((s) => ({ bgmMuted: !s.bgmMuted })),
       setBgmMuted: (v) => set({ bgmMuted: v }),
       setQuality: (q) => set({ qualityPreset: q }),
+      toggleDarkMode: () => set((s) => ({ darkMode: !s.darkMode })),
       setFontSize: (s) => set({ fontSize: s }),
       setFontFamily: (f) => set({ fontFamily: f }),
       setFontColor: (c) => set({ fontColor: c }),

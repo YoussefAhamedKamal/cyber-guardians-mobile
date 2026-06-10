@@ -23,6 +23,7 @@ export interface GameSettings {
   bgAnimationUrl: string
   bgAnimationBrightness: number
   accessibilityMode: boolean
+  darkMode: boolean
   customBgUrl: string
   customBoyVideoUrl: string
   customGirlVideoUrl: string

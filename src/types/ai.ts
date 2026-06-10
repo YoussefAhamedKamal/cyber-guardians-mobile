@@ -101,6 +101,7 @@ export interface AIState {
   facultySessions: ChatSession[]
   activeFacultySessionId: string
   panelOpen: boolean
+  panelMaximized: boolean
   activeTab: 'student' | 'faculty' | 'settings'
   loading: boolean
 }
@@ -116,6 +117,7 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   facultySessions: [],
   activeFacultySessionId: '',
   panelOpen: false,
+  panelMaximized: false,
   activeTab: 'student',
   loading: false,
 }

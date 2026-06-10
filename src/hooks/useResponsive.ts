@@ -6,6 +6,8 @@ interface ResponsiveInfo {
   height: number
   scale: number
   isLandscape: boolean
+  isTablet: boolean
+  isMobile: boolean
 }
 
 export function useResponsive(): ResponsiveInfo {
@@ -23,11 +25,16 @@ export function useResponsive(): ResponsiveInfo {
       h = w / aspect
     }
 
+    const isTablet = sw >= 768 && sw < 1024
+    const isMobile = sw < 768
+
     return {
       width: Math.floor(w),
       height: Math.floor(h),
       scale: w / DESIGN_WIDTH,
       isLandscape: sw >= sh,
+      isTablet,
+      isMobile,
     }
   }, [])
 

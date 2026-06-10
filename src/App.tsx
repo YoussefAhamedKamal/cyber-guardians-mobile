@@ -1,13 +1,25 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense, startTransition } from 'react'
 import { useResponsive } from '@/hooks'
-import { Button, ProgressBar, DialogueBox, BackgroundVideo, SettingsPanel, CelebrationVideo, MenuScreen } from '@/components/ui'
-import { useGameStore, useSettingsStore } from '@/store'
-import { AIPanel } from '@/ai/AIPanel'
+import { BackgroundVideo } from '@/components/ui'
+import { useGameStore, useSettingsStore, useAIStore } from '@/store'
+import { ScreenTransition } from '@/components/ScreenTransition'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ScreenSkeleton } from '@/components/LoadingSkeleton'
 import { getLevels } from '@/data/gameData'
-import { ChallengeRenderer } from '@/challenges'
 import { audio } from '@/systems/ProceduralAudio'
+import { analytics } from '@/systems/AnalyticsSystem'
+import { autoSave } from '@/systems/AutoSaveSystem'
 import { BASE_URL } from '@/utils/constants'
 import type { LevelId } from '@/types'
+
+const MenuPage = lazy(() => import('@/pages/MenuPage'))
+const LevelSelectPage = lazy(() => import('@/pages/LevelSelectPage'))
+const DialoguePage = lazy(() => import('@/pages/DialoguePage'))
+const GameplayPage = lazy(() => import('@/pages/GameplayPage'))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const CelebrationPage = lazy(() => import('@/pages/CelebrationPage'))
+const VictoryPage = lazy(() => import('@/pages/VictoryPage'))
+const AIPanel = lazy(() => import('@/ai/AIPanel').then((m) => ({ default: m.AIPanel })))
 
 const FONT_STYLE_ID = 'cg-custom-fonts'
 
@@ -26,8 +38,17 @@ function isValidLevel(id: number): id is LevelId {
   return id >= 1 && id <= 7
 }
 
+function SuspenseFallback() {
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      <ScreenSkeleton />
+    </div>
+  )
+}
+
 export function App() {
   const [screen, setScreen] = useState<Screen>('menu')
+  const panelMaximized = useAIStore((s) => s.panelMaximized)
   const [dialogueIndex, setDialogueIndex] = useState(0)
   const responsive = useResponsive()
   const game = useGameStore()
@@ -40,6 +61,11 @@ export function App() {
   useEffect(() => {
     audio.setSfxVolume(settings.sfxVolume)
   }, [settings.sfxVolume])
+
+  useEffect(() => {
+    autoSave.start()
+    return () => autoSave.stop()
+  }, [])
 
   useEffect(() => {
     if (settings.customFontUrl) injectFont(settings.customFontName || 'CustomFont', settings.customFontUrl)
@@ -80,47 +106,59 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [settings, screen])
 
+  const navigate = useCallback((next: Screen) => {
+    startTransition(() => setScreen(next))
+  }, [])
+
   const handleStart = useCallback(() => {
     audio.playClick()
     game.startGame()
-    setScreen('levelSelect')
-  }, [game])
+    analytics.track('game_start')
+    navigate('levelSelect')
+  }, [game, navigate])
 
   const handleLevelSelect = useCallback((id: number) => {
     audio.playClick()
     game.setLevel(isValidLevel(id) ? id : 1)
     setDialogueIndex(0)
-    setScreen('dialogue')
-  }, [game])
+    navigate('dialogue')
+  }, [game, navigate])
 
   const handleDialogueComplete = useCallback(() => {
     if (dialogueIndex === 0) {
       setDialogueIndex(1)
-      setScreen('gameplay')
+      navigate('gameplay')
     } else {
       if (game.currentLevel === 7 && game.completedLevels.has(7)) {
-        setScreen('celebration')
+        navigate('celebration')
       } else {
-        setScreen('levelSelect')
+        navigate('levelSelect')
       }
       setDialogueIndex(0)
     }
-  }, [dialogueIndex, game])
+  }, [dialogueIndex, game, navigate])
 
   const handleChallengeComplete = useCallback((score: number) => {
     audio.playLevelUp()
     game.completeLevel(game.currentLevel, score)
+    analytics.track('level_complete', { level: game.currentLevel, score })
+    autoSave.saveNow()
     setDialogueIndex(1)
-    setScreen('dialogue')
-  }, [game])
+    navigate('dialogue')
+  }, [game, navigate])
+
+  const isDark = settings.darkMode
+  const themeBorder = isDark
+    ? { subtle: 'rgba(255,255,255,0.2)', muted: 'rgba(255,255,255,0.1)', faint: 'rgba(255,255,255,0.06)' }
+    : { subtle: 'rgba(0,0,0,0.15)', muted: 'rgba(0,0,0,0.08)', faint: 'rgba(0,0,0,0.04)' }
 
   const containerStyle: React.CSSProperties = {
     width: responsive.width,
     height: responsive.height,
     position: 'relative',
     overflow: 'hidden',
-    background: settings.bgColor,
-    color: settings.fontColor,
+    background: isDark ? settings.bgColor : '#f0f0f5',
+    color: isDark ? settings.fontColor : '#1a1a2e',
     fontFamily: `'${settings.fontFamily}', 'Segoe UI', sans-serif`,
     fontSize: `${settings.fontSize}px`,
     direction: 'rtl',
@@ -130,24 +168,18 @@ export function App() {
     '--custom-border-width': `${settings.borderWidth}px`,
     '--heading-font': `'${settings.headingFont}', sans-serif`,
     '--heading-font-size': `${settings.headingFontSize}px`,
-    '--heading-color': settings.headingColor,
-    '--accent-color': settings.accentColor,
-    '--muted-color': settings.mutedColor,
+    '--heading-color': isDark ? settings.headingColor : '#1565C0',
+    '--accent-color': isDark ? settings.accentColor : '#1976D2',
+    '--muted-color': isDark ? settings.mutedColor : '#666666',
     '--mono-font': `'${settings.monoFont}', monospace`,
     '--mono-font-size': `${settings.monoFontSize}px`,
-    '--border-color-subtle': 'rgba(255,255,255,0.2)',
-    '--border-color-muted': 'rgba(255,255,255,0.1)',
-    '--border-color-faint': 'rgba(255,255,255,0.06)',
+    '--border-color-subtle': themeBorder.subtle,
+    '--border-color-muted': themeBorder.muted,
+    '--border-color-faint': themeBorder.faint,
     '--border-color-success': '#81C784',
     '--border-color-error': '#E57373',
     '--border-color-warning': '#FFB74D',
   } as React.CSSProperties & Record<string, string | number>
-
-  const titleGradient: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #4FC3F7, #CE93D8)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  }
 
   return (
     <div style={containerStyle}>
@@ -156,126 +188,31 @@ export function App() {
         overlayOpacity={screen === 'menu' ? 0 : 0.7}
         muted={screen !== 'menu'}
       />
-      {screen === 'menu' && (
-        <MenuScreen
-          onStart={handleStart}
-          onSettings={() => setScreen('settings')}
-        />
-      )}
+      <Suspense fallback={<SuspenseFallback />}>
+        <ScreenTransition screenKey={screen}>
+          <ErrorBoundary>
+            {screen === 'menu' && <MenuPage onStart={handleStart} onSettings={() => navigate('settings')} />}
+            {screen === 'levelSelect' && <LevelSelectPage onSelectLevel={handleLevelSelect} onBack={() => navigate('menu')} />}
+            {screen === 'dialogue' && <DialoguePage level={level} dialogueIndex={dialogueIndex} onComplete={handleDialogueComplete} />}
+            {screen === 'gameplay' && <GameplayPage level={level} onComplete={handleChallengeComplete} />}
+            {screen === 'settings' && <SettingsPage onBack={() => navigate('menu')} />}
+            {screen === 'celebration' && <CelebrationPage onEnd={() => navigate('victory')} />}
+            {screen === 'victory' && <VictoryPage onRestart={() => navigate('menu')} />}
+          </ErrorBoundary>
+        </ScreenTransition>
+      </Suspense>
 
-      {screen === 'levelSelect' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', height: '100%', gap: '20px', padding: '32px',
-          position: 'relative', zIndex: 1,
-        }}>
-          <h2 style={{ fontSize: 'var(--heading-font-size)', margin: 0, fontFamily: 'var(--heading-font)', color: 'var(--heading-color)' }}>اختر المستوى</h2>
-          <div style={{ width: '100%', maxWidth: '600px' }}>
-            <ProgressBar value={game.getProgress()} label="التقدم العام" />
-          </div>
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px',
-            width: '100%', maxWidth: '600px',
-          }}>
-            {levels.map((l) => {
-              const unlocked = l.id === 1 || game.completedLevels.has((l.id - 1) as 1 | 2 | 3 | 4 | 5 | 6)
-              const done = game.completedLevels.has(l.id)
-              const canPlay = unlocked || done
-              return (
-                <button
-                  key={l.id}
-                  disabled={!canPlay}
-                  onClick={() => canPlay && handleLevelSelect(l.id)}
-                  style={{
-                    padding: '20px', borderRadius: 'var(--custom-border-radius)', border: 'var(--custom-border-width) solid',
-                    borderColor: done ? 'var(--accent-color)' : unlocked ? 'var(--border-color-subtle)' : 'var(--border-color-faint)',
-                    background: done ? 'rgba(79,195,247,0.1)' : unlocked ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)',
-                    color: canPlay ? '#fff' : '#444',
-                    cursor: canPlay ? 'pointer' : 'not-allowed',
-                    fontSize: '14px', textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontSize: '24px', marginBottom: '4px' }}>{done ? <span style={{color:'#81C784'}}>&#x2713;</span> : unlocked ? `0${l.id}` : <span style={{color:'#666'}}>&#x1F512;</span>}</div>
-                  <div style={{ fontWeight: 700 }}>{l.title}</div>
-                  <div style={{ fontSize: '11px', color: '#888' }}>{l.subtitle}</div>
-                  {done && <div style={{ fontSize: '10px', color: '#4FC3F7', marginTop: '4px' }}>اضغط لإعادة</div>}
-                </button>
-              )
-            })}
-          </div>
-          <Button variant="ghost" onClick={() => setScreen('menu')}>الرجوع</Button>
-        </div>
-      )}
-
-      {screen === 'dialogue' && (
-        <div style={{
-          height: '100%', position: 'relative', overflow: 'hidden',
-          background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0a0a1a 100%)',
-        }}>
-          <div style={{
-            position: 'absolute', inset: 0, opacity: 0.1,
-            background: 'radial-gradient(ellipse at 20% 50%, #4FC3F7 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, #CE93D8 0%, transparent 60%)',
-          }} />
-          <DialogueBox
-            lines={dialogueIndex === 0 ? level.intro : level.outro}
-            onComplete={handleDialogueComplete}
-          />
-        </div>
-      )}
-
-      {screen === 'gameplay' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto',
-          position: 'relative', zIndex: 1,
-        }}>
-          <div style={{
-            textAlign: 'center', padding: '12px',
-            background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)',
-          }}>
-            <h2 style={{ fontSize: 'var(--heading-font-size)', margin: 0, ...titleGradient, fontFamily: 'var(--heading-font)' }}>{level.title}</h2>
-            <div style={{ color: '#888', fontSize: '13px' }}>{level.subtitle}</div>
-          </div>
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            <ChallengeRenderer level={level} onComplete={handleChallengeComplete} />
-          </div>
-        </div>
-      )}
-
-      {screen === 'settings' && (
-        <SettingsPanel onBack={() => setScreen('menu')} />
-      )}
-
-      {screen === 'celebration' && (
-        <CelebrationVideo onEnd={() => setScreen('victory')} />
-      )}
-
-      {screen === 'victory' && (
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', height: '100%', gap: '24px',
-          position: 'relative', zIndex: 1,
-        }}>
-          <div style={{ fontSize: '64px' }}>🏆</div>
-          <h1 style={{ fontSize: 'var(--heading-font-size)', margin: 0, fontFamily: 'var(--heading-font)', color: 'var(--heading-color)' }}>تهانينا!</h1>
-          <p style={{ color: '#aaa', fontSize: '18px', maxWidth: '400px', textAlign: 'center' }}>
-            لقد أتممت جميع المستويات. أنت الآن حارس أمن سيبراني حقيقي!
-          </p>
-          <p style={{ fontSize: '24px', color: '#4FC3F7' }}>النقاط: {game.totalScore}</p>
-          <Button onClick={() => { game.resetProgress(); setScreen('menu') }}>
-            لعب مرة أخرى
-          </Button>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <AIPanel />
+      </Suspense>
 
       {/* Version */}
       <div style={{
         position: 'fixed', bottom: '16px', left: '16px', zIndex: 9999,
         color: 'rgba(255,255,255,0.15)', fontSize: '11px', fontFamily: 'monospace', direction: 'ltr',
       }}>
-        v1.1.0
+        v1.3.0
       </div>
-
-      <AIPanel />
 
       {/* BGM toggle button */}
       <button
@@ -283,10 +220,11 @@ export function App() {
         title={settings.bgmMuted || settings.muted ? 'تشغيل الموسيقى الخلفية' : 'كتم الموسيقى الخلفية'}
         style={{
           position: 'fixed', top: '72px', right: '16px', zIndex: 9999,
+          display: panelMaximized ? 'none' : 'inline-flex',
           width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)',
           background: (settings.bgmMuted || settings.muted) ? 'rgba(255,82,82,0.2)' : 'rgba(79,195,247,0.2)',
           color: '#fff', fontSize: '20px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(6px)',
         }}
       >

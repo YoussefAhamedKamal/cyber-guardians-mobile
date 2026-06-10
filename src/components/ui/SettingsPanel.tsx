@@ -1,8 +1,12 @@
-import { useState, useRef } from 'react'
-import { useSettingsStore } from '@/store'
+import { useState, useRef, lazy, Suspense } from 'react'
+import { useSettingsStore, useGameStore } from '@/store'
 import { Button } from './Button'
 import { KeyboardShortcuts } from './KeyboardShortcuts'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ScreenSkeleton } from '@/components/LoadingSkeleton'
 import { FONT_OPTIONS, HEADING_FONT_OPTIONS, MONO_FONT_OPTIONS, MAX_VIDEO_SIZE, MAX_ANIMATION_SIZE } from '@/utils/constants'
+
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })))
 
 interface Props {
   onBack: () => void
@@ -15,7 +19,8 @@ function injectFontStyle(name: string, url: string) {
   if (existing) existing.remove()
   const style = document.createElement('style')
   style.id = FONT_STYLE_ID
-  style.textContent = `@font-face{font-family:'${name}';src:url('${url}') format('truetype');font-weight:normal;font-style:normal;font-display:swap}`
+  const safeName = name.replace(/[';{}]/g, ''); const safeUrl = url.replace(/[';{}]/g, '')
+  style.textContent = `@font-face{font-family:'${safeName}';src:url('${safeUrl}') format('truetype');font-weight:normal;font-style:normal;font-display:swap}`
   document.head.appendChild(style)
 }
 
@@ -124,6 +129,7 @@ export function SettingsPanel({ onBack }: Props) {
   const s = useSettingsStore()
   const [tab, setTab] = useState<Tab>('الصوت')
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
 
   const tabBar = (
     <div style={{
@@ -510,8 +516,20 @@ export function SettingsPanel({ onBack }: Props) {
               </label>
             </div>
             <div style={rowStyle}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', cursor: 'pointer' }}>
+                <input type="checkbox" checked={s.darkMode}
+                  onChange={() => s.toggleDarkMode()} />
+                الوضع الليلي
+              </label>
+            </div>
+            <div style={rowStyle}>
               <Button onClick={() => setShowShortcuts(true)} style={{ width: '100%', textAlign: 'center' }}>
                 اختصارات لوحة المفاتيح
+              </Button>
+            </div>
+            <div style={rowStyle}>
+              <Button variant="secondary" onClick={() => setShowAdmin(true)} style={{ width: '100%', textAlign: 'center' }}>
+                لوحة التحكم 🛠️
               </Button>
             </div>
             <div style={rowStyle}>
@@ -539,6 +557,26 @@ export function SettingsPanel({ onBack }: Props) {
         <Button variant="ghost" onClick={onBack}>الرجوع</Button>
       </div>
       {showShortcuts && <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />}
+      {showAdmin && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowAdmin(false)}>
+          <div style={{
+            width: '90%', maxWidth: '700px', height: '80%',
+            background: '#0a0a1a', borderRadius: 'var(--custom-border-radius)',
+            border: 'var(--custom-border-width) solid var(--custom-border-color)',
+            overflow: 'hidden',
+          }} onClick={(e) => e.stopPropagation()}>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenSkeleton />}>
+                <AdminDashboard onBack={() => setShowAdmin(false)} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

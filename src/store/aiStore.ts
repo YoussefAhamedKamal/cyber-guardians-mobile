@@ -23,6 +23,7 @@ interface AIStore extends AIState {
   lockFaculty: () => void
   togglePanel: () => void
   setPanelOpen: (v: boolean) => void
+  setPanelMaximized: (v: boolean) => void
   setActiveTab: (tab: 'student' | 'faculty' | 'settings') => void
   setLoading: (v: boolean) => void
   resetAll: () => void
@@ -67,8 +68,9 @@ export const useAIStore = create<AIStore>()(
       setFacultyPin: (pin) => set({ facultyPin: pin }),
       unlockFaculty: (pin) => { if (pin === get().facultyPin) { set({ facultyUnlocked: true }); return true }; return false },
       lockFaculty: () => set({ facultyUnlocked: false }),
-      togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen })),
-      setPanelOpen: (v) => set({ panelOpen: v }),
+      togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, panelMaximized: false })),
+      setPanelOpen: (v) => set({ panelOpen: v, panelMaximized: false }),
+      setPanelMaximized: (v) => set({ panelMaximized: v }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setLoading: (v) => set({ loading: v }),
 

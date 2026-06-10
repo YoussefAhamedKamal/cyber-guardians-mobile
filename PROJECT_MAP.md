@@ -2,6 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on GitHub Pages)**
+> الإصدار: **1.3.0** — تم إضافة 13 تحسيناً احترافياً
 
 ---
 
@@ -20,6 +21,12 @@
 | Audio | Web Audio API (Procedural) | — | BGM (procedural/file) + SFX (7 أنواع) |
 | 3D Characters | useGLTF (RobotExpressive) + Float + useAnimations | — | نماذج محملة من الإنترنت مع حركات |
 | 3D Environment | Stars + Particles + Grid | — | خلفية نجمية مع جزيئات عائمة |
+| Code Splitting | React.lazy + Suspense | — | 7 صفحات lazy-loaded + ChallengeRenderer |
+| PWA | manifest.json + Service Worker | — | تثبيت التطبيق (standalone) |
+| i18n | Context API (مخصص) | — | ترجمة عربي/إنجليزي |
+| Analytics | مخصص (localStorage) | — | تتبع الأحداث + إحصائيات المستويات |
+| Cloud Save | localStorage | — | رفع/تحميل/مزامنة التقدم |
+| Auto Save | مخصص (30s interval) | — | حفظ تلقائي كل 30 ثانية |
 | Testing | Vitest | 4.1.7 | 70 اختبار ✅ |
 | Deploy | GitHub Actions → GitHub Pages | — | نشر آلي مع workflow_dispatch |
 | AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
@@ -29,8 +36,10 @@
 - ES2022 target
 - Path aliases: `@/` → `src/`
 - Resolution: responsive 16:9 (base 1200×675)
-- Chunk size: ~1.2MB (Three.js)
+- Chunk size: ~548KB (بعد إضافة code splitting)
 - Deployment base: `/cyber-guardians/`
+- Screen transitions: CSS animations (cg-fade-in, cg-fade-out)
+- all screens wrapped in ErrorBoundary + Suspense
 
 ---
 
@@ -39,35 +48,39 @@
 ```
 [Boot]
   │
-  ├─→ Main Menu (video with sound, no BGM) ←─┐
-  │     ├─→ Start Game → Level Select         │
-  │     └─→ Settings                          │
+  ├─→ Main Menu (video with sound, no BGM) ←──────┐
+  │     ├─→ Start Game → Level Select              │
+  │     └─→ Settings (6 tabs)                      │
   │                                    │
-  ├─→ Level Select (BGM starts) ←─────┐  │
-  │     ├─→ Level[N] (جديد/مكرر)      │  │
-  │     │     ├─→ Story Dialogue (3D) │  │
-  │     │     ├─→ Challenge (mini-game)│  │
-  │     │     │     ├─→ إعادة تعيين   │  │
-  │     │     │     └─→ Result Screen │  │
-  │     │     │           ├─→ متابعة  │  │
-  │     │     │           └─→ إعادة   │  │
-  │     │     ├─→ Outro Dialogue      │  │
-  │     │     └─→ Back to Level Select┘  │
-  │     └─→ جميع المستويات قابلة لإعادة ┘
+  ├─→ Level Select (BGM starts) ←─────────┐  │
+  │     ├─→ Level[N] (جديد/مكرر)           │  │
+  │     │     ├─→ Story Dialogue (3D)     │  │         ← lazy
+  │     │     ├─→ Challenge (mini-game)   │  │         ← lazy (ChallengeRenderer)
+  │     │     │     ├─→ إعادة تعيين       │  │
+  │     │     │     └─→ Result Screen     │  │
+  │     │     │           ├─→ متابعة      │  │
+  │     │     │           └─→ إعادة       │  │
+  │     │     ├─→ Outro Dialogue           │  │
+  │     │     └─→ Back to Level Select     ┘  │
+  │     └─→ جميع المستويات قابلة لإعادة     ┘
   │
-  ├─→ Settings (5 tabs: الصوت, العرض, الخطوط, الفيديو, عام)
+  ├─→ Settings (6 tabs: الصوت, العرض, الخطوط, الفيديو, عام + لوحة تحكم)
   │
-  ├─→ Celebration Video (BGM stops, فيديو بصوت, المستوى 7 فقط)
+  ├─→ Celebration Video (BGM stops, فيديو بصوت, المستوى 7 فقط) ← lazy
   │
-  └─→ Victory (إعادة تعيين → Main Menu)
+  └─→ Victory (إعادة تعيين → Main Menu) ← lazy
 
 Keyboard Shortcuts: M (mute), B (BGM mute), Esc (back)
 
 UI Layout (top-right corner):
-- 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى)
+- 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى) ← lazy
 - 🔊 BGM toggle button: y = 72px (أسفل زر AI)
-- AI Panel: centered on screen when opened
+- AI Panel: centered on screen when opened ← lazy
 - Panel closes: زر ✕ / النافذة المعتمة / زر AI (toggle)
+
+Auto-save: كل 30 ثانية (localStorage)
+Cloud save: رفع/تحميل/مزامنة يدوية عبر لوحة التحكم
+Analytics: تتبع level_start, level_complete, challenge_retry, error
 ```
 
 ---
@@ -90,269 +103,109 @@ UI Layout (top-right corner):
 
 ```
 src/
-├── App.tsx                          # 8 شاشات + AIPanel — MenuScreen + AI Assistant مدمج
-├── main.tsx                         # Entry point
+├── App.tsx                          # 7 شاشات lazy-loaded — React.lazy + Suspense + ErrorBoundary + ScreenTransition
+├── main.tsx                         # Entry point + I18nProvider + Service Worker registration
 │
 ├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel: SessionBar + StudentChat + FacultyAIChat + FacultyDataEditor + AISettings + GitHub Sync
-│   ├── api.ts                       # OpenAI-compatible API (stream + non-stream) + OpenRouter/Ollama + unlimited max_tokens
-│   ├── github.ts                    # GitHub API: push files/changes, list files, create/update files, test connection + Git Data API
-│   ├── googleDrive.ts               # Google Drive API: OAuth 2.0 + رفع محتوى + رفع مشروع كامل
-│   └── prompts.ts                   # System prompts: طالب + هيئة تدريس (مع تعليمات JSON لأضافة/تعديل/حذف gameMeta + levels + characters)
+│   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded)
+│   ├── api.ts                       # OpenAI-compatible API
+│   ├── github.ts                    # GitHub API
+│   ├── googleDrive.ts               # Google Drive API
+│   └── prompts.ts                   # System prompts
+│
+├── pages/                           # ★ جديد — صفحات lazy-loaded
+│   ├── MenuPage.tsx                 # شاشة البداية (lazy)
+│   ├── LevelSelectPage.tsx          # اختيار المستوى (lazy)
+│   ├── DialoguePage.tsx             # الحوارات (lazy)
+│   ├── GameplayPage.tsx             # التحديات (lazy — يحمل ChallengeRenderer متأخراً)
+│   ├── SettingsPage.tsx             # الإعدادات (lazy)
+│   ├── CelebrationPage.tsx          # فيديو احتفال (lazy)
+│   ├── VictoryPage.tsx              # شاشة النصر (lazy)
+│   ├── AdminDashboard.tsx           # ★ جديد — لوحة تحكم (إحصائيات + سحابي + تصحيح)
+│   └── shared.ts                    # أنماط مشتركة
 │
 ├── challenges/                      # 7 mini-games كاملة + shuffle
-│   ├── ChallengeRenderer.tsx        # Router حسب type
-│   ├── CardChallenge.tsx            # Level 1 — shuffle emails
-│   ├── BuildChallenge.tsx           # Level 2
-│   ├── MazeChallenge.tsx            # Level 3 — Sokoban 7×7, 4 malware, reset/retry
-│   ├── DragDropChallenge.tsx        # Level 4
-│   ├── DecryptChallenge.tsx         # Level 5 — shuffle options via monoFont
-│   ├── CodeFixChallenge.tsx         # Level 6 — shuffle codes + options
-│   └── ResponseChallenge.tsx        # Level 7 — shuffle steps + options
+│   ├── ChallengeRenderer.tsx        # Router حسب type (lazy-loaded عبر GameplayPage)
+│   ├── CardChallenge.tsx
+│   ├── BuildChallenge.tsx
+│   ├── MazeChallenge.tsx
+│   ├── DragDropChallenge.tsx
+│   ├── DecryptChallenge.tsx
+│   ├── CodeFixChallenge.tsx
+│   └── ResponseChallenge.tsx
 │
 ├── components/
+│   ├── ErrorBoundary.tsx            # ★ جديد — التقاط أخطاء React + زر إعادة محاولة
+│   ├── LoadingSkeleton.tsx          # ★ جديد — ScreenSkeleton + ChallengeSkeleton (shimmer animation)
+│   ├── ScreenTransition.tsx         # ★ جديد — CSS fade-in/fade-out بين الشاشات
 │   ├── ui/
-│   │   ├── Button.tsx               # 3 variants — CSS variables for borders/colors
-│   │   ├── Modal.tsx                # CSS variable borderRadius
-│   │   ├── ProgressBar.tsx          # CSS variable borderRadius + accent-color
-│   │   ├── DialogueBox.tsx          # فيديو مستقل لكل شخصية (zayn.mp4, nora.mp4, etc.)
-│   │   ├── BackgroundVideo.tsx      # فيديو/صورة/GIF مخصص + سطوع
-│   │   ├── CelebrationVideo.tsx     # فيديو احتفال نهاية اللعبة + skip button
-│   │   ├── SettingsPanel.tsx        # 5 tabs + رفع ملفات لكل شخصية + معاينة خطوط
-│   │   ├── KeyboardShortcuts.tsx    # اختصارات لوحة المفاتيح — CSS variables
-│   │   └── MenuScreen.tsx           # شاشة البداية (Fortnite/Free Fire style) — title top-left, orbs, grid, particles, circular buttons
+│   │   ├── Button.tsx
+│   │   ├── Modal.tsx
+│   │   ├── ProgressBar.tsx
+│   │   ├── DialogueBox.tsx
+│   │   ├── BackgroundVideo.tsx
+│   │   ├── CelebrationVideo.tsx
+│   │   ├── SettingsPanel.tsx        # ★ محدث — dark mode toggle + زر لوحة التحكم
+│   │   ├── KeyboardShortcuts.tsx
+│   │   └── MenuScreen.tsx
 │   └── three/
 │       ├── GameCanvas.tsx
-│       ├── CharacterModel.tsx       # GLTF + Animations (غير مستخدم حالياً)
-│       └── Environment.tsx          # Stars + Particles + Grid
+│       ├── CharacterModel.tsx
+│       └── Environment.tsx
 │
 ├── store/
-│   ├── gameStore.ts                 # Zustand + persist (IndexedDB) — Set serialization fix
-│   ├── settingsStore.ts            # 28 حقل إعدادات (18 قديم + 10 جديد)
-│   ├── contentStore.ts             # محتوى مخصص (gameMeta + level overrides + new levels + deleted levels + character overrides)
-│   └── aiStore.ts                  # AI state: provider, model, API keys, faculty PIN, sessions (student + faculty) + CRUD
+│   ├── gameStore.ts                 # Zustand + persist (IndexedDB)
+│   ├── settingsStore.ts            # ★ محدث — 29 حقل (جديد: darkMode)
+│   ├── contentStore.ts
+│   └── aiStore.ts
+│
+├── i18n/                            # ★ جديد — نظام الترجمة
+│   ├── context.tsx                  # I18nProvider + useI18n hook
+│   ├── ar.ts                        # ترجمة عربية (كاملة)
+│   └── en.ts                        # ترجمة إنجليزية (كاملة)
 │
 ├── systems/
-│   ├── ProceduralAudio.ts           # BGM (procedural/file) + SFX (7 أنواع) — autoplay fix
+│   ├── ProceduralAudio.ts
+│   ├── AnalyticsSystem.ts           # ★ جديد — Analytics: Event tracking + Level stats
+│   ├── AutoSaveSystem.ts            # ★ جديد — Auto-save: 30s interval + manual
+│   ├── CloudSaveSystem.ts           # ★ جديد — Cloud save: upload/download/sync
 │   └── LoggingSystem.ts
 │
 ├── hooks/
-│   └── useResponsive.ts
+│   └── useResponsive.ts             # ★ محدث — إضافة isTablet, isMobile
 │
 ├── data/
-│   ├── characters.ts                # 6 شخصيات (زين، نورا، عمر، ليلى، طارق، النظام)
-│   └── dialogue.ts                  # 7 مستويات — نص + تحديات + shuffle
+│   ├── characters.ts
+│   └── dialogue.ts
 │
 ├── types/
 │   ├── index.ts
-│   ├── settings.ts                  # GameSettings + GameMeta (28 حcampo)
-│   ├── ai.ts                        # AIMessage, ChatAttachment (uploadStatus), ChatSession, AIState, AI_PROVIDERS, UploadStatus
-│   ├── game.ts                      # LevelData (مُوسّع) + Character (مُوسّع) + GameMeta
+│   ├── settings.ts                  # ★ محدث — GameSettings + darkMode
+│   ├── ai.ts
+│   ├── game.ts
 │   ├── dialogue.ts
 │   └── characters.ts
 │
 ├── utils/
-│   ├── constants.ts                 # قيم افتراضية + FONT_OPTIONS + HEADING_FONT_OPTIONS + MONO_FONT_OPTIONS
-│   ├── indexedDBStorage.ts          # تخزين Zustand في IndexedDB + تثاقل من localStorage
-│   ├── apiKeyCrypto.ts              # تشفير/فك API keys بـ AES-GCM (Web Crypto API)
+│   ├── constants.ts                 # ★ محدث — DEFAULT_SETTINGS + darkMode
+│   ├── indexedDBStorage.ts
+│   ├── apiKeyCrypto.ts
 │   └── helpers.ts
 │
 └── __tests__/                       # 70 اختبار ✅
-    ├── gameStore.test.ts            # 9 tests
-    ├── settingsStore.test.ts        # 6 tests
-    ├── storage.test.ts              # 5 tests
-    ├── helpers.test.ts              # 6 tests
-    ├── logging.test.ts              # 5 tests
-    └── levels.test.ts               # 4 tests
+
+public/
+├── manifest.json                    # ★ جديد — PWA manifest
+├── sw.js                            # ★ جديد — Service Worker (cache-first)
+├── assets/
+├── ryzes-font/
+├── videos/
+└── startpage5.html
 ```
 
 ---
 
-## [AI_ASSISTANT]
-
-| الميزة | الوضع | التفاصيل |
-|---|---|---|
-| **Student Chat** | مفتوح للجميع | شات مع AI يجيب عن أسئلة الأمن السيبراني مدعوم بـ system prompt مخصص |
-| **Faculty Editor** | محمي برمز PIN (افتراضي: 1234) | محرر لمحتوى اللعبة: عناوين، حوار، تحديات + إعدادات اللعبة + صعوبة/نقاط/حدود الوقت |
-| **Faculty PIN Change** | في تبويب Settings | تغيير رمز هيئة التدريس مع التحقق من الرمز الحالي |
-| **AI Providers** | 4 مزودين | OpenAI, OpenRouter (مع نماذج مجانية), Ollama (محلي), API مخصص (OpenAI-compatible) |
-| **Streaming** | نعم | عرض الردود بشكل تدريجي |
-| **Markdown Rendering** | نعم | عرض ردود AI بصيغة Markdown مع جداول وقوائم وأكواد (react-markdown + remark-gfm) |
-| **Session Management** | نعم | جلسات متعددة لكل وضع (طالب/هيئة تدريس) — إنشاء/切换/إعادة تسمية/حذف |
-| **File Upload** | نعم | رفع ملفات (نص، صور، فيديو، صوت) مع إمكانية إرفاق عدة ملفات + مؤشر حالة الرفع (⏳ رفع / ✅ نجاح / ❌ خطأ) |
-| **GitHub Sync** | نعم | رفع ملفات TypeScript المعدّلة مباشرة إلى GitHub (characters.ts + dialogue.ts + gameMeta.ts) |
-| **GitHub Fork** | نعم | نسخ المستودع الرئيسي إلى حساب عضو هيئة التدريس + تفعيل GitHub Pages تلقائياً |
-| **Upload Status** | نعم | مؤشرات حالة رفع الملفات: ⏳ رفع / ✅ نجاح / ❌ خطأ مع رسالة الخطأ |
-| **Edit User Message** | نعم | تعديل الرسالة وإعادة إرسالها |
-| **Regenerate Response** | نعم | إعادة توليد رد AI من نفس السياق |
-| **Copy Response** | نعم | نسخ رد AI إلى الحافظة |
-| **Download Response** | نعم | تنزيل رد AI بصيغة .md / .docx / .pdf |
-| **API Keys** | localStorage | مشفرة وغير مشاركة مع الـ persist (IndexedDB) |
-| **زر AI FAB** | أعلى اليمين (y: 16px) | زر دائري مع pulse animation عند التحويم + سحب مخصص |
-| **زر الصوت** | أسفل زر AI (y: 72px) | كتم/تشغيل الموسيقى الخلفية |
-| **لوحة AI** | منتصف الشاشة | تظهر عند الضغط على زر AI، قابلة للسحب والتغيير الحجم + maximize/minimize |
-| **إغلاق اللوحة** | 3 طرق | زر ✕، النافذة المعتمة، زر AI مرة أخرى (toggle) |
-| **إرشادات الاستخدام** | — | موجودة أدناه |
-
-### الحقول القابلة للتعديل عبر AI والمحرر
-
-#### إعدادات اللعبة العامة (GameMeta)
-| الحقل | النوع | القيمة الافتراضية |
-|---|---|---|
-| `gameTitle` | نص | Cyber Guardians |
-| `gameSubtitle` | نص | حراس الأمن السيبراني |
-| `gameVersion` | نص | 1.0.0 |
-| `defaultLanguage` | قائمة | ar |
-| `difficulty` | قائمة | medium (easy/medium/hard) |
-| `dailyRewardEnabled` | صحيح | true |
-| `dailyRewardPoints` | رقم | 100 |
-| `adsEnabled` | صحيح | false |
-| `iapEnabled` | صحيح | false |
-| `platformNotes` | نص | — |
-| `layoutWidth` | رقم | 1200 |
-| `layoutHeight` | رقم | 675 |
-| `layoutMode` | قائمة | responsive (fixed/responsive) |
-| `hudPosition` | قائمة | top (top/bottom/left/right) |
-| `menuStyle` | قائمة | cards (grid/list/cards) |
-| `animationSpeed` | قائمة | normal (slow/normal/fast) |
-| `bgVolume` | رقم | 0.7 (0-1) |
-| `sfxVolume` | رقم | 1.0 (0-1) |
-| `voiceVolume` | رقم | 1.0 (0-1) |
-
-#### حقول المستوى الإضافية
-| الحقل | النوع | الوصف |
-|---|---|---|
-| `difficulty` | قائمة | سهل/متوسط/صعب |
-| `points` | رقم | نقاط عند الإكمال |
-| `timeLimit` | رقم | حد الوقت بالثانية (0 = بدون حد) |
-| `unlockRequirement` | رقم | المستوى المطلوب إكماله (0 = متاح دائماً) |
-| `hints` | مصفوفة نصوص | نصائح تظهر أثناء التحدي |
-| `backgroundImage` | رابط | صورة خلفية المستوى |
-| `backgroundMusic` | رابط | موسيقى خلفية المستوى |
-| `soundEffects` | مصفوفة روابط | مؤثرات صوتية |
-
-#### حقول الشخصية الإضافية
-| الحقل | النوع | الوصف |
-|---|---|---|
-| `avatarUrl` | رابط | صورة الشخصية |
-| `voiceUrl` | رابط | ملف صوتي للشخصية |
-
-#### أدوات إضافية في محرر البيانات
-| الأداة | الوصف |
-|---|---|
-| **📤 تصدير JSON** | تصدير جميع البيانات (gameMeta + levels + characters) كملف JSON |
-| **📥 استيراد JSON** | استيراد بيانات من ملف JSON (يحل محل جميع البيانات الحالية) |
-| **⚙ JSON خام** | تحرير جميع البيانات كـ JSON مباشرة مع التحقق من الصحة |
-
-### إرشادات استخدام AI Assistant
-
-#### نظام الجلسات
-- كل وضع (طالب/هيئة تدريس) لديه جلسات مستقلة
-- جلسة تُنشأ تلقائياً عند فتح المحادثة لأول مرة
-- يمكن إنشاء جلسات جديدة، التبديل بينها، إعادة تسميتها، أو حذفها
-- كل جلسة تحتفظ برسائلها بشكل مستقل
-- عند حذف آخر جلسة، تُنشأ جلسة جديدة تلقائياً
-- جميع الجلسات تُحفظ في IndexedDB وتظهر عند إعادة التحميل
-
-#### رفع الملفات
-- 📎 زر رفع الملفات في شريط الإدخال
-- دعم: ملفات نصية، صور (base64)، فيديو، صوت
-- الصور تُرسل للـ AI كـ base64 (مدعومة في نماذج الرؤية)
-- الفيديو/الصوت يُرسلان كmetadata نصية
-- النصوص (JSON, CSV, etc.) تُرسل كمحتوى كامل
-- يمكن إرفاق عدة ملفات قبل الإرسال
-- المرفقات تظهر فوق شريط الإدخال مع إمكانية الحذف
-
-#### 🆓 OpenCode Zen (نماذج مجانية)
-افتح إعدادات AI ← اختر OpenRouter ← اختر أحد النماذج المجانية:
-- `meta-llama/llama-3.2-3b-instruct:free` — خفيف وسريع
-- `mistralai/mistral-7b-instruct:free` — دقيق
-- `google/gemini-2.0-flash-exp:free` — قوي جداً
-
-1. سجل في https://openrouter.ai
-2. أنشئ API Key مجاني
-3. الصقه في حقل API Key في الإعدادات
-
-#### 🔓 OpenAI
-1. سجل في https://platform.openai.com
-2. أنشئ API Key من Billing → API Keys
-3. اختر `gpt-4o-mini` (رخيص) أو `gpt-4o`
-
-#### 💻 Ollama (نماذج محلية - مجانية تماماً)
-1. ثبت Ollama من https://ollama.ai
-2. شغل أمر مثل `ollama run llama3.2`
-3. في الإعدادات: اختر Ollama، اترك API Key فارغ (أو أي قيمة)
-4. تأكد أن Ollama شغال (`ollama serve`)
-
-#### 🔧 API مخصص
-أي مزود يدعم OpenAI-compatible API:
-1. ضع Base URL (مثلاً `https://generativelanguage.googleapis.com/v1beta/openai/` لجيميني)
-2. ضع API Key المناسب
-3. اختر النموذج المطلوب
-
-#### 🔄 رفع التعديلات إلى GitHub
-لكل عضو هيئة تدريس نسخته الخاصة من اللعبة على GitHub:
-
-**الخطوة 1: إنشاء GitHub Token**
-1. اذهب إلى `github.com → Settings → Developer settings → Tokens (fine-grained or classic)`
-2. أنشئ Token جديد وفعّل الصلاحيات:
-   - ☑️ `repo` —(full control of private repositories)
-   - ☑️ `workflow` —(Update GitHub Action workflows)
-3. انسخ الـ Token
-
-**الخطوة 2: إعداد GitHub (خياران)**
-
-**🟢 الخيار 1: التعديل المباشر في المستودع الرئيسي**
-1. في اللعبة: افتح AI Panel ← هيئة تدريس ← ⚙ GitHub
-2. الصق الـ Token
-3. اضغط **🟢 التعديل المباشر**
-4. يُفعّل GitHub Pages على المستودع الرئيسي
-
-**🟡 الخيار 2: إنشاء مستودع جديد**
-1. في اللعبة: افتح AI Panel ← هيئة تدريس ← ⚙ GitHub
-2. الصق الـ Token
-3. اكتب اسم المستودع الجديد
-4. اضغط **🟡 إنشاء مستودع جديد**
-5. سيحصل على:
-   - مستودع جديد في حسابه: `username/الاسم-الجديد`
-   - رابط اللعبة: `https://username.github.io/الاسم-الجديد/`
-
-**مميزات النسخ الجديد (Git Data API):**
-- ✅ **commit واحد لكل الملفات** عبر Git Trees/Blobs/Commits API — أسرع وأكثر موثوقية
-- ✅ ينسخ **كل الملفات** بدون استثناء — صور، فيديوهات، خطوط، خريطة (via Blob API)
-- ✅ يُحدّث `vite.config.ts` تلقائياً (base path — يدعم جميع أنواع الاقتباسات + يضيف base إن لم يكن موجوداً)
-- ✅ يُحدّث `package.json` و `package-lock.json` تلقائياً
-- ✅ يُحدّث `README.md` بالروابط الجديدة
-- ✅ لا يوجد `SKIP_EXTENSIONS` أو `MAX_FILE_SIZE` — كل ملف يُرفع
-- ✅ عملية ذرية — كل شيء ينجح أو يفشل معاً (لا ملفات مفقودة)
-- ✅ يفعّل GitHub Pages تلقائياً
-- ✅ **auto_init: false** — commit واحد فقط (لا إلغاء deploy)
-
-**الخطوة 3: رفع التعديلات**
-1.عدّل اللعبة عبر AI أو المحرر
-2. اضغط **🔄 رفع إلى GitHub**
-3. الملفات تُرفع تلقائياً: `characters.ts` + `dialogue.ts` + `gameMeta.ts`
-4. GitHub Actions يعيد البناء تلقائياً
-5. التعديلات تظهر على الرابط خلال دقائق
-
-**ملفات تُرفع:**
-| الملف | المحتوى |
-|---|---|
-| `src/data/characters.ts` | الشخصيات (الأسماء، الأدوار، الألوان، الشخصية) |
-| `src/data/dialogue.ts` | المستويات (الحوارات، التحديات، الإعدادات) |
-| `src/data/gameMeta.ts` | إعدادات اللعبة العامة (العنوان، الصعوبة، النقاط) |
-
-**ملفات تُحدّث تلقائياً عند النسخ:**
-| الملف | ماذا يُحدّث |
-|---|---|
-| `vite.config.ts` | `base: '/الاسم-الجديد/'` |
-| `package.json` | `"name": "الاسم-الجديد"` |
-| `package-lock.json` | `"name": "الاسم-الجديد"` |
-| `README.md` | الروابط + اسم المالك |
-
----
-
-## [SETTINGS] — 28 حقل
+## [SETTINGS] — 29 حقل
 
 ### تبويب الصوت
 | الميزة | الحالة | التخزين |
@@ -366,12 +219,12 @@ src/
 | الميزة | الحالة | التخزين |
 |---|---|---|
 | Background Color | ✅ | IndexedDB |
-| Background Brightness (0.1–2) | ✅ | IndexedDB — CSS variable |
-| Background Animation (image/video/GIF) | ✅ | IndexedDB (data URL, 20MB max) |
+| Background Brightness (0.1–2) | ✅ | IndexedDB |
+| Background Animation (image/video/GIF) | ✅ | IndexedDB |
 | Background Animation Brightness | ✅ | IndexedDB |
-| Border Radius (0–32px) | ✅ | IndexedDB — CSS variable `--custom-border-radius` |
-| Border Width (0–6px) | ✅ | IndexedDB — CSS variable `--custom-border-width` |
-| Border Color | ✅ | IndexedDB — CSS variable `--custom-border-color` |
+| Border Radius (0–32px) | ✅ | IndexedDB |
+| Border Width (0–6px) | ✅ | IndexedDB |
+| Border Color | ✅ | IndexedDB |
 
 ### تبويب الخطوط
 | الميزة | النطاق | الافتراضي | التخزين |
@@ -392,46 +245,24 @@ src/
 ### تبويب الفيديو
 | الميزة | الحالة | التخزين |
 |---|---|---|
-| فيديو زين (محلل أمني) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو د. نورا (خبيرة تشفير) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو عمر (خبير شبكات) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو ليلى (خبيرة أمن ويب) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو طارق (محلل برمجيات خبيثة) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو النظام (إشعارات وأهداف) | ✅ | IndexedDB (data URL, 50MB max) |
-| فيديو الاحتفال (نهاية اللعبة) | ✅ | IndexedDB (data URL, 50MB max) |
-| خلفية القائمة الرئيسية | ✅ | IndexedDB (data URL, 50MB max) |
+| فيديو زين (محلل أمني) | ✅ | IndexedDB |
+| فيديو د. نورا (خبيرة تشفير) | ✅ | IndexedDB |
+| فيديو عمر (خبير شبكات) | ✅ | IndexedDB |
+| فيديو ليلى (خبيرة أمن ويب) | ✅ | IndexedDB |
+| فيديو طارق (محلل برمجيات خبيثة) | ✅ | IndexedDB |
+| فيديو النظام (إشعارات وأهداف) | ✅ | IndexedDB |
+| فيديو الاحتفال (نهاية اللعبة) | ✅ | IndexedDB |
+| خلفية القائمة الرئيسية | ✅ | IndexedDB |
 
-### تبويب عام
+### تبويب عام — ★ محدث
 | الميزة | الحالة | التخزين |
 |---|---|---|
 | Quality Preset (low/medium/high) | ✅ | IndexedDB |
 | Accessibility Mode | ✅ | IndexedDB |
+| **Dark Mode (الوضع الليلي)** | ✅ **جديد** | IndexedDB |
 | Keyboard Shortcuts | ✅ | — |
+| **Admin Dashboard (لوحة التحكم)** | ✅ **جديد** | — |
 | Reset All Defaults | ✅ | IndexedDB |
-
----
-
-## [CSS_VARIABLES]
-
-| المتغير | الاستخدام | القيمة الافتراضية |
-|---|---|---|
-| `--custom-brightness` | سطوع الخلفية | 1.0 |
-| `--custom-border-radius` | نصف قطر الحدود | 12px |
-| `--custom-border-color` | لون الحدود | rgba(255,255,255,0.2) |
-| `--custom-border-width` | سماكة الحدود | 1px |
-| `--heading-font` | خط العناوين | Cairo |
-| `--heading-font-size` | حجم العناوين | 24px |
-| `--heading-color` | لون العناوين | #4FC3F7 |
-| `--accent-color` | لون التمييز | #4FC3F7 |
-| `--muted-color` | لون النص الثانوي | #888888 |
-| `--mono-font` | خط الكود | Courier New |
-| `--mono-font-size` | حجم الكود | 14px |
-| `--border-color-subtle` | حدود عامة | rgba(255,255,255,0.2) |
-| `--border-color-muted` | حدود خافتة | rgba(255,255,255,0.1) |
-| `--border-color-faint` | حدود شبه مخفية | rgba(255,255,255,0.06) |
-| `--border-color-success` | نجاح | #81C784 |
-| `--border-color-error` | خطأ | #E57373 |
-| `--border-color-warning` | تحذير | #FFB74D |
 
 ---
 
@@ -439,11 +270,201 @@ src/
 
 | الكلمة المفتاحية | الوظيفة | المدة |
 |---|---|---|
-| `cg-particle-rise` | جسيمات متصاعدة من الأسفل للأعلى بتلاشي | 10–20s |
-| `cg-orb-float` | كرات ضبابية عائمة مع تغير الحجم | 12s |
-| `cg-grid-move` | شبكة منظور 3D متحركة للأعلى | 20s |
-| `cg-title-glow` | توهج متغير للعنوان (نيلي → بنفسجي) | 3s |
-| `cg-notification-pulse` | نبض نقطة الإشعار (تكبير/تصغير) | 2.5s |
+| `cg-particle-rise` | جسيمات متصاعدة | 10–20s |
+| `cg-orb-float` | كرات ضبابية عائمة | 12s |
+| `cg-grid-move` | شبكة منظور 3D متحركة | 20s |
+| `cg-title-glow` | توهج متغير للعنوان | 3s |
+| `cg-notification-pulse` | نبض نقطة الإشعار | 2.5s |
+| `cg-fade-in` | ★ **ظهور الشاشات (fade + scale)** | 0.25s |
+| `cg-fade-out` | ★ **اختفاء الشاشات (fade + scale)** | 0.15s |
+| `cg-shimmer` | ★ **تأثير تحميل متحرك (skeleton)** | 1.5s |
+
+---
+
+## [CSS_VARIABLES]
+
+| المتغير | الاستخدام | القيمة الافتراضية (داكن) | القيمة الافتراضية (فاتح) |
+|---|---|---|---|
+| `--custom-brightness` | سطوع الخلفية | 1.0 | 1.0 |
+| `--custom-border-radius` | نصف قطر الحدود | 12px | 12px |
+| `--custom-border-color` | لون الحدود | rgba(255,255,255,0.2) | rgba(0,0,0,0.15) |
+| `--custom-border-width` | سماكة الحدود | 1px | 1px |
+| `--heading-font` | خط العناوين | Cairo | Cairo |
+| `--heading-font-size` | حجم العناوين | 24px | 24px |
+| `--heading-color` | لون العناوين | #4FC3F7 | #1565C0 |
+| `--accent-color` | لون التمييز | #4FC3F7 | #1976D2 |
+| `--muted-color` | لون النص الثانوي | #888888 | #666666 |
+| `--mono-font` | خط الكود | Courier New | Courier New |
+| `--mono-font-size` | حجم الكود | 14px | 14px |
+| `--border-color-subtle` | حدود عامة | rgba(255,255,255,0.2) | rgba(0,0,0,0.15) |
+| `--border-color-muted` | حدود خافتة | rgba(255,255,255,0.1) | rgba(0,0,0,0.08) |
+| `--border-color-faint` | حدود شبه مخفية | rgba(255,255,255,0.06) | rgba(0,0,0,0.04) |
+
+---
+
+## [CODE_SPLITTING] — ★ جديد
+
+### آلية العمل
+```
+App.tsx
+├── React.lazy → MenuPage           (خفيف — يُحمّل فوراً)
+├── React.lazy → LevelSelectPage    (خفيف)
+├── React.lazy → DialoguePage       (خفيف)
+├── React.lazy → GameplayPage       (ثقيل — يحمل الـ 7 mini-games متأخراً)
+│   └── Suspense fallback → ChallengeSkeleton
+├── React.lazy → SettingsPage       (خفيف)
+├── React.lazy → CelebrationPage    (ثقيل — فيديو)
+├── React.lazy → VictoryPage        (خفيف)
+├── React.lazy → AIPanel            (ثقيل — AI + GitHub + Google Drive)
+└── Suspense fallback → ScreenSkeleton
+```
+
+### الاستراتيجية
+- جميع الصفحات: `React.lazy(() => import(...))`
+- Suspense شامل يغلف كل الشاشات مع `ScreenSkeleton`
+- ErrorBoundary يغلف كل شاشة لمنع تعطل التطبيق بالكامل
+- `startTransition` للتنقل بين الشاشات (React 19)
+- `ScreenTransition` مع CSS animations للتخلص من الوميض
+
+---
+
+## [PWA] — ★ جديد
+
+### المكونات
+| الملف | الوظيفة |
+|---|---|
+| `public/manifest.json` | إعدادات التثبيت: name, icons, display standalone, orientation |
+| `public/sw.js` | Service Worker: cache-first للملفات الثابتة |
+| `src/main.tsx` | تسجيل SW بعد تحميل الصفحة |
+
+### الميزات
+- ✅ **قابل للتثبيت**: display: standalone + orientation: landscape
+- ✅ **Offline support**: cache-first للملفات الثابتة عبر SW
+- ✅ **Theme color**: #0a0a1a
+- ✅ **Apple mobile**: apple-mobile-web-app-capable meta
+
+---
+
+## [ANALYTICS_SYSTEM] — ★ جديد
+
+### الأحداث المتتبعة
+| الحدث | متى يحدث |
+|---|---|
+| `game_start` | بدء اللعبة من القائمة |
+| `level_complete` | إكمال مستوى (مع رقم المستوى والنتيجة) |
+| `settings_change` | تغيير الإعدادات |
+| `error` | أخطاء React (ErrorBoundary) |
+
+### الوظائف
+- `track(type, data?)` — تسجيل حدث
+- `getLevelStats()` — إحصائيات كل مستوى (محاولات، أعلى نتيجة)
+- `getTotalPlayTime()` — إجمالي وقت اللعب
+- التخزين: localStorage (آخر 50 حدث)
+
+---
+
+## [AUTO_SAVE_SYSTEM] — ★ جديد
+
+| الوظيفة | الآلية |
+|---|---|
+| الحفظ التلقائي | كل 30 ثانية عبر setInterval |
+| الحفظ اليدوي | `autoSave.saveNow()` عند إكمال مستوى |
+| التحميل | `autoSave.load()` لاستعادة التقدم |
+| المسح | `autoSave.clear()` عند إعادة تعيين التقدم |
+| التخزين | localStorage بالمفتاح `cg-autosave` |
+
+---
+
+## [CLOUD_SAVE_SYSTEM] — ★ جديد
+
+| الوظيفة | الوصف |
+|---|---|
+| رفع (upload) | حفظ التقدم الحالي إلى localStorage السحابي |
+| تحميل (download) | استعادة التقدم من localStorage السحابي |
+| مزامنة (sync) | رفع + تحميل في عملية واحدة |
+| مسح (clear) | حذف البيانات السحابية |
+
+**ملاحظة:** حالياً يستخدم localStorage كسحابة محلية. يمكن تطويره لاستخدام Firebase/Supabase لاحقاً.
+
+---
+
+## [ADMIN_DASHBOARD] — ★ جديد
+
+| التبويب | المحتوى |
+|---|---|
+| إحصائيات | تقدم المستويات، النقاط، وقت اللعب، إحصائيات كل مستوى |
+| سحابي | رفع / تحميل / مزامنة مع السحابة + حفظ يدوي |
+| تصحيح | عرض حالة اللعبة (JSON) + الإعدادات (JSON) |
+
+**الوصول:** الإعدادات ← عام ← لوحة التحكم
+
+---
+
+## [LIGHT_THEME] — ★ جديد
+
+### آلية العمل
+- إعداد `darkMode: boolean` في `settingsStore` (افتراضي: true)
+- `toggleDarkMode()` للتبديل بين الوضع الليلي والفاتح
+- `App.tsx` تطبق ألوان مختلفة حسب `isDark`
+- CSS variables تتغير تلقائياً للون الفاتح
+
+### الفروقات
+| الخاصية | الوضع الليلي | الوضع الفاتح |
+|---|---|---|
+| خلفية التطبيق | #0a0a1a | #f0f0f5 |
+| لون النص | #ffffff | #1a1a2e |
+| لون العناوين | #4FC3F7 | #1565C0 |
+| لون التمييز | #4FC3F7 | #1976D2 |
+| لون النص الثانوي | #888888 | #666666 |
+| ألوان الحدود | rgba(255,255,255,...) | rgba(0,0,0,...) |
+
+---
+
+## [TABLET_LAYOUT] — ★ جديد
+
+### الإضافات في `useResponsive.ts`
+| الحقل | الوصف |
+|---|---|
+| `isTablet` | true عندما يكون العرض بين 768 و 1024px |
+| `isMobile` | true عندما يكون العرض أقل من 768px |
+
+### التأثير
+- تحسينات CSS للشاشات المتوسطة (600px–1024px)
+- منع التكبير التلقائي على الأجهزة اللوحية
+- أحجام خطوط مناسبة للشاشات المتوسطة
+
+---
+
+## [I18N] — ★ جديد
+
+### المكونات
+| الملف | الوظيفة |
+|---|---|
+| `src/i18n/context.tsx` | I18nProvider + useI18n hook |
+| `src/i18n/ar.ts` | ~100 مفتاح ترجمة عربية |
+| `src/i18n/en.ts` | ~100 مفتاح ترجمة إنجليزية |
+
+### التبويبات المدعومة
+- `game` — عناوين اللعبة، أزرار التنقل
+- `menu` — شاشة البداية واختيار المستوى
+- `dialogue` — نصوص الحوار
+- `settings` — جميع أقسام الإعدادات
+- `victory` — شاشة النصر
+- `error` — رسائل الأخطاء
+- `audio` — أزرار الصوت
+
+**الاستخدام:** `const { t } = useI18n()` ثم `t.game.start`
+
+---
+
+## [SCREEN_TRANSITIONS] — ★ جديد
+
+| الـ CSS Keyframe | الوظيفة | المدة |
+|---|---|---|
+| `cg-fade-in` | ظهور: opacity 0→1 + scale 0.97→1 | 0.25s ease-out |
+| `cg-fade-out` | اختفاء: opacity 1→0 + scale 1→0.97 | 0.15s ease-in |
+
+كل شاشة تُلف بـ `ScreenTransition` مع `key={screen}` لتفعيل الـ animation عند تغيير الشاشة.
 
 ---
 
@@ -460,6 +481,12 @@ src/
 | `system.mp4` | النظام — إشعارات وأهداف | فيديو افتراضي |
 | `celebration.mp4` | شاشة الاحتفال | نهاية المستوى 7 |
 
+### ملفات PWA — ★ جديد
+| الملف | الوظيفة |
+|---|---|
+| `public/manifest.json` | manifest تطبيق PWA |
+| `public/sw.js` | Service Worker للتخزين المؤقت |
+
 ### ملفات أخرى
 | الملف | الحجم | الاستخدام |
 |---|---|---|
@@ -468,165 +495,56 @@ src/
 | `public/videos/background_1.mp4` | 1.3MB | خلفية سابقة (احتياطي) |
 | `public/startpage5.html` | — | تصميم مرجعي لشاشة البداية (Fortnite/Free Fire style) |
 | `public/videos/output.wav` | 1.4MB | موسيقى خلفية أصلية |
-| `public/videos/output(new).wav` | 1.4MB | موسيقى خلفية الافتراضية الحالية (يتم استخدامها في `App.tsx`) |
+| `public/videos/output(new).wav` | 1.4MB | موسيقى خلفية الافتراضية الحالية |
 | `public/videos/output.mp3` | 129KB | نسخة MP3 من الموسيقى |
 | `public/videos/زين.webp` | 2.5MB | صورة FLUX لشخصية زين |
 | `PROMPTS.md` | 475+ سطر | أوامر FLUX + مشاهد انتقالية + مشهد النظام |
+| `PROJECT_MAP.md` | — | خريطة المشروع الشاملة |
 | `.github/workflows/deploy.yml` | — | GitHub Pages deploy (Node.js 24) |
-
----
-
-## [CHARACTERS]
-
-| المعرف | الاسم | الدور | اللون | فيديو |
-|---|---|---|---|---|
-| `zayn` | زين | محلل أمني | `#4FC3F7` | `zayn.mp4` |
-| `nora` | د. نورا | خبيرة تشفير | `#CE93D8` | `nora.mp4` |
-| `omar` | عمر | خبير شبكات | `#FFB74D` | `omar.mp4` |
-| `layla` | ليلى | خبيرة أمن ويب | `#81C784` | `layla.mp4` |
-| `tariq` | طارق | محلل برمجيات خبيثة | `#E57373` | `tariq.mp4` |
-| `system` | النظام | إشعارات وأهداف | `#FFFFFF` | `system.mp4` |
-
----
-
-## [MAZE_CHALLENGE] — المستوى 3
-
-**النوع**: Sokoban-style push mechanic
-
-**الخريطة**:
-```
-   0 1 2 3 4 5 6
-0: . . . . . . .
-1: . W . . M . .    M = (4,1), W = (1,1)
-2: . . . . . M .    M = (5,2)
-3: . . . W . . .    W = (3,3)
-4: . . . M . . .    M = (3,4)
-5: . M . . . . .    M = (1,5)
-6: . . E . . E .    E = (2,6), E = (5,6)
-```
-
-**التحسينات**:
-- زر **إعادة تعيين** أثناء اللعب
-- زر **إعادة المحاولة** بعد الإكمال
-- `useCallback` أُزيل (stale closure كان ينهي اللعبة بدرياً)
-- `secured` يُحسب من `totalMalware - malware.length` بدل state منفصل
-- كل الملفات الخبيثة تصل إلى نقطة أمان (تم إصلاح موضع (5,0) → (4,1))
-
----
-
-## [SHUFFLE_SYSTEM]
-
-في كل مرة يُفتح المستوى أو تُعاد المحاولة، يتم خلط الأسئلة والإجابات عشوائياً:
-
-| المستوى | ما يُخلط |
-|---|---|
-| 1 (رسالة مشبوهة) | ترتيب الإيميلات |
-| 6 (الموقع المخترق) | ترتيب الثغرات + ترتيب الإجابات |
-| 7 (الهجوم الأخير) | ترتيب الخطوات + ترتيب الإجابات |
-
-**الآلية**: `useState(() => shuffle(data))` — الخلط يحدث مرة واحدة عند تحميل المكون.
-
----
-
-## [CELEBRATION_VIDEO]
-
-- يظهر **فقط** بعد إنهاء المستوى 7 (الهجوم الأخير)
-- BGM يتوقف قبل ظهور فيديو الاحتفال
-- فيديو full-screen **بصوت** (`autoPlay` + `playsInline`)
-- صوت الفيديو يتحكم عبر `bgmVolume` و `muted` من الإعدادات
-- زر "تخطي" يظهر بعد 3 ثواني
-- عند انتهاء الفيديو → صفحة النقاط (Victory)
-
----
-
-## [BORDER_SYSTEM]
-
-تم توحيد **~55** حد hardcoded باستخدام CSS variables:
-
-| المكون | التعديلات |
-|---|---|
-| Button | `--custom-border-radius`, `--custom-border-color`, `--accent-color` |
-| Modal | `--custom-border-radius` |
-| SettingsPanel | `--custom-border-radius`, `--custom-border-color`, `--border-color-faint` |
-| KeyboardShortcuts | `--custom-border-radius`, `--border-color-subtle`, `--accent-color` |
-| ProgressBar | `--custom-border-radius`, `--accent-color` |
-| App (level select) | `--custom-border-radius`, `--custom-border-width`, `--accent-color`, `--border-color-subtle`, `--border-color-faint` |
-| MazeChallenge | `--custom-border-width`, `--border-color-error`, `--border-color-success`, `--accent-color`, `--border-color-subtle` |
-| BuildChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-subtle`, `--border-color-success`, `--border-color-faint` |
-| DragDropChallenge | `--custom-border-radius`, `--custom-border-width`, `--accent-color`, `--border-color-muted` |
-| DecryptChallenge | `--custom-border-width`, `--accent-color`, `--border-color-success` |
-| CodeFixChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-muted`, `--border-color-success`, `--border-color-error` |
-| ResponseChallenge | `--custom-border-radius`, `--custom-border-width`, `--border-color-muted`, `--border-color-success`, `--border-color-error` |
-
----
-
-## [AUDIO_SYSTEM]
-
-**ProceduralAudio.ts** — التحسينات:
-- `playFileBg()`: `Math.min(volume, 1)` لمنع قيم > 1
-- `playFileBg()`: `preload='auto'` لتحميل مسبق
-- `playFileBg()`: fallback to user interaction click إذا المتصفح منع autoplay
-- `playClick()`: يعيد تشغيل BGM إذا متوقف
-- متغير مشترك `bgAudio` لمنع تداخل ملفات صوتية
-
-**سلوك الصوت/الفيديو**:
-- **شاشة البداية**: فيديو خلفية بصوت (unmuted)، لا يوجد BGM
-- **شاشة المستويات/التحديات**: BGM يعمل، فيديو الخلفية مكتوم (muted)
-- **شاشة الاحتفال**: BGM يتوقف، فيديو الاحتفال يعمل بصوت
-- **شاشة النصر**: لا يوجد صوت (إعادة تعيين → القائمة الرئيسية)
-
-**BackgroundVideo.tsx**:
-- Prop `muted` (افتراضي `true`) يتحكم في كتم صوت الفيديو
-- `muted={screen !== 'menu'}` — صوت مفعّل فقط في شاشة البداية
-
-**CelebrationVideo.tsx**:
-- `autoPlay` + `playsInline` للتشغيل التلقائي
-- الصوت يتحكم عبر `bgmVolume` و `muted` من الإعدادات
 
 ---
 
 ## [ORPHANS & PENDING]
 
-### مكتمل
+### مكتمل — الإضافات الجديدة (v1.3.0)
+- [x] **Code Splitting** — 7 صفحات lazy-loaded + ChallengeRenderer + AIPanel، حجم الـ chunk: 548KB
+- [x] **PWA** — manifest.json + Service Worker + تسجيل في main.tsx
+- [x] **Screen Transitions** — CSS fade-in/fade-out animations
+- [x] **Loading Skeletons** — ScreenSkeleton + ChallengeSkeleton (shimmer animation)
+- [x] **Error Boundaries** — ErrorBoundary لكل شاشة مع زر إعادة محاولة
+- [x] **i18n** — I18nProvider + ترجمة عربية/إنجليزية (100+ مفتاح)
+- [x] **Admin Dashboard** — لوحة تحكم (إحصائيات + سحابي + تصحيح)
+- [x] **Analytics** — نظام تتبع الأحداث + إحصائيات المستويات
+- [x] **Cloud Save** — رفع/تحميل/مزامنة التقدم
+- [x] **Light Theme** — darkMode toggle مع CSS variables للثيم الفاتح
+- [x] **Tablet Layout** — isTablet/isMobile في useResponsive
+- [x] **Auto-save** — حفظ تلقائي كل 30 ثانية + حفظ عند إكمال مستوى
+
+### مكتمل (سابق)
 - [x] **إعادة المحاولة في كل التحديات** — تم
 - [x] **خلط الأسئلة عشوائياً** — تم (المستويات 1, 6, 7)
-- [x] **فيديو احتفال نهاية اللعبة** — تم (celebration.mp4 + CelebrationVideo)
-- [x] **فيديو مستقل لكل شخصية** — تم (6 شخصيات: zayn, nora, omar, layla, tariq, system)
-- [x] **إعدادات خطوط شاملة** — تم (12 إعداد + معاينة حية)
+- [x] **فيديو احتفال نهاية اللعبة** — تم
+- [x] **فيديو مستقل لكل شخصية** — تم
+- [x] **إعدادات خطوط شاملة** — تم
 - [x] **توحيد الحدود** — تم (~55 hardcoded → CSS variables)
-- [x] **إصلاح Set serialization** — تم
-- [x] **إصلاح autoplay الصوت** — تم
-- [x] **توليد فيديوهات الشخصيات** — تم (zayn.mp4, nora.mp4, omar.mp4, layla.mp4, tariq.mp4, system.mp4, celebration.mp4)
-- [x] **شاشة بداية عصرية (Game Menu)** — تم: تصميم Fortnite/Free Fire style
-- [x] **AI Assistant مدمج** — تم: Student Chat + Faculty Editor + دعم OpenAI/OpenRouter/Ollama/API مخصص + تخزين API Keys محلياً
-- [x] **نظام الجلسات** — تم: جلسات متعددة لكل وضع (طالب/هيئة تدريس) مع إنشاء/切换/إعادة تسمية/حذف
-- [x] **رفع الملفات** — تم: دعم ملفات نصية + صور + فيديو + صوت مع إرفاق متعدد + مؤشرات حالة الرفع (⏳✅❌)
-- [x] **إصلاح أخطاء الجلسات** — تم: SessionBar يظهر دائماً + إنشاء تلقائي للجلسة + حماية الرسائل
-- [x] **GitHub Integration** — تم: التعديل المباشر + إنشاء مستودع جديد + نسخ كامل + تحديث base path تلقائياً + تجاهل ملفات كبيرة
-- [x] **رفع ملفات إلى AI مع مؤشرات الحالة** — تم: ⏳ رفع / ✅ نجاح / ❌ خطأ على كل مرفق
-- [x] **Git Data API** — تم: إعادة كتابة `copyEntireRepo` باستخدام Git Trees/Blobs/Commits API ← commit واحد لكل الملفات، عملية ذرية، لا SKIP_DIRS
-- [x] **إصلاح base path في vite.config.ts** — تم: دعم جميع أنواع الاقتباسات (`'`, `"`, `` ` ``) + إضافة `base` إن لم يكن موجوداً
-- [x] **Google Drive Backup** — تم: رفع محتوى JSON أو المشروع كامل إلى Google Drive
-- [x] **إزالة SKIP_EXTENSIONS** — تم: `copyEntireRepo` يرفع كل الملفات حتى الوسائط (via Blob API)
-- [x] **إلغاء deploy المكرر** — تم: `auto_init: false` في `createNewRepo` ← commit واحد فقط
-- [x] **تمرير نتائج الرفع** — تم: scrollable box + عداد ✅/❌/⚠️ لكل ملف
-- [x] **Google Drive instructions** — تم: إرشادات كاملة في واجهة الإعدادات
-- [x] **Semgrep SAST Scan** — تم: فحص شامل بـ 10 rulesets (0 ثغرات)
-- [x] **Supply Chain Audit** — تم: فحص 5 تبعيات (0 عالية المخاطر)
-- [x] **CodeQL Fix: Insecure Randomness** — تم: `Math.random()` → `crypto.randomUUID()` في `createSession()`
-- [x] **CodeQL Fix: Clear Text Storage** — تم: تشفير API Keys بـ AES-GCM قبل تخزينها في `localStorage`
+- [x] **AI Assistant مدمج** — تم
+- [x] **GitHub Integration** — تم
+- [x] **Google Drive Backup** — تم
+- [x] **Security Scans** — تم (Semgrep + CodeQL + Supply Chain)
 
-### معلق / غير مربوط
-- [ ] **CharacterModel (3D)** — مكوّن `src/components/three/CharacterModel.tsx` مصدّر لكن غير مستخدم في أي مكان. الـ 3D scene يعرض فقط `Environment`.
-- [ ] **AudioSystem** — `src/systems/AudioSystem.ts` مصدّر لكن غير مستورد في أي كود إنتاجي. الـ app يستخدم `ProceduralAudio` بدلاً منه.
-- [ ] **LoggingSystem** — `src/systems/LoggingSystem.ts` يستخدم فقط في `__tests__/`، ليس في الإنتاج.
-- [ ] **تسجيل الموسيقى من MiniMax Music** — الأوامر جاهزة في PROMPTS.md، `output.wav` حالياً placeholder
+### معلق / غير مربوط — ★ محدث
+- [ ] **CharacterModel (3D)** — مكوّن ثلاثي الأبعاد غير مستخدم
+- [ ] **AudioSystem** — ملف قديم غير مستخدم (يُستخدم ProceduralAudio بدلاً منه)
+- [ ] **LoggingSystem** — يستخدم فقط في الاختبارات
+- [ ] **تسجيل الموسيقى من MiniMax Music** — الأوامر جاهزة في PROMPTS.md
 - [ ] **نموذج GLTF مخصص لكل شخصية** — حالياً نموذج واحد (RobotExpressive)
 - [ ] **تلميحات داخل التحديات** — للمستخدمين الجدد
-- [ ] **ترجمة إنجليزية** — MVP عربي بالكامل
+- [ ] **ترجمة إنجليزية واجهة كاملة** — الـ i18n infrastructure جاهز، يحتاج ربط بالواجهة
 - [ ] **صفحة Credits** — بسيطة يمكن إضافتها
 - [ ] **مشهد البداية (Intro)** — أوامر الفيديو جاهزة في PROMPTS.md
-- [ ] **تقسيم الـ chunk** — ~1.2MB حالياً (Three.js dominates)
+- [ ] **Cloud Save حقيقي (Firebase/Supabase)** — حالياً localStorage فقط
+- [ ] **اختبارات للأنظمة الجديدة** — Analytics, AutoSave, CloudSave تحتاج اختبارات
+- [ ] **i18n UI connection** — الـ context جاهز لكن لم يُربط بكل الـ UI components
 
 ---
 
@@ -636,47 +554,12 @@ src/
 | الملف | الوظيفة |
 |---|---|
 | `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection + Git Data API |
-| `src/ai/googleDrive.ts` | Google Drive API: OAuth 2.0 + رفع محتوى JSON + رفع مشروع كامل (بما في ذلك الوسائط) |
-| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive + زر Fork + زر Push + تعليمات + scrollable results |
-
-### دوال GitHub
-| الدالة | الوظيفة |
-|---|---|
-| `forkMainRepo()` | نسخ المستودع الرئيسي إلى حساب المستخدم |
-| `enableGitHubPages()` | تفعيل GitHub Pages على المستودع |
-| `setupForkWithPages()` | Fork + انتظار التجهيز + تفعيل Pages |
-| `pushContentToGitHub()` | رفع ملفات TypeScript: characters.ts + dialogue.ts + gameMeta.ts |
-| `copyEntireRepo()` | **Git Data API** — نسخ كل ملفات المستودع في commit واحد: Trees + Blobs + Commits (بدون SKIP) |
-| `testGitHubConnection()` | اختبار الاتصال بالـ API |
-| `getGitHubUsername()` | الحصول على اسم المستخدم من Token |
-| `waitForForkReady()` | انتظار حتى يكون المستودع المنسوخ جاهزاً |
-| `createNewRepo()` | إنشاء مستودع جديد (auto_init: false) |
-| `setupDirectEdit()` | تفعيل التعديل المباشر + GitHub Pages |
-| `updateViteBasePath()` | تحديث base path في vite.config.ts (يدعم `'`, `"`, `` ` `` ويضيف base إن لم يكن موجوداً) |
-| `generateCharactersTS()` | توليد كود TypeScript للشخصيات |
-| `generateDialogueTS()` | توليد كود TypeScript للمستويات |
-| `generateGameMetaTS()` | توليد كود TypeScript لإعدادات اللعبة |
-
-### دوال Google Drive
-| الدالة | الوظيفة |
-|---|---|
-| `loadGIS()` | تحميل مكتبة Google Identity Services |
-| `initGoogleDrive(clientId)` | تهيئة OAuth client |
-| `loginToDrive()` | تسجيل الدخول بحساب Google |
-| `logout()` | تسجيل الخروج |
-| `createFolder(name)` | إنشاء مجلد في Drive |
-| `uploadContentToDrive()` | رفع بيانات اللعبة (JSON): gameMeta + levels + characters |
-| `uploadFullRepoToDrive()` | رفع المشروع كامل من GitHub إلى Drive مع الحفاظ على هيكل المجلدات |
-
-### الإعدادات المحفوظة
-| المفتاح | المحتوى |
-|---|---|
-| `cg-github-config` | Token + Owner + Repo + Branch (في localStorage) |
+| `src/ai/googleDrive.ts` | Google Drive API: OAuth 2.0 + رفع محتوى JSON + رفع مشروع كامل |
+| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive |
 
 ### المستودع الرئيسي
 - **Owner**: `YoussefAhamedKamal`
 - **Repo**: `cyber-guardians-mobile`
-- **النسخ**: كل عضو هيئة تدريس يحصل على نسخة في حسابه
 
 ---
 
@@ -686,60 +569,45 @@ src/
 **الأدوات:** Semgrep 1.165.0 + Supply Chain Risk Audit
 **الوضع:** Important only (MEDIUM/HIGH/CRITICAL)
 
-### نتائج Semgrep (SAST)
+### نتائج Semgrep (SAST) — 0 ثغرات
 | القاعدة | التصنيف | النتائج |
-|---------|---------|---------|
+|---|---|---|
 | `p/security-audit` | ثغرات عامة | 0 |
 | `p/secrets` | مفاتيح سرية | 0 |
 | `p/typescript` | TypeScript | 0 |
 | `p/react` | React | 0 |
 | `p/javascript` | JavaScript | 0 |
 | `p/nodejs` | Node.js | 0 |
-| `p/yaml` | YAML | 0 (ruleset 404) |
+| `p/yaml` | YAML | 0 |
 | `p/github-actions` | CI/CD | 0 |
 | Trail of Bits | Third-party | 0 |
 | elttam | Third-party | 0 |
 | Apiiro | Malicious code | 0 |
-| **المجموع** | | **0 ثغرات** |
 
-### ملاحظات الفحص
-- **Syntax errors وهمية:** ملفان بهما syntax errors من `p/security-audit` بسبب JS parser:
-  - `src/ai/AIPanel.tsx:330` ← رمز `→` في نص JSX
-  - `src/data/dialogue.ts:80` ← `import('@/types')` (TypeScript type import)
-  - **ليست أخطاء حقيقية** — TypeScript compiler لا يشتكي منهما
+### نتائج Supply Chain — 0 عالية المخاطر
+| الحزمة | الإصدار | المخاطر |
+|---|---|---|
+| react | ^19.1.0 | منخفض |
+| react-dom | ^19.1.0 | منخفض |
+| react-markdown | ^10.1.0 | منخفض |
+| remark-gfm | ^4.0.1 | منخفض |
+| zustand | ^5.0.13 | منخفض |
 
-### نتائج Supply Chain
-| الحزمة | الإصدار | المخاطر | نجوم | آخر تحديث |
-|--------|---------|---------|------|-----------|
-| react | ^19.1.0 | منخفض | 245k ⭐ | 2026-06-09 |
-| react-dom | ^19.1.0 | منخفض | 245k ⭐ | 2026-06-09 |
-| react-markdown | ^10.1.0 | منخفض | 15.7k ⭐ | 2026-06-09 |
-| remark-gfm | ^4.0.1 | منخفض | 1.2k ⭐ | 2026-06-07 |
-| zustand | ^5.0.13 | منخفض | 58k ⭐ | 2026-06-09 |
+### CodeQL GitHub Alerts — 5 أصلحت ✅
+| # | التصنيف | Severity | الموقع | الإصلاح |
+|---|---|---|---|---|
+| 1-4 | Insecure randomness | MEDIUM | `aiStore.ts:76,84,99,107` | `Math.random()` ← `crypto.randomUUID()` |
+| 5 | Clear text storage | MEDIUM | `aiStore.ts:12` | localStorage plaintext ← AES-GCM عبر `apiKeyCrypto.ts` |
 
-**الخلاصة:** لا توجد تبعيات عالية المخاطر. كل الحزم نشيطة ومدعومة من منظمات (Meta, remarkjs, pmndrs). `npm audit` يظهر 0 vulnerabilities.
-
-### CodeQL Alerts (مُصلحة)
-| Alert | الخط | الحالة | الإصلاح |
-|-------|------|--------|---------|
-| Clear text storage | `aiStore.ts:12` | ✅ | `AES-GCM` + sessionStorage key |
-| Insecure randomness | `aiStore.ts:76` | ✅ | `crypto.randomUUID()` |
-| Insecure randomness | `aiStore.ts:84` | ✅ | `crypto.randomUUID()` |
-| Insecure randomness | `aiStore.ts:99` | ✅ | `crypto.randomUUID()` |
-| Insecure randomness | `aiStore.ts:107` | ✅ | `crypto.randomUUID()` |
+### فحص يدوي — 3 أصلحت ✅
+| # | التصنيف | Severity | الموقع | الإصلاح |
+|---|---|---|---|---|
+| 1 | **HTML injection (export)** | MEDIUM | `AIPanel.tsx:502,507` | إضافة `escapeHtml()` قبل تضمين `msg.content` في HTML القالب |
+| 2 | **CSS injection** | MEDIUM | `SettingsPanel.tsx:22` | إزالة `'{};` من اسم الخط قبل الحقن في `@font-face` |
+| 3 | **Info disclosure (PIN leak)** | MEDIUM | `AIPanel.tsx:1502` | إخفاء الرقم السري من شاشة القفل |
 
 ### توصيات
-1. تفعيل **Dependabot** على المستودع
-2. إضافة `npm audit` إلى CI pipeline
-3. تثبيت الإصدارات (`package-lock.json` موجود أساساً)
-4. فحص دوري بـ Semgrep بعد كل تحديث كبير
-
-### مخرجات الفحص
-```
-static_analysis_semgrep_1/
-├── rulesets.txt
-├── raw/                ← 14 ملف SARIF + 14 JSON
-└── results/
-    ├── results.sarif
-    └── supply-chain-audit.md
-```
+1. إضافة اختبارات للأنظمة الجديدة (Analytics, AutoSave, CloudSave)
+2. ربط i18n context بجميع مكونات الواجهة
+3. تفعيل Dependabot على المستودع
+4. تجزئة (hash) الرقم السري في التخزين (SHA-256) كطبقة حماية إضافية
