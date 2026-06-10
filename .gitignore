@@ -6,3 +6,10 @@ videos_chracters/
 src/**/*.js
 src/**/*.d.ts
 !src/vite-env.d.ts
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
