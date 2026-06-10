@@ -498,13 +498,19 @@ function downloadFile(content: string, filename: string, mime: string) {
 
 function downloadMd(content: string, filename: string) { downloadFile(content, `${filename}.md`, 'text/markdown') }
 
+function escapeHtml(text: string) {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+}
+
 function downloadDocx(content: string, filename: string) {
-  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;line-height:1.8}pre{background:#f4f4f4;padding:10px;border-radius:4px}code{background:#f4f4f4;padding:2px 4px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`
+  const escaped = escapeHtml(content).replace(/\n/g, '<br>')
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;line-height:1.8}pre{background:#f4f4f4;padding:10px;border-radius:4px}code{background:#f4f4f4;padding:2px 4px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${escaped}</body></html>`
   downloadFile(html, `${filename}.doc`, 'application/msword')
 }
 
 function downloadPdf(content: string, filename: string) {
-  const html = `<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;padding:20px;line-height:1.8;font-size:14px}pre{background:#f4f4f4;padding:10px;border-radius:4px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`
+  const escaped = escapeHtml(content).replace(/\n/g, '<br>')
+  const html = `<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;padding:20px;line-height:1.8;font-size:14px}pre{background:#f4f4f4;padding:10px;border-radius:4px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${escaped}</body></html>`
   downloadFile(html, `${filename}.html`, 'text/html')
 }
 
@@ -1445,7 +1451,7 @@ export function AIPanel() {
       <AIFab onClick={() => ai.setPanelOpen(!ai.panelOpen)} />
       {ai.panelOpen && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => { ai.setPanelOpen(false); ai.setPanelMaximized(false) }} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9997, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => { ai.setPanelOpen(false) }} />
           <div style={{
             ...panelStyle,
             background: 'linear-gradient(180deg, #0d1128 0%, #1a1f3a 100%)',
@@ -1499,7 +1505,7 @@ export function AIPanel() {
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
               <p>هذه الميزة مخصصة لهيئة التدريس فقط</p>
               <button onClick={handleFacultyAuth} style={{ marginTop: '16px', padding: '10px 24px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#CE93D8,#BA68C8)', color: '#0a0a1a', fontWeight: 700, cursor: 'pointer' }}>أدخل رمز الدخول</button>
-              <p style={{ marginTop: '12px', fontSize: '11px', color: '#555' }}>الرمز الافتراضي: {ai.facultyPin}</p>
+              <p style={{ marginTop: '12px', fontSize: '11px', color: '#555' }}>أدخل الرمز السري للدخول</p>
             </div>
           )}
           {ai.activeTab === 'faculty' && ai.facultyUnlocked && (

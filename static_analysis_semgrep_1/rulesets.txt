@@ -1,0 +1,25 @@
+# Approved Rulesets - 2026-06-10
+# Mode: important-only
+# Pro: unavailable (OSS only)
+
+## Baseline
+- p/security-audit
+- p/secrets
+
+## TypeScript
+- p/typescript
+- p/react
+
+## JavaScript
+- p/javascript
+- p/nodejs
+- p/react
+
+## Infrastructure
+- p/yaml
+- p/github-actions
+
+## Third-Party (all languages)
+- https://github.com/trailofbits/semgrep-rules
+- https://github.com/elttam/semgrep-rules
+- https://github.com/apiiro/malicious-code-ruleset

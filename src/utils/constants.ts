@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS = {
   bgAnimationUrl: '',
   bgAnimationBrightness: 0.6,
   accessibilityMode: false,
+  darkMode: true,
   customBgUrl: '',
   customBoyVideoUrl: '',
   customGirlVideoUrl: '',

@@ -1,0 +1,17 @@
+{
+  "name": "Cyber Guardians — حراس الأمن السيبراني",
+  "short_name": "Cyber Guardians",
+  "description": "لعبة تعليمية تفاعلية لتعليم أساسيات الأمن السيبراني",
+  "start_url": "/cyber-guardians-mobile/",
+  "scope": "/cyber-guardians-mobile/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0a1a",
+  "theme_color": "#0a0a1a",
+  "categories": ["education", "game"],
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
