@@ -155,14 +155,10 @@ function AISettings() {
 
   const handleTestConnection = async () => {
     setTesting(true); setTestStatus('⏳ جارٍ اختبار الاتصال...')
-    setGitHubConfig(ghConfig)
     try {
-      const username = await getGitHubUsername()
-      setGhConfig({ ...ghConfig, owner: username })
-      setGitHubConfig({ ...ghConfig, owner: username })
-      const r = await testGitHubConnection()
+      const r = await testConnection(ai.providerId, ai.modelId, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
       setTestStatus(r)
-    } catch (e: any) { setTestStatus(`❌ ${e.message}`) }
+    } catch (e: any) { setTestStatus(`⚠️ ${e.message}`) }
     setTesting(false)
   }
 
