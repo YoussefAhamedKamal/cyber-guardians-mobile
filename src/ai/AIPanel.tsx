@@ -1165,8 +1165,8 @@ function FacultyDataEditor() {
                   levels: (contentStore.newLevels || []) as unknown[],
                   characters: contentStore.newCharacters as Record<string, unknown>,
                 }
-              const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
-                await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
+                const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
+                try { await enableGitHubPages(newRepo.owner, newRepo.repo, 'main') } catch {}
                 setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
                 setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
                 const ok = results.filter(r => r.startsWith('✅')).length

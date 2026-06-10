@@ -512,7 +512,8 @@ App.tsx
 ### مكتمل — الإضافات الجديدة (v1.4.0)
 - [x] **Cloudflare Pages** — نشر آلي مع كل push على `main`، bandwith غير محدود، HTTPS مجاني
 - [x] **SPA fallback** — `public/_redirects` (`/* /index.html 200`) لتوجيه جميع المسارات
-- [x] **تغيير base path** — `'/'` لـ Cloudflare (مع ملاحظة: GitHub Pages يحتاج `'/repo-name/'`)
+- [x] **Base path ديناميكي** — `process.env.BASE_URL \|\| '/'` يشتغل مع Cloudflare و GitHub Pages بدون تعديل يدوي
+- [x] **GitHub Integration متسامح** — `enableGitHubPages` يفشل بهدوء مع المستودعات الخاصة (لا يكسر العملية)
 
 ### مكتمل — الإضافات الجديدة (v1.3.0)
 - [x] **Code Splitting** — 7 صفحات lazy-loaded + ChallengeRenderer + AIPanel، حجم الـ chunk: 548KB
@@ -583,27 +584,23 @@ App.tsx
 | **Build** | `npm run build` ← مجلد `dist` |
 | **SPA support** | `public/_redirects` (`/* /index.html 200`) |
 
-### ملاحظة مهمة: base path
+### ملاحظة مهمة: base path (ديناميكي)
+```ts
+// vite.config.ts
+base: process.env.BASE_URL || '/',
 ```
-Cloudflare Pages: vite.config.ts → base: '/'          (الموقع في الجذر)
-GitHub Pages:     vite.config.ts → base: '/repo-name/' (الموقع تحت مسار المستودع)
-```
-إذا رجعت لـ GitHub Pages، عدّل `base` في `vite.config.ts` إلى `'/cyber-guardians-mobile/'`.
+- **Cloudflare Pages**: BASE_URL غير مضبوط ← `base: '/'` ✅
+- **GitHub Actions**: BASE_URL = `/cyber-guardians-mobile/` ✅
+- **محلياً (npm run dev)**: غير مضبوط ← `base: '/'` ✅
 
-### المقارنة (لمن أراد التغيير مستقبلاً)
-| المنصة | bandwidth | Builds/شهر | ربط مستودع خاص | SPA fallback |
-|--------|:---------:|:-----------:|:--------------:|:------------:|
-| **Cloudflare Pages** | غير محدود | 500 | ✅ | `_redirects` |
-| Netlify | 100GB | 300 | ✅ | `_redirects` |
-| Vercel | 100GB | 6000 | ✅ | `vercel.json` |
-| GitHub Pages | 100GB | 2000 | ❌ (يحتاج Pro) | 404.html |
+لا تحتاج تغيير `vite.config.ts` يدوياً عند التبديل بين المنصات.
 
-### GitHub Pages deploy.yml (معطل حالياً)
+### GitHub Actions deploy.yml (شغال مع المستودع العام)
 ```
 .github/workflows/deploy.yml
-  └── push على main → build + publish to Pages
+  └── push على main → build (مع BASE_URL=/cyber-guardians-mobile/) → publish to Pages
 ```
-معطل لأن المستودع خاص و GitHub Pages لا يدعم الخاص في الحساب المجاني.
+**ملاحظة:** يحتاج المستودع عام أو GitHub Pro للمستودعات الخاصة.
 
 ---
 

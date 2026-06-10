@@ -527,7 +527,7 @@ export async function copyEntireRepo(
 
 export async function setupDirectEdit(): Promise<{ owner: string; repo: string; pagesUrl: string }> {
   const config = loadConfig()
-  await enableGitHubPages(config.owner, config.repo, config.branch)
+  try { await enableGitHubPages(config.owner, config.repo, config.branch) } catch {}
   return {
     owner: config.owner,
     repo: config.repo,
@@ -538,7 +538,7 @@ export async function setupDirectEdit(): Promise<{ owner: string; repo: string; 
 export async function setupForkWithPages(): Promise<{ owner: string; repo: string; url: string; pagesUrl: string }> {
   const result = await forkMainRepo()
   await waitForForkReady(result.owner, result.repo)
-  const pagesMsg = await enableGitHubPages(result.owner, result.repo)
+  try { await enableGitHubPages(result.owner, result.repo) } catch {}
   return {
     ...result,
     pagesUrl: `https://${result.owner}.github.io/${result.repo}/`,
