@@ -5,7 +5,8 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, MAIN_REPO } from './github'
+import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit } from './github'
+import { MAIN_REPO } from '@/config'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
@@ -95,6 +96,17 @@ function AIFab({ onClick }: { onClick: () => void }) {
           borderRadius: '50%', border: '1px solid rgba(206,147,216,0.2)',
           animation: 'ai-fab-pulse 1.5s ease-in-out infinite', pointerEvents: 'none',
         }} />
+      )}
+      {hovered && !dragging && (
+        <div style={{
+          position: 'absolute', right: '56px', top: '50%', transform: 'translateY(-50%)',
+          background: 'rgba(0,0,0,0.85)', color: '#E1BEE7', fontSize: '13px',
+          padding: '6px 12px', borderRadius: '8px', whiteSpace: 'nowrap',
+          pointerEvents: 'none', zIndex: 9999, direction: 'ltr',
+          border: '1px solid rgba(206,147,216,0.3)',
+        }}>
+          AI &amp; Advanced Settings
+        </div>
       )}
     </div>
   )
@@ -400,12 +412,12 @@ function AISettings() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
           <label style={{ color: '#fff', fontWeight: 500 }}>Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
-          <label style={{ color: '#fff', fontWeight: 500 }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="ykamal-1 أو email@github.com" style={inputStyle} /></label>
+          <label style={{ color: '#fff', fontWeight: 500 }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="your-username أو email@github.com" style={inputStyle} /></label>
           <label style={{ color: '#fff', fontWeight: 500 }}>Repo (اسم المستودع)<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="cyber-guardians-mobile" style={inputStyle} /></label>
           <label style={{ color: '#fff', fontWeight: 500 }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
           <div style={{ display: 'flex', gap: '6px' }}>
-            <button onClick={() => { setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
-            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }); const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
+            <button onClick={async () => { await setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
+            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); try { let username; try { username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }) } catch {}; const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
           </div>
           {ghTestStatus && (
               <div style={{
@@ -434,11 +446,17 @@ function FacultyPinChanger() {
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
+  const [showCurrentPin, setShowCurrentPin] = useState(false)
+  const [showNewPin, setShowNewPin] = useState(false)
+  const [showConfirmPin, setShowConfirmPin] = useState(false)
 
-  const handleChange = () => {
-    if (currentPin !== ai.facultyPin) {
-      setMsg('❌ الرمز الحالي خطأ')
-      return
+  const handleChange = async () => {
+    if (currentPin.length > 0) {
+      const ok = await ai.unlockFaculty(currentPin)
+      if (!ok) {
+        setMsg('❌ الرمز الحالي خطأ')
+        return
+      }
     }
     if (newPin.length < 4) {
       setMsg('❌ الرمز الجديد يجب أن يكون 4 أحرف على الأقل')
@@ -448,24 +466,35 @@ function FacultyPinChanger() {
       setMsg('❌ الرمز الجديد غير متطابق')
       return
     }
-    ai.setFacultyPin(newPin)
+    await ai.setFacultyPin(newPin)
     setCurrentPin('')
     setNewPin('')
     setConfirmPin('')
     setMsg('✅ تم تغيير الرمز بنجاح')
   }
 
+  const PasswordField = ({ label, value, onChange, show, onToggle, placeholder }: {
+    label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void; placeholder: string
+  }) => (
+    <label style={{ color: '#fff', fontWeight: 500, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {label}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input type={show ? 'text' : 'password'} value={value} onChange={(e) => { onChange(e.target.value); setMsg(null) }} placeholder={placeholder} style={{ ...inputStyle, paddingRight: '32px' }} />
+        <button onClick={onToggle} type="button" style={{
+          position: 'absolute', right: '6px', background: 'none', border: 'none',
+          color: '#888', cursor: 'pointer', fontSize: '14px', padding: '2px',
+        }}>
+          {show ? '🙈' : '👁️'}
+        </button>
+      </div>
+    </label>
+  )
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-      <label style={{ color: '#fff', fontWeight: 500 }}>الرمز الحالي
-        <input type="password" value={currentPin} onChange={(e) => { setCurrentPin(e.target.value); setMsg(null) }} placeholder="****" style={inputStyle} />
-      </label>
-      <label style={{ color: '#fff', fontWeight: 500 }}>الرمز الجديد
-        <input type="password" value={newPin} onChange={(e) => { setNewPin(e.target.value); setMsg(null) }} placeholder="4 أحرف على الأقل" style={inputStyle} />
-      </label>
-      <label style={{ color: '#fff', fontWeight: 500 }}>تأكيد الرمز الجديد
-        <input type="password" value={confirmPin} onChange={(e) => { setConfirmPin(e.target.value); setMsg(null) }} placeholder="أعد إدخال الرمز" style={inputStyle} />
-      </label>
+      <PasswordField label="الرمز الحالي" value={currentPin} onChange={setCurrentPin} show={showCurrentPin} onToggle={() => setShowCurrentPin(!showCurrentPin)} placeholder="****" />
+      <PasswordField label="الرمز الجديد" value={newPin} onChange={setNewPin} show={showNewPin} onToggle={() => setShowNewPin(!showNewPin)} placeholder="4 أحرف على الأقل" />
+      <PasswordField label="تأكيد الرمز الجديد" value={confirmPin} onChange={setConfirmPin} show={showConfirmPin} onToggle={() => setShowConfirmPin(!showConfirmPin)} placeholder="أعد إدخال الرمز" />
       <button onClick={handleChange} style={{
         padding: '8px', borderRadius: '6px', border: 'none',
         background: 'linear-gradient(135deg,#CE93D8,#BA68C8)',
@@ -1038,8 +1067,8 @@ function FacultyDataEditor() {
     setGithubSyncing(false)
   }
 
-  const handleSaveGitHubConfig = () => {
-    setGitHubConfig(ghConfig)
+  const handleSaveGitHubConfig = async () => {
+    await setGitHubConfig(ghConfig)
     setShowGitHubSettings(false)
     setGithubStatus('✅ تم حفظ إعدادات GitHub')
   }
@@ -1181,7 +1210,7 @@ function FacultyDataEditor() {
           </div>
 
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>GitHub Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
-          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="ykamal-1 أو email@github.com" style={inputStyle} /></label>
+          <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="your-username أو email@github.com" style={inputStyle} /></label>
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Repo (اسم المستودع)<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="cyber-guardians-mobile" style={inputStyle} /></label>
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
           <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
@@ -1189,9 +1218,7 @@ function FacultyDataEditor() {
             <button onClick={async () => {
               setGitHubConfig(ghConfig)
               try {
-                const username = await getGitHubUsername()
-                setGhConfig({ ...ghConfig, owner: username })
-                setGitHubConfig({ ...ghConfig, owner: username })
+                try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }) } catch {}
                 const r = await testGitHubConnection()
                 setGithubStatus(r)
               } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
@@ -1376,8 +1403,38 @@ export function AIPanel() {
   const resizeRef = useRef({ startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, handle: '' })
 
   const handleFacultyAuth = () => {
-    const pin = window.prompt('أدخل رمز هيئة التدريس:')
-    if (pin && !ai.unlockFaculty(pin)) alert('رمز خطأ')
+    setShowFacultyPinModal(true)
+  }
+
+  const [showFacultyPinModal, setShowFacultyPinModal] = useState(false)
+  const [facultyPinInput, setFacultyPinInput] = useState('')
+  const [showFacultyPin, setShowFacultyPin] = useState(false)
+
+  const [pinLockedMsg, setPinLockedMsg] = useState<string | null>(null)
+
+  const handleFacultyPinSubmit = async () => {
+    const now = Date.now()
+    if (ai.pinLockedUntil > now) {
+      const remaining = Math.ceil((ai.pinLockedUntil - now) / 1000)
+      setPinLockedMsg(`🔒 انتظر ${remaining} ثانية`)
+      return
+    }
+    if (facultyPinInput) {
+      const ok = await ai.unlockFaculty(facultyPinInput)
+      if (!ok) {
+        setFacultyPinInput('')
+        setShowFacultyPin(false)
+        if (ai.pinLockedUntil > Date.now()) {
+          setPinLockedMsg('🔒 تم القفل مؤقتاً — انتظر 30 ثانية')
+        }
+        alert('رمز خطأ')
+      } else {
+        setShowFacultyPinModal(false)
+        setFacultyPinInput('')
+        setShowFacultyPin(false)
+        setPinLockedMsg(null)
+      }
+    }
   }
 
   const handleHeaderPointerDown = useCallback((e: React.PointerEvent) => {
@@ -1521,7 +1578,52 @@ export function AIPanel() {
       </div>
         </>
       )}
-    </>
+      {showFacultyPinModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => { setShowFacultyPinModal(false); setFacultyPinInput(''); setShowFacultyPin(false) }}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: '#0d1128', border: '1px solid rgba(206,147,216,0.3)', borderRadius: '12px',
+            padding: '24px', width: '280px', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+            <p style={{ color: '#CE93D8', fontWeight: 700, fontSize: '14px', marginBottom: '16px' }}>أدخل رمز هيئة التدريس</p>
+            {pinLockedMsg && <p style={{ color: '#FF5252', fontSize: '12px', marginBottom: '8px' }}>{pinLockedMsg}</p>}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showFacultyPin ? 'text' : 'password'}
+                value={facultyPinInput}
+                onChange={(e) => setFacultyPinInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleFacultyPinSubmit() }}
+                placeholder="****"
+                autoFocus
+                style={{
+                  ...inputStyle, paddingRight: '36px', textAlign: 'center',
+                  fontSize: '18px', letterSpacing: '8px',
+                }}
+              />
+              <button onClick={() => setShowFacultyPin(!showFacultyPin)}
+                style={{
+                  position: 'absolute', right: '8px', background: 'none', border: 'none',
+                  color: '#888', cursor: 'pointer', fontSize: '16px', padding: '4px',
+                }}>
+                {showFacultyPin ? '🙈' : '👁️'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
+              <button onClick={handleFacultyPinSubmit} style={{
+                padding: '8px 20px', borderRadius: '8px', border: 'none',
+                background: 'linear-gradient(135deg,#CE93D8,#BA68C8)',
+                color: '#0a0a1a', fontWeight: 700, cursor: 'pointer', fontSize: '13px',
+              }}>دخول</button>
+              <button onClick={() => { setShowFacultyPinModal(false); setFacultyPinInput(''); setShowFacultyPin(false) }} style={{
+                padding: '8px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)',
+                background: 'transparent', color: '#888', cursor: 'pointer', fontSize: '13px',
+              }}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
   )
 }
 

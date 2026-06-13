@@ -4,6 +4,7 @@ import type { AIMessage, AIState, ChatSession } from '@/types/ai'
 import { DEFAULT_AI_STATE, AI_PROVIDERS } from '@/types/ai'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import { loadEncryptedKeys, saveEncryptedKeys } from '@/utils/apiKeyCrypto'
+import { hashPin } from '@/utils/pinCrypto'
 
 const STORAGE_KEY = 'cg-ai-state'
 
@@ -18,8 +19,8 @@ interface AIStore extends AIState {
   setApiKeys: (keys: Record<string, string>) => void
   getApiKey: (providerId: string) => string
   setCustomBaseUrl: (url: string) => void
-  setFacultyPin: (pin: string) => void
-  unlockFaculty: (pin: string) => boolean
+  setFacultyPin: (pin: string) => Promise<void>
+  unlockFaculty: (pin: string) => Promise<boolean>
   lockFaculty: () => void
   togglePanel: () => void
   setPanelOpen: (v: boolean) => void
@@ -65,9 +66,29 @@ export const useAIStore = create<AIStore>()(
       setApiKeys: (keys) => set({ apiKeys: keys }),
       getApiKey: (providerId) => get().apiKeys[providerId] || '',
       setCustomBaseUrl: (url) => set({ customBaseUrl: url }),
-      setFacultyPin: (pin) => set({ facultyPin: pin }),
-      unlockFaculty: (pin) => { if (pin === get().facultyPin) { set({ facultyUnlocked: true }); return true }; return false },
+      setFacultyPin: async (pin) => {
+        const hashed = await hashPin(pin)
+        set({ facultyPinHash: hashed })
+      },
+      unlockFaculty: async (pin) => {
+        const now = Date.now()
+        const state = get()
+        if (state.pinLockedUntil > now) return false
+        const hashed = await hashPin(pin)
+        if (hashed === state.facultyPinHash) {
+          set({ facultyUnlocked: true, pinAttempts: 0 })
+          return true
+        }
+        const attempts = state.pinAttempts + 1
+        if (attempts >= 5) {
+          set({ pinAttempts: attempts, pinLockedUntil: now + 30000 })
+        } else {
+          set({ pinAttempts: attempts })
+        }
+        return false
+      },
       lockFaculty: () => set({ facultyUnlocked: false }),
+
       togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, panelMaximized: false })),
       setPanelOpen: (v) => set({ panelOpen: v, panelMaximized: false }),
       setPanelMaximized: (v) => set({ panelMaximized: v }),
@@ -129,7 +150,7 @@ export const useAIStore = create<AIStore>()(
         providerId: state.providerId,
         modelId: state.modelId,
         customBaseUrl: state.customBaseUrl,
-        facultyPin: state.facultyPin,
+        facultyPinHash: state.facultyPinHash,
         facultyUnlocked: state.facultyUnlocked,
         studentSessions: state.studentSessions,
         activeStudentSessionId: state.activeStudentSessionId,

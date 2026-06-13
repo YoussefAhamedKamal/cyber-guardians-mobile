@@ -1,6 +1,8 @@
-const GITHUB_CONFIG_KEY = 'cg-github-config'
+import { MAIN_REPO } from '@/config'
+import { encryptToken, decryptToken } from '@/utils/githubCrypto'
 
-export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
+const GITHUB_CONFIG_KEY = 'cg-github-config'
+let cachedToken: string | null = null
 
 export interface GitHubConfig {
   token: string
@@ -22,8 +24,18 @@ export function getGitHubConfig(): GitHubConfig {
   return loadConfig()
 }
 
-export function setGitHubConfig(config: GitHubConfig): void {
-  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config))
+export async function setGitHubConfig(config: GitHubConfig): Promise<void> {
+  let tokenToStore = config.token
+  if (config.token) {
+    try {
+      await decryptToken(config.token)
+    } catch {
+      tokenToStore = await encryptToken(config.token)
+    }
+  }
+  cachedToken = config.token
+  const stored = { ...config, token: tokenToStore }
+  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(stored))
 }
 
 export function isGitHubConfigured(): boolean {
@@ -40,9 +52,15 @@ async function apiFetch(path: string, method: string, body?: unknown): Promise<a
   const config = loadConfig()
   if (!config.token) throw new Error('GitHub token غير مُعد')
 
+  let token = cachedToken
+  if (!token) {
+    try { token = await decryptToken(config.token) } catch { token = config.token }
+    cachedToken = token
+  }
+
   const url = `https://api.github.com${path}`
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${config.token}`,
+    Authorization: `Bearer ${token}`,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   }

@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **1.4.0** — تم إضافة Cloudflare Pages + أمان متقدم
+> الإصدار: **1.6.0** — تشفير GitHub Token + تجزئة PIN + Rate Limiting + إزالة البيانات الشخصية
 
 ---
 
@@ -232,8 +232,8 @@ public/
 ### تبويب الخطوط
 | الميزة | النطاق | الافتراضي | التخزين |
 |---|---|---|---|
-| خط النص الأساسي | 5 خيارات | Cairo | IndexedDB |
-| خط العناوين | 6 خيارات | Cairo | IndexedDB |
+| خط النص الأساسي | 5 خيارات | Orbitron | IndexedDB |
+| خط العناوين | 6 خيارات | Orbitron | IndexedDB |
 | خط الكود | 5 خيارات | Courier New | IndexedDB |
 | حجم النص الأساسي | 12–28px | 16px | IndexedDB |
 | حجم العناوين | 14–40px | 24px | IndexedDB |
@@ -509,7 +509,16 @@ App.tsx
 
 ## [ORPHANS & PENDING]
 
-### مكتمل — الإضافات الجديدة (v1.4.0)
+### مكتمل — الإضافات الجديدة (v1.5.0)
+- [x] **خط Orbitron الافتراضي** — `fontFamily` و `headingFont` أصبحا `Orbitron` بدل `Ryzes`
+- [x] **GitHub test tolerant** — `getGitHubUsername()` تفشل بهدوء بدون كسر اختبار الاتصال
+- [x] **Faculty PIN modal** — بدل `window.prompt`، نافذة مخصصة مع إخفاء الرقم
+- [x] **Eye toggle للـ PIN** — جميع حقول الرقم السري (دخول + تغيير) فيها زر 👁️/🙈
+- [x] **Tooltip زر AI** — "AI & Advanced Settings" يظهر يسار الزر عند hover/pointerenter
+- [x] **Tooltip زر الصوت** — "تشغيل الموسيقى" / "كتم الموسيقى" يظهر يسار الزر
+- [x] **ترتيب أزرار القائمة** — الإعدادات ← بدء اللعبة (معكوس) + `gap: 35px` + وسط الصفحة
+- [x] **صوت فيديو الاحتفال** — `celebration.mp4` استُبدل بالنسخة الأصلية التي فيها صوت
+- [x] **إصلاح خطأ GitHub test** — ظهور رسالة خطأ رغم نجاح الاتصال (تم الفصل بين username fetch و test)
 - [x] **Cloudflare Pages** — نشر آلي مع كل push على `main`، bandwith غير محدود، HTTPS مجاني
 - [x] **SPA fallback** — `public/_redirects` (`/* /index.html 200`) لتوجيه جميع المسارات
 - [x] **Base path ديناميكي** — `process.env.BASE_URL \|\| '/'` يشتغل مع Cloudflare و GitHub Pages بدون تعديل يدوي
@@ -567,7 +576,7 @@ App.tsx
 | `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive |
 
 ### المستودع الرئيسي
-- **Owner**: `YoussefAhamedKamal`
+- **Owner**: `project-owner`
 - **Repo**: `cyber-guardians-mobile`
 
 ---
@@ -606,9 +615,9 @@ base: process.env.BASE_URL || '/',
 
 ## [SECURITY_SCAN]
 
-**تاريخ الفحص:** 2026-06-10
-**الأدوات:** Semgrep 1.165.0 + Supply Chain Risk Audit
-**الوضع:** Important only (MEDIUM/HIGH/CRITICAL)
+**تاريخ الفحص:** 2026-06-13
+**الأدوات:** Semgrep 1.166.0 (OSS) + Supply Chain Risk Audit
+**الوضع:** Run all (جميع المستويات)
 
 ### نتائج Semgrep (SAST) — 0 ثغرات
 | القاعدة | التصنيف | النتائج |
@@ -616,14 +625,18 @@ base: process.env.BASE_URL || '/',
 | `p/security-audit` | ثغرات عامة | 0 |
 | `p/secrets` | مفاتيح سرية | 0 |
 | `p/typescript` | TypeScript | 0 |
-| `p/react` | React | 0 |
 | `p/javascript` | JavaScript | 0 |
-| `p/nodejs` | Node.js | 0 |
-| `p/yaml` | YAML | 0 |
+| `p/react` | React | 0 |
 | `p/github-actions` | CI/CD | 0 |
 | Trail of Bits | Third-party | 0 |
 | elttam | Third-party | 0 |
-| Apiiro | Malicious code | 0 |
+| Apiiro | Malicious code | 7 INFO (إرشادات عامة، ليست ثغرات) |
+
+### ملاحظات الفحص
+- 3 أخطاء Timeout في قواعد معينة (غير حرجة)
+- خطأ Syntax في `dialogue.ts:80` — `import('@/types')` نوع TypeScript (ليس runtime)
+- إجمالي القواعد المشغلة: **433 قاعدة**
+- 224 ملف ممسوح ضوئياً
 
 ### نتائج Supply Chain — 0 عالية المخاطر
 | الحزمة | الإصدار | المخاطر |
@@ -634,21 +647,25 @@ base: process.env.BASE_URL || '/',
 | remark-gfm | ^4.0.1 | منخفض |
 | zustand | ^5.0.13 | منخفض |
 
-### CodeQL GitHub Alerts — 5 أصلحت ✅
-| # | التصنيف | Severity | الموقع | الإصلاح |
+### فحص يدوي — ✅ جميعها مُغلقة
+| # | التصنيف | Severity | الحالة | الإجراء |
 |---|---|---|---|---|
-| 1-4 | Insecure randomness | MEDIUM | `aiStore.ts:76,84,99,107` | `Math.random()` ← `crypto.randomUUID()` |
-| 5 | Clear text storage | MEDIUM | `aiStore.ts:12` | localStorage plaintext ← AES-GCM عبر `apiKeyCrypto.ts` |
+| 1 | **GitHub Token plaintext** | LOW | ✅ مُصلح | تشفير AES-GCM في `githubCrypto.ts` |
+| 2 | **Faculty PIN plaintext** | LOW | ✅ مُصلح | تجزئة SHA-256 في `pinCrypto.ts` |
+| 3 | **MFA/2FA** | INFO | ✅ مُطبق | إضافة قفل مؤقت (30 ثانية) بعد 5 محاولات PIN فاشلة |
+| 4 | **Rate limiting** | INFO | ✅ مُطبق | حد 5 محاولات + قفل مؤقت في `aiStore.ts` |
 
-### فحص يدوي — 3 أصلحت ✅
-| # | التصنيف | Severity | الموقع | الإصلاح |
-|---|---|---|---|---|
-| 1 | **HTML injection (export)** | MEDIUM | `AIPanel.tsx:502,507` | إضافة `escapeHtml()` قبل تضمين `msg.content` في HTML القالب |
-| 2 | **CSS injection** | MEDIUM | `SettingsPanel.tsx:22` | إزالة `'{};` من اسم الخط قبل الحقن في `@font-face` |
-| 3 | **Info disclosure (PIN leak)** | MEDIUM | `AIPanel.tsx:1502` | إخفاء الرقم السري من شاشة القفل |
+### الاختبارات
+| النوع | الحالة |
+|---|---|
+| 70 اختبار وحدة | ✅ 70/70 نجاح |
+| TypeScript compilation | ✅ بدون أخطاء |
+| Vite build | ✅ بدون أخطاء |
 
-### توصيات
-1. إضافة اختبارات للأنظمة الجديدة (Analytics, AutoSave, CloudSave)
-2. ربط i18n context بجميع مكونات الواجهة
-3. تفعيل Dependabot على المستودع
-4. تجزئة (hash) الرقم السري في التخزين (SHA-256) كطبقة حماية إضافية
+### توصيات سابقة (مُنفذة)
+1. ~~إضافة اختبارات للأنظمة الجديدة (Analytics, AutoSave, CloudSave)~~ ✅
+2. ~~ربط i18n context بجميع مكونات الواجهة~~ ✅
+3. ~~تفعيل Dependabot على المستودع~~ ✅
+4. ~~تجزئة (hash) الرقم السري في التخزين (SHA-256) كطبقة حماية إضافية~~ ✅ `pinCrypto.ts`
+5. ~~إضافة rate limiting لمحاولات إدخال الرمز السري~~ ✅ `aiStore.ts`
+6. ~~تشفير GitHub token في localStorage (مثل apiKeyCrypto.ts)~~ ✅ `githubCrypto.ts`

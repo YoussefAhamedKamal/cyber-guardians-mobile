@@ -1,4 +1,5 @@
 import { generateCharactersTS, generateDialogueTS, generateGameMetaTS } from './github'
+import { MAIN_REPO } from '@/config'
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
 const GIS_URL = 'https://accounts.google.com/gsi/client'
@@ -252,7 +253,7 @@ export async function uploadFullRepoToDrive(
   }
 
   clearFolderCache()
-  const isFromMain = sourceOwner === 'YoussefAhamedKamal' && sourceRepo === 'cyber-guardians-mobile'
+  const isFromMain = sourceOwner === MAIN_REPO.owner && sourceRepo === MAIN_REPO.repo
 
   // === Step 1: Get source tree ===
   let sourceTree: Array<{ path: string; mode: string; type: string; sha: string }>

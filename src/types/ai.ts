@@ -94,8 +94,10 @@ export interface AIState {
   modelId: string
   apiKeys: Record<string, string>
   customBaseUrl: string
-  facultyPin: string
+  facultyPinHash: string
   facultyUnlocked: boolean
+  pinAttempts: number
+  pinLockedUntil: number
   studentSessions: ChatSession[]
   activeStudentSessionId: string
   facultySessions: ChatSession[]
@@ -110,8 +112,10 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   providerId: 'openrouter',
   modelId: 'meta-llama/llama-3.2-3b-instruct:free',
   customBaseUrl: '',
-  facultyPin: '1234',
+  facultyPinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
   facultyUnlocked: false,
+  pinAttempts: 0,
+  pinLockedUntil: 0,
   studentSessions: [],
   activeStudentSessionId: '',
   facultySessions: [],

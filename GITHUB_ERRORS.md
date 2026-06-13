@@ -5,7 +5,7 @@
 | # | الخطأ | السبب | الحل |
 |---|-------|-------|------|
 | 1 | 403 Resource not accessible by integration | التوكن lacks صلاحيات الكتابة | استخدام توكن كلاسيك بصلاحية `repo` كاملة |
-| 2 | 404 Not Found (Fork) | المالك غير صحيح (`ykamal-1` بدلاً من `YoussefAhamedKamal`) | تصحيح `MAIN_REPO.owner` في `github.ts` |
+| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/config.ts` |
 | 3 | 404 Not Found (Owner) | المستخدم يكتب اسم المستخدم الكامل أو الإيميل | إضافة دالة `resolveGithubOwner()` + كشف تلقائي من التوكن |
 | 4 | المستودع فارغ بعد النسخ (قديم) | ~`auto_init: false`~ **تم الإصلاح**: الآن `auto_init: false` عمداً — يُنشئ commit واحد فقط (لا إلغاء deploy) | يُنشئ أول commit عبر `copyEntireRepo` مباشرة |
 | 5 | الصفحة البيضاء | `vite.config.ts` يحتوي على `base` غير صحيح أو لا يحتوي على `base` أصلًا | تحديث `base` تلقائياً — مع دعم جميع أنواع الاقتباسات (`'`, `"`, `` ` ``) وإضافة `base` إن لم يكن موجوداً |
@@ -48,12 +48,12 @@ GitHub API خطأ 403: Resource not accessible by integration
 ```
 
 **السبب:**
-`MAIN_REPO.owner` كان `ykamal-1` لكن المالك الحقيقي هو `YoussefAhamedKamal`.
+`MAIN_REPO.owner` كان خاطئاً.
 
 **الحل:**
 ```typescript
-// github.ts
-export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
+// src/config.ts
+export const MAIN_REPO = { owner: 'project-owner', repo: 'cyber-guardians-mobile' }
 ```
 
 **ملاحظة:** المالك هو **اسم المستخدم** على GitHub، وليس الاسم الكامل.
@@ -68,7 +68,7 @@ export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-m
 ```
 
 **السبب:**
-- المستخدم يكتب الاسم الكامل (`Youssef Ahmed Kamal`) بدلاً من اسم المستخدم (`YoussefAhamedKamal`)
+- المستخدم يكتب الاسم الكامل بدلاً من اسم المستخدم
 - البحث بالإيميل لا يعمل دائماً لأن GitHub لا يظهر كل الإيميلات العامة
 
 **الحل:**
@@ -227,7 +227,7 @@ const handleKey = (e: KeyboardEvent) => {
 2. اعمل مشروع جديد ← فعّل **Google Drive API**
 3. **OAuth consent screen**: User data → Testing mode → ضيف إيميلك في Test users
 4. **Credentials**: Create Credentials → OAuth Client ID → Web application
-5. حط URLs في **Authorized JavaScript origins**: `http://localhost:5173`, `https://YoussefAhamedKamal.github.io`
+5. حط URLs في **Authorized JavaScript origins**: `http://localhost:5173`, `https://project-owner.github.io`
 6. انسخ **Client ID** وحطه في التطبيق
 
 ### المميزات

@@ -50,6 +50,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('menu')
   const panelMaximized = useAIStore((s) => s.panelMaximized)
   const [dialogueIndex, setDialogueIndex] = useState(0)
+  const [bgmHovered, setBgmHovered] = useState(false)
   const responsive = useResponsive()
   const game = useGameStore()
   const settings = useSettingsStore()
@@ -215,11 +216,15 @@ export function App() {
       </div>
 
       {/* BGM toggle button */}
+      <div
+        style={{ position: 'fixed', top: '72px', right: '16px', zIndex: 9999 }}
+        onPointerEnter={() => setBgmHovered(true)}
+        onPointerLeave={() => setBgmHovered(false)}
+      >
       <button
         onClick={() => settings.toggleBgmMute()}
         title={settings.bgmMuted || settings.muted ? 'تشغيل الموسيقى الخلفية' : 'كتم الموسيقى الخلفية'}
         style={{
-          position: 'fixed', top: '72px', right: '16px', zIndex: 9999,
           display: panelMaximized ? 'none' : 'inline-flex',
           width: '44px', height: '44px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)',
           background: (settings.bgmMuted || settings.muted) ? 'rgba(255,82,82,0.2)' : 'rgba(79,195,247,0.2)',
@@ -230,6 +235,18 @@ export function App() {
       >
         {(settings.bgmMuted || settings.muted) ? '\u{1F507}' : '\u{1F50A}'}
       </button>
+      {bgmHovered && (
+        <div style={{
+          position: 'absolute', right: '52px', top: '50%', transform: 'translateY(-50%)',
+          background: 'rgba(0,0,0,0.85)', color: '#E1BEE7', fontSize: '13px',
+          padding: '6px 12px', borderRadius: '8px', whiteSpace: 'nowrap',
+          pointerEvents: 'none', zIndex: 9999,
+          border: '1px solid rgba(206,147,216,0.3)',
+        }}>
+          {settings.bgmMuted || settings.muted ? 'تشغيل الموسيقى' : 'كتم الموسيقى'}
+        </div>
+      )}
+      </div>
     </div>
   )
 }

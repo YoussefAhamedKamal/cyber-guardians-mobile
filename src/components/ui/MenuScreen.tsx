@@ -119,9 +119,22 @@ export function MenuScreen({ onStart, onSettings }: Props) {
         position: 'absolute', bottom: 'clamp(20px,4vw,36px)',
         left: '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center',
-        gap: 'clamp(10px,2vw,24px)',
+        gap: '35px',
         zIndex: 30, direction: 'ltr',
       }}>
+        {/* SETTINGS wrapper: label then button → label on LEFT */}
+        <div className="cg-btn-wrapper">
+          <span className="cg-label cg-label--left">
+            الإعدادات
+          </span>
+          <button onClick={onSettings} className="cg-icon-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          </button>
+        </div>
+
         {/* START wrapper: button then label → label on RIGHT */}
         <div className="cg-btn-wrapper">
           <button onClick={onStart} className="cg-icon-btn cg-icon-btn--active">
@@ -141,19 +154,6 @@ export function MenuScreen({ onStart, onSettings }: Props) {
           <span className="cg-label cg-label--right">
             بدء اللعبة
           </span>
-        </div>
-
-        {/* SETTINGS wrapper: label then button → label on LEFT */}
-        <div className="cg-btn-wrapper">
-          <span className="cg-label cg-label--left">
-            الإعدادات
-          </span>
-          <button onClick={onSettings} className="cg-icon-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-            </svg>
-          </button>
         </div>
       </div>
 
