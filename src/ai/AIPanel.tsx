@@ -440,6 +440,25 @@ function AISettings() {
   )
 }
 
+function PasswordField({ label, value, onChange, show, onToggle, placeholder, onMsgClear }: {
+  label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void; placeholder: string; onMsgClear: () => void
+}) {
+  return (
+    <label style={{ color: '#fff', fontWeight: 500, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {label}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input type={show ? 'text' : 'password'} value={value} onChange={(e) => { onChange(e.target.value); onMsgClear() }} placeholder={placeholder} style={{ ...inputStyle, paddingRight: '32px' }} />
+        <button onClick={onToggle} type="button" style={{
+          position: 'absolute', right: '6px', background: 'none', border: 'none',
+          color: '#888', cursor: 'pointer', fontSize: '14px', padding: '2px',
+        }}>
+          {show ? '🙈' : '👁️'}
+        </button>
+      </div>
+    </label>
+  )
+}
+
 function FacultyPinChanger() {
   const ai = useAIStore()
   const [currentPin, setCurrentPin] = useState('')
@@ -473,28 +492,11 @@ function FacultyPinChanger() {
     setMsg('✅ تم تغيير الرمز بنجاح')
   }
 
-  const PasswordField = ({ label, value, onChange, show, onToggle, placeholder }: {
-    label: string; value: string; onChange: (v: string) => void; show: boolean; onToggle: () => void; placeholder: string
-  }) => (
-    <label style={{ color: '#fff', fontWeight: 500, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      {label}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <input type={show ? 'text' : 'password'} value={value} onChange={(e) => { onChange(e.target.value); setMsg(null) }} placeholder={placeholder} style={{ ...inputStyle, paddingRight: '32px' }} />
-        <button onClick={onToggle} type="button" style={{
-          position: 'absolute', right: '6px', background: 'none', border: 'none',
-          color: '#888', cursor: 'pointer', fontSize: '14px', padding: '2px',
-        }}>
-          {show ? '🙈' : '👁️'}
-        </button>
-      </div>
-    </label>
-  )
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-      <PasswordField label="الرمز الحالي" value={currentPin} onChange={setCurrentPin} show={showCurrentPin} onToggle={() => setShowCurrentPin(!showCurrentPin)} placeholder="****" />
-      <PasswordField label="الرمز الجديد" value={newPin} onChange={setNewPin} show={showNewPin} onToggle={() => setShowNewPin(!showNewPin)} placeholder="4 أحرف على الأقل" />
-      <PasswordField label="تأكيد الرمز الجديد" value={confirmPin} onChange={setConfirmPin} show={showConfirmPin} onToggle={() => setShowConfirmPin(!showConfirmPin)} placeholder="أعد إدخال الرمز" />
+      <PasswordField label="الرمز الحالي" value={currentPin} onChange={setCurrentPin} show={showCurrentPin} onToggle={() => setShowCurrentPin(!showCurrentPin)} placeholder="****" onMsgClear={() => setMsg(null)} />
+      <PasswordField label="الرمز الجديد" value={newPin} onChange={setNewPin} show={showNewPin} onToggle={() => setShowNewPin(!showNewPin)} placeholder="4 أحرف على الأقل" onMsgClear={() => setMsg(null)} />
+      <PasswordField label="تأكيد الرمز الجديد" value={confirmPin} onChange={setConfirmPin} show={showConfirmPin} onToggle={() => setShowConfirmPin(!showConfirmPin)} placeholder="أعد إدخال الرمز" onMsgClear={() => setMsg(null)} />
       <button onClick={handleChange} style={{
         padding: '8px', borderRadius: '6px', border: 'none',
         background: 'linear-gradient(135deg,#CE93D8,#BA68C8)',

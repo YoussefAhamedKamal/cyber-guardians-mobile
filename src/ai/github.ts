@@ -28,12 +28,14 @@ export async function setGitHubConfig(config: GitHubConfig): Promise<void> {
   let tokenToStore = config.token
   if (config.token) {
     try {
-      await decryptToken(config.token)
+      cachedToken = await decryptToken(config.token)
     } catch {
       tokenToStore = await encryptToken(config.token)
+      cachedToken = config.token
     }
+  } else {
+    cachedToken = null
   }
-  cachedToken = config.token
   const stored = { ...config, token: tokenToStore }
   localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(stored))
 }
