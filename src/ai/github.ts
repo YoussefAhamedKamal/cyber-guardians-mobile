@@ -1,8 +1,6 @@
-import { MAIN_REPO } from '@/config'
-import { encryptToken, decryptToken } from '@/utils/githubCrypto'
-
 const GITHUB_CONFIG_KEY = 'cg-github-config'
-let cachedToken: string | null = null
+
+export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
 
 export interface GitHubConfig {
   token: string
@@ -24,20 +22,8 @@ export function getGitHubConfig(): GitHubConfig {
   return loadConfig()
 }
 
-export async function setGitHubConfig(config: GitHubConfig): Promise<void> {
-  let tokenToStore = config.token
-  if (config.token) {
-    try {
-      cachedToken = await decryptToken(config.token)
-    } catch {
-      tokenToStore = await encryptToken(config.token)
-      cachedToken = config.token
-    }
-  } else {
-    cachedToken = null
-  }
-  const stored = { ...config, token: tokenToStore }
-  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(stored))
+export function setGitHubConfig(config: GitHubConfig): void {
+  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config))
 }
 
 export function isGitHubConfigured(): boolean {
@@ -54,25 +40,29 @@ async function apiFetch(path: string, method: string, body?: unknown): Promise<a
   const config = loadConfig()
   if (!config.token) throw new Error('GitHub token غير مُعد')
 
-  let token = cachedToken
-  if (!token) {
-    try { token = await decryptToken(config.token) } catch { token = config.token }
-    cachedToken = token
-  }
-
   const url = `https://api.github.com${path}`
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${config.token}`,
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   }
-  const opts: RequestInit = { method, headers }
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), 15000)
+  const opts: RequestInit = { method, headers, signal: ac.signal }
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(body)
   }
 
-  const res = await fetch(url, opts)
+  let res: Response
+  try {
+    res = await fetch(url, opts)
+  } catch (e: any) {
+    if (e.name === 'AbortError') throw new Error('طلب GitHub لم يكتمل — انتهت المهلة (15 ثانية)')
+    throw new Error('طلب GitHub فشل — تحقق من اتصالك بالإنترنت')
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
@@ -338,7 +328,7 @@ export async function enableGitHubPages(owner: string, repo: string, branch = 'm
     await apiFetch(`/repos/${owner}/${repo}/pages`, 'POST', {
       source: { branch, path: '/' },
     })
-    return `✅ GitHub Pages مفعّل —他会 يعمل على: https://${owner}.github.io/${repo}/`
+    return `✅ GitHub Pages مفعّل — https://${owner}.github.io/${repo}/`
   } catch (e: any) {
     if (e.message.includes('422') || e.message.includes('already')) {
       return `✅ GitHub Pages مفعّل مسبقاً — https://${owner}.github.io/${repo}/`
@@ -434,7 +424,6 @@ export async function copyEntireRepo(
   const results: string[] = []
   const isFromMain = sourceOwner === MAIN_REPO.owner && sourceRepo === MAIN_REPO.repo
 
-  // === Step 1: Get source tree (recursive) ===
   let sourceTree: Array<{ path: string; mode: string; type: string; sha: string; size: number }>
   try {
     const refData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/refs/heads/main`, 'GET')
@@ -446,7 +435,6 @@ export async function copyEntireRepo(
     return results
   }
 
-  // === Step 2: Create blobs in target repo and build tree ===
   const treeItems: Array<{ path: string; mode: string; type: string; sha: string }> = []
 
   for (const item of sourceTree) {
@@ -500,14 +488,12 @@ export async function copyEntireRepo(
     return results
   }
 
-  // === Step 3: Get parent commit SHA (if target repo already has commits) ===
   let parentSha: string | null = null
   try {
     const branchData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'GET')
     parentSha = branchData.object.sha
-  } catch { /* new repo — orphan commit */ }
+  } catch {}
 
-  // === Step 4: Create tree in target repo ===
   let newTreeSha: string
   try {
     const treeData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/trees`, 'POST', { tree: treeItems })
@@ -517,7 +503,6 @@ export async function copyEntireRepo(
     return results
   }
 
-  // === Step 5: Create commit ===
   let commitSha: string
   try {
     const commitData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/commits`, 'POST', {
@@ -531,7 +516,6 @@ export async function copyEntireRepo(
     return results
   }
 
-  // === Step 6: Update branch reference ===
   try {
     if (parentSha) {
       await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'PATCH', { sha: commitSha, force: true })

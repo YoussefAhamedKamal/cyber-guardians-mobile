@@ -6,7 +6,7 @@ import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit } from './github'
-import { MAIN_REPO } from '@/config'
+import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
 import { AI_PROVIDERS } from '@/types/ai'
@@ -274,14 +274,14 @@ function AISettings() {
           <button onClick={async () => {
             if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
             setGhForking(true); setGhTestStatus('⏳ جارٍ إعداد التعديل المباشر...')
-            setGitHubConfig(ghConfig)
+            await setGitHubConfig(ghConfig)
             try {
               const username = await getGitHubUsername()
               setGhConfig({ ...ghConfig, owner: username })
-              setGitHubConfig({ ...ghConfig, owner: username })
+              await setGitHubConfig({ ...ghConfig, owner: username })
               const result = await setupDirectEdit()
               setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-              setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+              await setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
               setGhTestStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات مباشرة`)
             } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
             setGhForking(false)
@@ -299,11 +299,11 @@ function AISettings() {
             if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
             if (!ghConfig.repo) { setGhTestStatus('❌ أدخل اسم المستودع الجديد'); return }
             setGhForking(true); setGhTestStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
-            setGitHubConfig(ghConfig)
+            await setGitHubConfig(ghConfig)
             try {
               const username = await getGitHubUsername()
               setGhConfig({ ...ghConfig, owner: username })
-              setGitHubConfig({ ...ghConfig, owner: username })
+              await setGitHubConfig({ ...ghConfig, owner: username })
               setGhTestStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
               const newRepo = await createNewRepo(ghConfig.repo, 'Cyber Guardians Mobile — نسخة مخصصة')
               setGhTestStatus(`⏳ جارٍ رفع الملفات إلى ${newRepo.owner}/${newRepo.repo}...`)
@@ -314,7 +314,7 @@ function AISettings() {
               }
                 const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
               setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
-              setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+              await setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
               await enableGitHubPages(newRepo.owner, newRepo.repo, 'main')
               const ok = results.filter(r => r.startsWith('✅')).length
               const fail = results.filter(r => r.startsWith('❌')).length
@@ -417,7 +417,7 @@ function AISettings() {
           <label style={{ color: '#fff', fontWeight: 500 }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button onClick={async () => { await setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
-            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); setGitHubConfig(ghConfig); try { let username; try { username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }) } catch {}; const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
+            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); await setGitHubConfig(ghConfig); try { let username; try { username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); await setGitHubConfig({ ...ghConfig, owner: username }) } catch {}; const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
           </div>
           {ghTestStatus && (
               <div style={{
@@ -1078,15 +1078,15 @@ function FacultyDataEditor() {
   const handleFork = async () => {
     if (!ghConfig.token) { setGithubStatus('❌ أدخل GitHub Token أولاً'); return }
     setForking(true); setGithubStatus('⏳ جارٍ التحقق من الحساب...')
-    setGitHubConfig(ghConfig)
+    await setGitHubConfig(ghConfig)
     try {
       const username = await getGitHubUsername()
       setGhConfig({ ...ghConfig, owner: username })
-      setGitHubConfig({ ...ghConfig, owner: username })
+      await setGitHubConfig({ ...ghConfig, owner: username })
       setGithubStatus(`⏳ جارٍ نسخ المستودع من ${MAIN_REPO.owner}/${MAIN_REPO.repo} إلى ${username}...`)
       const result = await setupForkWithPages()
       setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-      setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+      await setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
       setGithubStatus(`✅ جاهز!\n📦 المستودع: ${result.owner}/${result.repo}\n🌐 اللعبة: ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات`)
     } catch (e: any) {
       setGithubStatus(`❌ ${e.message}`)
@@ -1158,14 +1158,14 @@ function FacultyDataEditor() {
             <button onClick={async () => {
               if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
               setForking(true); setGithubStatus('⏳ جارٍ إعداد التعديل المباشر...')
-              setGitHubConfig(ghConfig)
+              await setGitHubConfig(ghConfig)
               try {
                 const username = await getGitHubUsername()
                 setGhConfig({ ...ghConfig, owner: username })
-                setGitHubConfig({ ...ghConfig, owner: username })
+                await setGitHubConfig({ ...ghConfig, owner: username })
                 const result = await setupDirectEdit()
                 setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-                setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
+                await setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
                 setGithubStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
               } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
               setForking(false)
@@ -1183,11 +1183,11 @@ function FacultyDataEditor() {
               if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
               if (!ghConfig.repo) { setGithubStatus('❌ أدخل اسم المستودع الجديد'); return }
               setForking(true); setGithubStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
-              setGitHubConfig(ghConfig)
+              await setGitHubConfig(ghConfig)
               try {
                 const username = await getGitHubUsername()
                 setGhConfig({ ...ghConfig, owner: username })
-                setGitHubConfig({ ...ghConfig, owner: username })
+                await setGitHubConfig({ ...ghConfig, owner: username })
                 setGithubStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
                 const newRepo = await createNewRepo(ghConfig.repo, 'Cyber Guardians Mobile — نسخة مخصصة')
                 setGithubStatus(`⏳ جارٍ رفع الملفات...`)
@@ -1199,7 +1199,7 @@ function FacultyDataEditor() {
                 const results = await copyEntireRepo(MAIN_REPO.owner, MAIN_REPO.repo, newRepo.owner, newRepo.repo, 'main', contentData)
                 try { await enableGitHubPages(newRepo.owner, newRepo.repo, 'main') } catch {}
                 setGhConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
-                setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
+                await setGitHubConfig({ ...ghConfig, owner: newRepo.owner, repo: newRepo.repo })
                 const ok = results.filter(r => r.startsWith('✅')).length
                 const fail = results.filter(r => r.startsWith('❌')).length
                 const warn = results.filter(r => r.startsWith('⚠️')).length
@@ -1218,9 +1218,9 @@ function FacultyDataEditor() {
           <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
             <button onClick={handleSaveGitHubConfig} style={{ ...smallBtnStyle, color: '#81C784' }}>💾 حفظ</button>
             <button onClick={async () => {
-              setGitHubConfig(ghConfig)
+              await setGitHubConfig(ghConfig)
               try {
-                try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); setGitHubConfig({ ...ghConfig, owner: username }) } catch {}
+                try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); await setGitHubConfig({ ...ghConfig, owner: username }) } catch {}
                 const r = await testGitHubConnection()
                 setGithubStatus(r)
               } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }

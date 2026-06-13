@@ -5,7 +5,7 @@
 | # | الخطأ | السبب | الحل |
 |---|-------|-------|------|
 | 1 | 403 Resource not accessible by integration | التوكن lacks صلاحيات الكتابة | استخدام توكن كلاسيك بصلاحية `repo` كاملة |
-| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/config.ts` |
+| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/ai/github.ts` |
 | 3 | 404 Not Found (Owner) | المستخدم يكتب اسم المستخدم الكامل أو الإيميل | إضافة دالة `resolveGithubOwner()` + كشف تلقائي من التوكن |
 | 4 | المستودع فارغ بعد النسخ (قديم) | ~`auto_init: false`~ **تم الإصلاح**: الآن `auto_init: false` عمداً — يُنشئ commit واحد فقط (لا إلغاء deploy) | يُنشئ أول commit عبر `copyEntireRepo` مباشرة |
 | 5 | الصفحة البيضاء | `vite.config.ts` يحتوي على `base` غير صحيح أو لا يحتوي على `base` أصلًا | تحديث `base` تلقائياً — مع دعم جميع أنواع الاقتباسات (`'`, `"`, `` ` ``) وإضافة `base` إن لم يكن موجوداً |
@@ -52,7 +52,7 @@ GitHub API خطأ 403: Resource not accessible by integration
 
 **الحل:**
 ```typescript
-// src/config.ts
+// src/ai/github.ts
 export const MAIN_REPO = { owner: 'project-owner', repo: 'cyber-guardians-mobile' }
 ```
 

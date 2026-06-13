@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **1.6.0** — تشفير GitHub Token + تجزئة PIN + Rate Limiting + إزالة البيانات الشخصية
+> الإصدار: **1.7.0** — إلغاء تشفير GitHub Token + إصلاح async + Timeout 15s للـ API
 
 ---
 
@@ -192,6 +192,7 @@ src/
 │   ├── constants.ts                 # ★ محدث — DEFAULT_SETTINGS + darkMode
 │   ├── indexedDBStorage.ts
 │   ├── apiKeyCrypto.ts
+│   ├── pinCrypto.ts                 # تجزئة PIN (SHA-256)
 │   └── helpers.ts
 │
 └── __tests__/                       # 70 اختبار ✅
@@ -550,6 +551,12 @@ App.tsx
 - [x] **Google Drive Backup** — تم
 - [x] **Security Scans** — تم (Semgrep + CodeQL + Supply Chain)
 
+### الإصدار 1.7.0 — إلغاء تشفير GitHub Token + إصلاح async + Timeout
+- [x] **إلغاء تشفير GitHub Token** — `githubCrypto.ts` حُذف، `setGitHubConfig()` رجعت synchronous، التوكن يُحفظ plaintext في localStorage
+- [x] **إصلاح async race condition** — جميع استدعاءات `setGitHubConfig()` أصبحت `await` (كانت تسبب "غير مُعد" لأن التشفير async ما يكمل قبل API call)
+- [x] **Timeout للـ API** — `AbortController` 15 ثانية في `apiFetch` (بدونها `fetch` يعلق للأبد لو الشبكة بطيئة)
+- [x] **حذف `config.ts`** — `MAIN_REPO` رجعت إلى `github.ts`
+
 ### معلق / غير مربوط — ★ محدث
 - [ ] **CharacterModel (3D)** — مكوّن ثلاثي الأبعاد غير مستخدم
 - [ ] **AudioSystem** — ملف قديم غير مستخدم (يُستخدم ProceduralAudio بدلاً منه)
@@ -647,10 +654,10 @@ base: process.env.BASE_URL || '/',
 | remark-gfm | ^4.0.1 | منخفض |
 | zustand | ^5.0.13 | منخفض |
 
-### فحص يدوي — ✅ جميعها مُغلقة
+### فحص يدوي — ✅ جميعها مُغلقة (ما عدا #1 مُعاد فتحه)
 | # | التصنيف | Severity | الحالة | الإجراء |
 |---|---|---|---|---|
-| 1 | **GitHub Token plaintext** | LOW | ✅ مُصلح | تشفير AES-GCM في `githubCrypto.ts` |
+| 1 | **GitHub Token plaintext** | LOW | 🔄 **مُعاد فتحه** | التشفير تسبب في مشاكل (تعليق + عدم استقرار)، رُجّع إلى plaintext |
 | 2 | **Faculty PIN plaintext** | LOW | ✅ مُصلح | تجزئة SHA-256 في `pinCrypto.ts` |
 | 3 | **MFA/2FA** | INFO | ✅ مُطبق | إضافة قفل مؤقت (30 ثانية) بعد 5 محاولات PIN فاشلة |
 | 4 | **Rate limiting** | INFO | ✅ مُطبق | حد 5 محاولات + قفل مؤقت في `aiStore.ts` |
@@ -668,4 +675,3 @@ base: process.env.BASE_URL || '/',
 3. ~~تفعيل Dependabot على المستودع~~ ✅
 4. ~~تجزئة (hash) الرقم السري في التخزين (SHA-256) كطبقة حماية إضافية~~ ✅ `pinCrypto.ts`
 5. ~~إضافة rate limiting لمحاولات إدخال الرمز السري~~ ✅ `aiStore.ts`
-6. ~~تشفير GitHub token في localStorage (مثل apiKeyCrypto.ts)~~ ✅ `githubCrypto.ts`

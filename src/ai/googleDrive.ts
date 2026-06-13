@@ -1,5 +1,5 @@
 import { generateCharactersTS, generateDialogueTS, generateGameMetaTS } from './github'
-import { MAIN_REPO } from '@/config'
+import { MAIN_REPO } from './github'
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
 const GIS_URL = 'https://accounts.google.com/gsi/client'
