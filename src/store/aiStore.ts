@@ -27,6 +27,13 @@ interface AIStore extends AIState {
   setPanelMaximized: (v: boolean) => void
   setActiveTab: (tab: 'student' | 'faculty' | 'settings') => void
   setLoading: (v: boolean) => void
+  setForking: (v: boolean) => void
+  setGithubStatus: (v: string | null) => void
+  setStudentStreaming: (v: string) => void
+  setFacultyStreaming: (v: string) => void
+  setDriveStatus: (v: string | null) => void
+  setDriveLoading: (v: boolean) => void
+  setGithubSyncing: (v: boolean) => void
   resetAll: () => void
 
   createStudentSession: (name?: string) => string
@@ -94,6 +101,13 @@ export const useAIStore = create<AIStore>()(
       setPanelMaximized: (v) => set({ panelMaximized: v }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setLoading: (v) => set({ loading: v }),
+      setForking: (v) => set({ forking: v }),
+      setGithubStatus: (v) => set({ githubStatus: v }),
+      setStudentStreaming: (v) => set({ studentStreaming: v }),
+      setFacultyStreaming: (v) => set({ facultyStreaming: v }),
+      setDriveStatus: (v) => set({ driveStatus: v }),
+      setDriveLoading: (v) => set({ driveLoading: v }),
+      setGithubSyncing: (v) => set({ githubSyncing: v }),
 
       // Student sessions
       createStudentSession: (name) => {
@@ -157,6 +171,10 @@ export const useAIStore = create<AIStore>()(
         facultySessions: state.facultySessions,
         activeFacultySessionId: state.activeFacultySessionId,
         activeTab: state.activeTab,
+        forking: state.forking,
+        githubStatus: state.githubStatus,
+        driveStatus: state.driveStatus,
+        githubSyncing: state.githubSyncing,
       }),
     }
   )
@@ -165,5 +183,45 @@ export const useAIStore = create<AIStore>()(
 loadEncryptedKeys().then((keys) => {
   if (Object.keys(keys).length > 0) {
     useAIStore.getState().setApiKeys(keys)
+  }
+})
+
+// حفظ مؤقت لحالة التدفق في localStorage (سريع) بدلاً من IndexedDB
+// حتى لا تضيع المحادثة عند تبديل التبويب
+const STREAMING_KEY = 'cg-streaming-temp'
+let lastStreamingSave = 0
+const STREAMING_SAVE_MS = 500
+
+function loadStreamingTemp(): { studentStreaming: string; facultyStreaming: string } {
+  try {
+    const raw = localStorage.getItem(STREAMING_KEY)
+    return raw ? JSON.parse(raw) : { studentStreaming: '', facultyStreaming: '' }
+  } catch { return { studentStreaming: '', facultyStreaming: '' } }
+}
+
+function saveStreamingTemp(state: { studentStreaming: string; facultyStreaming: string }) {
+  try { localStorage.setItem(STREAMING_KEY, JSON.stringify(state)) } catch {}
+}
+
+// استعادة حالة التدفق عند بدء التشغيل
+const savedStreaming = loadStreamingTemp()
+if (savedStreaming.studentStreaming || savedStreaming.facultyStreaming) {
+  useAIStore.setState(savedStreaming)
+}
+
+// مزامنة مُقيّدة — حفظ في localStorage فقط كل 500ms
+useAIStore.subscribe((state) => {
+  const now = Date.now()
+  if (now - lastStreamingSave < STREAMING_SAVE_MS) return
+  if (!state.studentStreaming && !state.facultyStreaming) return
+  lastStreamingSave = now
+  saveStreamingTemp({ studentStreaming: state.studentStreaming, facultyStreaming: state.facultyStreaming })
+})
+
+// مسح التخزين المؤقت عند انتهاء التدفق
+useAIStore.subscribe((state, prevState) => {
+  const streamingEnded = (prevState.studentStreaming && !state.studentStreaming) || (prevState.facultyStreaming && !state.facultyStreaming)
+  if (streamingEnded) {
+    saveStreamingTemp({ studentStreaming: '', facultyStreaming: '' })
   }
 })

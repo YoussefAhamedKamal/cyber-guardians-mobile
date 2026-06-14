@@ -13,6 +13,7 @@ import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
 import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
+import { hashPin } from '@/utils/pinCrypto'
 
 const FAB_POS_KEY = 'cg-ai-fab-pos'
 const PANEL_STATE_KEY = 'cg-ai-panel-state'
@@ -152,8 +153,6 @@ function AISettings() {
   const [ghConfig, setGhConfig] = useState<GitHubConfig>(() => getGitHubConfig())
   const [ghTestStatus, setGhTestStatus] = useState<string | null>(null)
   const [driveClientId, setDriveClientId] = useState(localStorage.getItem('cg-drive-client-id') || '')
-  const [driveStatus, setDriveStatus] = useState<string | null>(null)
-  const [driveLoading, setDriveLoading] = useState(false)
   const [ghTesting, setGhTesting] = useState(false)
   const [ghForking, setGhForking] = useState(false)
 
@@ -346,23 +345,23 @@ function AISettings() {
           <label style={{ color: '#fff', fontSize: '10px', display: 'block', marginBottom: '4px' }}>Google Client ID:<input value={driveClientId} onChange={(e) => { setDriveClientId(e.target.value); localStorage.setItem('cg-drive-client-id', e.target.value) }} placeholder="123456789-xxxxx.apps.googleusercontent.com" style={{ ...inputStyle, fontSize: '11px' }} /></label>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             <button onClick={async () => {
-              if (isLoggedIn()) { logout(); setDriveStatus('✅ تم تسجيل الخروج'); return }
-              if (!driveClientId.trim()) { setDriveStatus('❌ أدخل Google Client ID أولاً'); return }
-              setDriveLoading(true); setDriveStatus('⏳ جارٍ تحميل مكتبة Google...')
+              if (isLoggedIn()) { logout(); ai.setDriveStatus('✅ تم تسجيل الخروج'); return }
+              if (!driveClientId.trim()) { ai.setDriveStatus('❌ أدخل Google Client ID أولاً'); return }
+              ai.setDriveLoading(true); ai.setDriveStatus('⏳ جارٍ تحميل مكتبة Google...')
               try {
                 await loadGIS()
                 initGoogleDrive(driveClientId.trim())
-                setDriveStatus('⏳ جارٍ تسجيل الدخول إلى Google...')
+                ai.setDriveStatus('⏳ جارٍ تسجيل الدخول إلى Google...')
                 await loginToDrive()
-                setDriveStatus('✅ تم تسجيل الدخول إلى Google Drive')
-              } catch (e: any) { setDriveStatus(`❌ ${e.message}`) }
-              setDriveLoading(false)
-            }} disabled={driveLoading} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: driveLoading ? '#444' : '#4285F4', color: driveLoading ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: driveLoading ? 'not-allowed' : 'pointer' }}>
-              {driveLoading ? '⏳...' : isLoggedIn() ? '🚪 تسجيل خروج' : '🔑 تسجيل الدخول'}
+                ai.setDriveStatus('✅ تم تسجيل الدخول إلى Google Drive')
+              } catch (e: any) { ai.setDriveStatus(`❌ ${e.message}`) }
+              ai.setDriveLoading(false)
+            }} disabled={ai.driveLoading} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: ai.driveLoading ? '#444' : '#4285F4', color: ai.driveLoading ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: ai.driveLoading ? 'not-allowed' : 'pointer' }}>
+              {ai.driveLoading ? '⏳...' : isLoggedIn() ? '🚪 تسجيل خروج' : '🔑 تسجيل الدخول'}
             </button>
             <button onClick={async () => {
-              if (!isLoggedIn()) { setDriveStatus('❌ سجل الدخول أولاً'); return }
-              setDriveLoading(true); setDriveStatus('⏳ جارٍ رفع المحتوى...')
+              if (!isLoggedIn()) { ai.setDriveStatus('❌ سجل الدخول أولاً'); return }
+              ai.setDriveLoading(true); ai.setDriveStatus('⏳ جارٍ رفع المحتوى...')
               try {
                 const contentData = {
                   gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
@@ -370,16 +369,16 @@ function AISettings() {
                   characters: contentStore.newCharacters as Record<string, unknown>,
                 }
                 const results = await uploadContentToDrive(contentData, `Cyber Guardians - ${new Date().toLocaleDateString('ar-EG')}`)
-                setDriveStatus(results.join('\n'))
-              } catch (e: any) { setDriveStatus(`❌ ${e.message}`) }
-              setDriveLoading(false)
-            }} disabled={driveLoading || !isLoggedIn()} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: driveLoading || !isLoggedIn() ? '#444' : '#4285F4', color: driveLoading || !isLoggedIn() ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: driveLoading || !isLoggedIn() ? 'not-allowed' : 'pointer', opacity: isLoggedIn() ? 1 : 0.5 }}>
-              {driveLoading ? '⏳...' : '📄 رفع المحتوى فقط'}
+                ai.setDriveStatus(results.join('\n'))
+              } catch (e: any) { ai.setDriveStatus(`❌ ${e.message}`) }
+              ai.setDriveLoading(false)
+            }} disabled={ai.driveLoading || !isLoggedIn()} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: ai.driveLoading || !isLoggedIn() ? '#444' : '#4285F4', color: ai.driveLoading || !isLoggedIn() ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: ai.driveLoading || !isLoggedIn() ? 'not-allowed' : 'pointer', opacity: isLoggedIn() ? 1 : 0.5 }}>
+              {ai.driveLoading ? '⏳...' : '📄 رفع المحتوى فقط'}
             </button>
             <button onClick={async () => {
-              if (!isLoggedIn()) { setDriveStatus('❌ سجل الدخول أولاً'); return }
-              if (!ghConfig.token) { setDriveStatus('❌ أدخل GitHub Token أولاً'); return }
-              setDriveLoading(true); setDriveStatus('⏳ جارٍ رفع المشروع كامل...')
+              if (!isLoggedIn()) { ai.setDriveStatus('❌ سجل الدخول أولاً'); return }
+              if (!ghConfig.token) { ai.setDriveStatus('❌ أدخل GitHub Token أولاً'); return }
+              ai.setDriveLoading(true); ai.setDriveStatus('⏳ جارٍ رفع المشروع كامل...')
               try {
                 const contentData = {
                   gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
@@ -391,22 +390,22 @@ function AISettings() {
                   `Cyber Guardians Full - ${new Date().toLocaleDateString('ar-EG')}`,
                   contentData
                 )
-                setDriveStatus(results.join('\n'))
-              } catch (e: any) { setDriveStatus(`❌ ${e.message}`) }
-              setDriveLoading(false)
-            }} disabled={driveLoading || !isLoggedIn() || !ghConfig.token} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: driveLoading || !isLoggedIn() || !ghConfig.token ? '#444' : '#34A853', color: driveLoading || !isLoggedIn() || !ghConfig.token ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: driveLoading || !isLoggedIn() || !ghConfig.token ? 'not-allowed' : 'pointer', opacity: isLoggedIn() && ghConfig.token ? 1 : 0.5 }}>
-              {driveLoading ? '⏳ جارٍ رفع المشروع...' : '📦 رفع المشروع كامل'}
+                ai.setDriveStatus(results.join('\n'))
+              } catch (e: any) { ai.setDriveStatus(`❌ ${e.message}`) }
+              ai.setDriveLoading(false)
+            }} disabled={ai.driveLoading || !isLoggedIn() || !ghConfig.token} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: ai.driveLoading || !isLoggedIn() || !ghConfig.token ? '#444' : '#34A853', color: ai.driveLoading || !isLoggedIn() || !ghConfig.token ? '#888' : '#fff', fontWeight: 700, fontSize: '11px', cursor: ai.driveLoading || !isLoggedIn() || !ghConfig.token ? 'not-allowed' : 'pointer', opacity: isLoggedIn() && ghConfig.token ? 1 : 0.5 }}>
+              {ai.driveLoading ? '⏳ جارٍ رفع المشروع...' : '📦 رفع المشروع كامل'}
             </button>
           </div>
           <div style={{ color: '#aaa', fontSize: '9px', marginTop: '4px' }}>يلزم <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style={{ color: '#669DF6' }}>Google Client ID</a> من Google Cloud Console مع تفعيل Drive API</div>
-          {driveStatus && (
+          {ai.driveStatus && (
             <div style={{
               marginTop: '6px', padding: '6px', borderRadius: '4px', fontSize: '10px', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
               maxHeight: '200px', overflowY: 'auto', lineHeight: '1.4',
-              background: driveStatus.startsWith('✅') ? 'rgba(129,199,132,0.12)' : driveStatus.startsWith('⚠️') ? 'rgba(255,183,77,0.12)' : 'rgba(229,115,115,0.12)',
-              border: `1px solid ${driveStatus.startsWith('✅') ? 'rgba(129,199,132,0.25)' : driveStatus.startsWith('⚠️') ? 'rgba(255,183,77,0.25)' : 'rgba(229,115,115,0.25)'}`,
-              color: driveStatus.startsWith('✅') ? '#81C784' : driveStatus.startsWith('⚠️') ? '#FFB74D' : '#E57373',
-            }}>{driveStatus}</div>
+              background: ai.driveStatus.startsWith('✅') ? 'rgba(129,199,132,0.12)' : ai.driveStatus.startsWith('⚠️') ? 'rgba(255,183,77,0.12)' : 'rgba(229,115,115,0.12)',
+              border: `1px solid ${ai.driveStatus.startsWith('✅') ? 'rgba(129,199,132,0.25)' : ai.driveStatus.startsWith('⚠️') ? 'rgba(255,183,77,0.25)' : 'rgba(229,115,115,0.25)'}`,
+              color: ai.driveStatus.startsWith('✅') ? '#81C784' : ai.driveStatus.startsWith('⚠️') ? '#FFB74D' : '#E57373',
+            }}>{ai.driveStatus}</div>
           )}
         </div>
 
@@ -417,7 +416,22 @@ function AISettings() {
           <label style={{ color: '#fff', fontWeight: 500 }}>Branch (الفرع)<input value={ghConfig.branch} onChange={(e) => setGhConfig({ ...ghConfig, branch: e.target.value })} placeholder="main" style={inputStyle} /></label>
           <div style={{ display: 'flex', gap: '6px' }}>
             <button onClick={async () => { await setGitHubConfig(ghConfig); setGhTestStatus('✅ تم الحفظ') }} style={{ ...smallBtnStyle, color: '#81C784', fontSize: '11px' }}>💾 حفظ</button>
-            <button onClick={async () => { setGhTesting(true); setGhTestStatus('⏳ جارٍ الاختبار...'); await setGitHubConfig(ghConfig); try { let username; try { username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); await setGitHubConfig({ ...ghConfig, owner: username }) } catch {}; const r = await testGitHubConnection(); setGhTestStatus(r) } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) } setGhTesting(false) }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
+            <button onClick={async () => {
+              setGhTesting(true); setGhTestStatus('⏳ جارٍ حفظ الإعدادات...')
+              await setGitHubConfig(ghConfig)
+              try {
+                setGhTestStatus('⏳ جارٍ التحقق من الهوية...')
+                const username = await getGitHubUsername()
+                setGhConfig({ ...ghConfig, owner: username })
+                await setGitHubConfig({ ...ghConfig, owner: username })
+                setGhTestStatus(`⏳ جارٍ اختبار الاتصال بـ ${username}/${ghConfig.repo}...`)
+                const r = await testGitHubConnection()
+                setGhTestStatus(r)
+              } catch (e: any) {
+                setGhTestStatus(`❌ ${e.message || 'فشل الاتصال — تحقق من Token واسم المستخدم والمستودع'}`)
+              }
+              setGhTesting(false)
+            }} disabled={ghTesting} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '11px', opacity: ghTesting ? 0.5 : 1 }}>{ghTesting ? '⏳...' : '🔌 اختبار الاتصال'}</button>
           </div>
           {ghTestStatus && (
               <div style={{
@@ -471,8 +485,8 @@ function FacultyPinChanger() {
 
   const handleChange = async () => {
     if (currentPin.length > 0) {
-      const ok = await ai.unlockFaculty(currentPin)
-      if (!ok) {
+      const currentHash = await hashPin(currentPin)
+      if (currentHash !== ai.facultyPinHash) {
         setMsg('❌ الرمز الحالي خطأ')
         return
       }
@@ -710,11 +724,11 @@ function readFiles(files: File[], onStatus?: (idx: number, status: 'success' | '
 function StudentChat() {
   const ai = useAIStore()
   const [input, setInput] = useState('')
-  const [streaming, setStreaming] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveStudentSession()
   const messages = session?.messages || []
+  const streaming = ai.studentStreaming
 
   useEffect(() => {
     if (ai.studentSessions.length === 0) ai.createStudentSession('جلسة جديدة')
@@ -723,14 +737,20 @@ function StudentChat() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
-    ai.setLoading(true); setStreaming('')
+    ai.setLoading(true); ai.setStudentStreaming('')
     try {
       const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
-      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
-      for await (const chunk of gen) { full += chunk; setStreaming(full) }
+      let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
+      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      for await (const chunk of gen) {
+        full += chunk
+        const now = Date.now()
+        if (now - lastUpdate >= THROTTLE_MS) { ai.setStudentStreaming(full); lastUpdate = now }
+      }
+      ai.setStudentStreaming(full)
       ai.addStudentMessage({ role: 'assistant', content: full })
     } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
-    ai.setLoading(false); setStreaming('')
+    ai.setLoading(false); ai.setStudentStreaming('')
   }
 
   const handleSend = async () => {
@@ -856,12 +876,12 @@ function getDisplayText(fullText: string): string {
 function FacultyAIChat() {
   const ai = useAIStore()
   const [input, setInput] = useState('')
-  const [streaming, setStreaming] = useState('')
   const [applyStatus, setApplyStatus] = useState<string[]>([])
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveFacultySession()
   const msgHistory = session?.messages || []
+  const streaming = ai.facultyStreaming
 
   useEffect(() => {
     if (ai.facultySessions.length === 0) ai.createFacultySession('جلسة هيئة التدريس')
@@ -870,7 +890,7 @@ function FacultyAIChat() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgHistory, streaming])
 
   const sendMessage = async (msgs: AIMessage[]) => {
-    ai.setLoading(true); setStreaming('')
+    ai.setLoading(true); ai.setFacultyStreaming('')
     const levels = getLevels(); const chars = getCharacters(); const meta = getGameMeta()
     const levelsJson = levels.map((l) => `المستوى ${l.id}: ${l.title} (${l.difficulty || 'medium'}, ${l.points || 0} نقطة)`).join('\n')
     const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role, gender: c.gender })), null, 2)
@@ -881,13 +901,19 @@ function FacultyAIChat() {
     try {
       const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
       const chatMsgs = msgs.filter((m) => m !== contextMsg)
-      let full = ''; const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
-      for await (const chunk of gen) { full += chunk; setStreaming(full) }
+      let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
+      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      for await (const chunk of gen) {
+        full += chunk
+        const now = Date.now()
+        if (now - lastUpdate >= THROTTLE_MS) { ai.setFacultyStreaming(full); lastUpdate = now }
+      }
+      ai.setFacultyStreaming(full)
       const { updates, cleanText } = parseAIUpdates(full)
       ai.addFacultyMessage({ role: 'assistant', content: cleanText || full })
       if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
     } catch (err: any) { ai.addFacultyMessage({ role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }) }
-    ai.setLoading(false); setStreaming('')
+    ai.setLoading(false); ai.setFacultyStreaming('')
   }
 
   const handleSend = async () => {
@@ -986,6 +1012,7 @@ function FacultyAIChat() {
 }
 
 function FacultyDataEditor() {
+  const ai = useAIStore()
   const contentStore = useContentStore()
   const levels = getLevels(); const chars = getCharacters(); const gameMeta = getGameMeta()
   const [selectedLevel, setSelectedLevel] = useState<number>(levels[0]?.id ?? 1)
@@ -995,11 +1022,8 @@ function FacultyDataEditor() {
   const [metaEditable, setMetaEditable] = useState<GameMeta>(() => structuredClone(gameMeta))
   const [rawJson, setRawJson] = useState('')
   const [rawError, setRawError] = useState('')
-  const [githubSyncing, setGithubSyncing] = useState(false)
-  const [githubStatus, setGithubStatus] = useState<string | null>(null)
   const [showGitHubSettings, setShowGitHubSettings] = useState(false)
   const [ghConfig, setGhConfig] = useState<GitHubConfig>(() => getGitHubConfig())
-  const [forking, setForking] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
 
   useEffect(() => { const level = levels.find((l) => l.id === selectedLevel); if (level) setEditable(structuredClone(level)) }, [selectedLevel, contentStore.levelOverrides, contentStore.newLevels, contentStore.deletedLevels])
@@ -1056,42 +1080,42 @@ function FacultyDataEditor() {
 
   const handleGitHubSync = async () => {
     if (!isGitHubConfigured()) { setShowGitHubSettings(true); return }
-    setGithubSyncing(true); setGithubStatus('⏳ جارٍ رفع الملفات إلى GitHub...')
+    ai.setGithubSyncing(true); ai.setGithubStatus('⏳ جارٍ رفع الملفات إلى GitHub...')
     try {
       const results = await pushContentToGitHub({ gameMeta: gameMeta as unknown as Record<string, unknown>, levels, characters: chars })
       const allOk = results.every((r) => r.startsWith('✅'))
-      setGithubStatus(allOk
+      ai.setGithubStatus(allOk
         ? `✅ تم الرفع بنجاح — الملفات المعدّلة:\n${results.join('\n')}\n\n💡 أعد بناء المشروع لتطبيق التغييرات`
         : `⚠️ بعض الملفات فشلت:\n${results.join('\n')}`)
     } catch (e: any) {
-      setGithubStatus(`❌ ${e.message}`)
+      ai.setGithubStatus(`❌ ${e.message}`)
     }
-    setGithubSyncing(false)
+    ai.setGithubSyncing(false)
   }
 
   const handleSaveGitHubConfig = async () => {
     await setGitHubConfig(ghConfig)
     setShowGitHubSettings(false)
-    setGithubStatus('✅ تم حفظ إعدادات GitHub')
+    ai.setGithubStatus('✅ تم حفظ إعدادات GitHub')
   }
 
   const handleFork = async () => {
-    if (!ghConfig.token) { setGithubStatus('❌ أدخل GitHub Token أولاً'); return }
-    setForking(true); setGithubStatus('⏳ جارٍ التحقق من الحساب...')
+    if (!ghConfig.token) { ai.setGithubStatus('❌ أدخل GitHub Token أولاً'); return }
+    ai.setForking(true); ai.setGithubStatus('⏳ جارٍ التحقق من الحساب...')
     await setGitHubConfig(ghConfig)
     try {
       const username = await getGitHubUsername()
       setGhConfig({ ...ghConfig, owner: username })
       await setGitHubConfig({ ...ghConfig, owner: username })
-      setGithubStatus(`⏳ جارٍ نسخ المستودع من ${MAIN_REPO.owner}/${MAIN_REPO.repo} إلى ${username}...`)
+      ai.setGithubStatus(`⏳ جارٍ نسخ المستودع من ${MAIN_REPO.owner}/${MAIN_REPO.repo} إلى ${username}...`)
       const result = await setupForkWithPages()
       setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
       await setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-      setGithubStatus(`✅ جاهز!\n📦 المستودع: ${result.owner}/${result.repo}\n🌐 اللعبة: ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات`)
+      ai.setGithubStatus(`✅ جاهز!\n📦 المستودع: ${result.owner}/${result.repo}\n🌐 اللعبة: ${result.pagesUrl}\n\nيمكنك الآن رفع التعديلات`)
     } catch (e: any) {
-      setGithubStatus(`❌ ${e.message}`)
+      ai.setGithubStatus(`❌ ${e.message}`)
     }
-    setForking(false)
+    ai.setForking(false)
   }
 
   const tabs = [
@@ -1104,6 +1128,32 @@ function FacultyDataEditor() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '12px' }}>
+      {/* مؤشر الحالة الدائم — يظهر دائماً عندما يكون هناك مهمة نشطة */}
+      {(ai.forking || ai.githubSyncing || ai.githubStatus) && (
+        <div style={{
+          padding: '8px 10px', fontSize: '11px', fontWeight: 600,
+          background: ai.forking || ai.githubSyncing
+            ? 'linear-gradient(90deg, rgba(255,183,77,0.15), rgba(255,152,0,0.1))'
+            : ai.githubStatus?.startsWith('✅') ? 'rgba(129,199,132,0.1)' : 'rgba(229,115,115,0.1)',
+          borderBottom: `2px solid ${ai.forking || ai.githubSyncing ? '#FFB74D' : ai.githubStatus?.startsWith('✅') ? '#81C784' : '#E57373'}`,
+          color: ai.forking || ai.githubSyncing ? '#FFB74D' : ai.githubStatus?.startsWith('✅') ? '#81C784' : ai.githubStatus?.startsWith('⚠️') ? '#FFB74D' : '#E57373',
+          flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px',
+          cursor: ai.githubStatus ? 'pointer' : 'default',
+          animation: ai.forking || ai.githubSyncing ? 'pulse-bg 2s ease-in-out infinite' : 'none',
+        }} onClick={() => { if (ai.githubStatus) ai.setGithubStatus(null) }}>
+          {ai.forking || ai.githubSyncing ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span>
+              {ai.githubSyncing ? 'جارٍ رفع التعديلات...' : 'جارٍ إنشاء المستودع ورفع الملفات...'}
+            </span>
+          ) : (
+            <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: '1.4' }}>{ai.githubStatus}</span>
+          )}
+          {ai.githubStatus && !ai.forking && !ai.githubSyncing && (
+            <span style={{ marginRight: 'auto', fontSize: '9px', opacity: 0.6 }}>اضغط للإغلاق</span>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => {
@@ -1115,8 +1165,8 @@ function FacultyDataEditor() {
       <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <button onClick={handleExport} style={{ ...smallBtnStyle, color: '#4FC3F7', fontSize: '10px' }}>📤 تصدير JSON</button>
         <button onClick={handleImport} style={{ ...smallBtnStyle, color: '#CE93D8', fontSize: '10px' }}>📥 استيراد JSON</button>
-        <button onClick={handleGitHubSync} disabled={githubSyncing} style={{ ...smallBtnStyle, color: githubSyncing ? '#666' : '#81C784', fontSize: '10px', opacity: githubSyncing ? 0.5 : 1 }}>
-          {githubSyncing ? '⏳ جارٍ...' : '🔄 رفع إلى GitHub'}
+        <button onClick={handleGitHubSync} disabled={ai.githubSyncing} style={{ ...smallBtnStyle, color: ai.githubSyncing ? '#666' : '#81C784', fontSize: '10px', opacity: ai.githubSyncing ? 0.5 : 1 }}>
+          {ai.githubSyncing ? '⏳ جارٍ...' : '🔄 رفع إلى GitHub'}
         </button>
         <button onClick={() => setShowGitHubSettings(!showGitHubSettings)} style={{ ...smallBtnStyle, color: '#FFB74D', fontSize: '10px' }}>⚙ GitHub</button>
       </div>
@@ -1156,8 +1206,8 @@ function FacultyDataEditor() {
             <div style={{ color: '#81C784', fontWeight: 700, fontSize: '11px', marginBottom: '4px' }}>🟢 التعديل المباشر في المستودع الرئيسي</div>
             <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>يعدّل الملفات مباشرة في مستودعك الرئيسي</div>
             <button onClick={async () => {
-              if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
-              setForking(true); setGithubStatus('⏳ جارٍ إعداد التعديل المباشر...')
+              if (!ghConfig.token) { ai.setGithubStatus('❌ أدخل Token أولاً'); return }
+              ai.setForking(true); ai.setGithubStatus('⏳ جارٍ إعداد التعديل المباشر...')
               await setGitHubConfig(ghConfig)
               try {
                 const username = await getGitHubUsername()
@@ -1166,11 +1216,11 @@ function FacultyDataEditor() {
                 const result = await setupDirectEdit()
                 setGhConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
                 await setGitHubConfig({ ...ghConfig, owner: result.owner, repo: result.repo })
-                setGithubStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
-              } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
-              setForking(false)
-            }} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
-              {forking ? '⏳...' : '🟢 التعديل المباشر'}
+                ai.setGithubStatus(`✅ جاهز للتعديل المباشر!\n📦 ${result.owner}/${result.repo}\n🌐 ${result.pagesUrl}`)
+              } catch (e: any) { ai.setGithubStatus(`❌ ${e.message}`) }
+              ai.setForking(false)
+            }} disabled={ai.forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ai.forking ? '#444' : 'linear-gradient(135deg,#81C784,#4CAF50)', color: ai.forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ai.forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+              {ai.forking ? '⏳...' : '🟢 التعديل المباشر'}
             </button>
           </div>
 
@@ -1180,17 +1230,17 @@ function FacultyDataEditor() {
             <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>ينشئ مستودعاً جديداً ويرفع كل ملفات اللعبة</div>
             <label style={{ color: '#fff', fontSize: '10px', display: 'block', marginBottom: '4px' }}>اسم المستودع الجديد:<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="my-cyber-guardians" style={{ ...inputStyle, fontSize: '11px' }} /></label>
             <button onClick={async () => {
-              if (!ghConfig.token) { setGithubStatus('❌ أدخل Token أولاً'); return }
-              if (!ghConfig.repo) { setGithubStatus('❌ أدخل اسم المستودع الجديد'); return }
-              setForking(true); setGithubStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
+              if (!ghConfig.token) { ai.setGithubStatus('❌ أدخل Token أولاً'); return }
+              if (!ghConfig.repo) { ai.setGithubStatus('❌ أدخل اسم المستودع الجديد'); return }
+              ai.setForking(true); ai.setGithubStatus('⏳ جارٍ إنشاء المستودع ورفع الملفات...')
               await setGitHubConfig(ghConfig)
               try {
                 const username = await getGitHubUsername()
                 setGhConfig({ ...ghConfig, owner: username })
                 await setGitHubConfig({ ...ghConfig, owner: username })
-                setGithubStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
+                ai.setGithubStatus(`⏳ جارٍ إنشاء مستودع ${ghConfig.repo}...`)
                 const newRepo = await createNewRepo(ghConfig.repo, 'Cyber Guardians Mobile — نسخة مخصصة')
-                setGithubStatus(`⏳ جارٍ رفع الملفات...`)
+                ai.setGithubStatus(`⏳ جارٍ رفع الملفات...`)
                 const contentData = {
                   gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
                   levels: (contentStore.newLevels || []) as unknown[],
@@ -1203,11 +1253,11 @@ function FacultyDataEditor() {
                 const ok = results.filter(r => r.startsWith('✅')).length
                 const fail = results.filter(r => r.startsWith('❌')).length
                 const warn = results.filter(r => r.startsWith('⚠️')).length
-                setGithubStatus(`✅ تم الإنشاء!\n📦 ${newRepo.owner}/${newRepo.repo}\n🌐 https://${newRepo.owner}.github.io/${newRepo.repo}/\n✅ نجح ${ok} | ❌ فشل ${fail} | ⚠️ تحذير ${warn}\n\n${results.join('\n')}`)
-              } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
-              setForking(false)
-            }} disabled={forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: forking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
-              {forking ? '⏳ جارٍ الإنشاء والرفع...' : '🟡 إنشاء مستودع جديد'}
+                ai.setGithubStatus(`✅ تم الإنشاء!\n📦 ${newRepo.owner}/${newRepo.repo}\n🌐 https://${newRepo.owner}.github.io/${newRepo.repo}/\n✅ نجح ${ok} | ❌ فشل ${fail} | ⚠️ تحذير ${warn}\n\n${results.join('\n')}`)
+              } catch (e: any) { ai.setGithubStatus(`❌ ${e.message}`) }
+              ai.setForking(false)
+            }} disabled={ai.forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ai.forking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ai.forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ai.forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+              {ai.forking ? '⏳ جارٍ الإنشاء والرفع...' : '🟡 إنشاء مستودع جديد'}
             </button>
           </div>
 
@@ -1222,20 +1272,11 @@ function FacultyDataEditor() {
               try {
                 try { const username = await getGitHubUsername(); setGhConfig({ ...ghConfig, owner: username }); await setGitHubConfig({ ...ghConfig, owner: username }) } catch {}
                 const r = await testGitHubConnection()
-                setGithubStatus(r)
-              } catch (e: any) { setGithubStatus(`❌ ${e.message}`) }
+                ai.setGithubStatus(r)
+              } catch (e: any) { ai.setGithubStatus(`❌ ${e.message}`) }
             }} style={{ ...smallBtnStyle, color: '#4FC3F7' }}>🔌 اختبار الاتصال</button>
           </div>
         </div>
-      )}
-      {githubStatus && (
-        <div style={{
-          padding: '6px 8px', fontSize: '10px', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-          background: githubStatus.startsWith('✅') ? 'rgba(129,199,132,0.08)' : 'rgba(229,115,115,0.08)',
-          borderBottom: `1px solid ${githubStatus.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)'}`,
-          color: githubStatus.startsWith('✅') ? '#81C784' : githubStatus.startsWith('⚠️') ? '#FFB74D' : '#E57373',
-          flexShrink: 0, cursor: 'pointer', maxHeight: '300px', overflowY: 'auto', lineHeight: '1.5',
-        }} onClick={() => setGithubStatus(null)}>{githubStatus}</div>
       )}
       {editorTab === 'game' && (
         <div style={{ flex: 1, overflow: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1502,7 +1543,7 @@ export function AIPanel() {
 
   return (
     <>
-      <style>{`@keyframes ai-fab-pulse{0%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:.6}}`}</style>
+      <style>{`@keyframes ai-fab-pulse{0%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:0}100%{transform:scale(1);opacity:.6}}@keyframes pulse-bg{0%{background-color:rgba(255,183,77,0.1)}50%{background-color:rgba(255,183,77,0.2)}100%{background-color:rgba(255,183,77,0.1)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       <AIFab onClick={() => ai.setPanelOpen(!ai.panelOpen)} />
       {ai.panelOpen && (
         <>

@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **1.7.0** — إلغاء تشفير GitHub Token + إصلاح async + Timeout 15s للـ API
+> الإصدار: **1.8.0** — إصلاح GitHub Integration (Contents API) + مهلة 120s للوسائط + تشغيل محلي على جميع الأنظمة
 
 ---
 
@@ -551,6 +551,16 @@ App.tsx
 - [x] **Google Drive Backup** — تم
 - [x] **Security Scans** — تم (Semgrep + CodeQL + Supply Chain)
 
+### الإصدار 1.8.0 — إصلاح GitHub Integration + مهلة الوسائط
+- [x] **إصلاح GitHub Integration** — `copyEntireRepo` يستخدم Contents API بدلاً من Git Data API (يعمل مع المستودعات الفارغة)
+- [x] **ملفات ثنائية** — دعم رفع .mp4, .mp3, .wav, .ttf بدون `malformed URI sequence`
+- [x] **ملفات كبيرة** — مهلة 120 ثانية للوسائط (كانت 15 ثانية)
+- [x] **تشغيل محلي** — إضافة قسم تشغيل اللعبة على Windows/macOS/Linux في المخطط
+- [x] **مؤشر حالة GitHub** — شريط دائم أثناء الرفع/الإنشاء مع CSS animations
+- [x] **PIN Changer** — يستخدم `hashPin()` مباشرة بدلاً من `unlockFaculty()`
+- [x] **اختبار الاتصال** — رسائل خطأ أوضح مع خطوات متعددة
+- [x] **Throttle التدفق** — تحديث store كل 80ms أثناء streaming AI
+
 ### الإصدار 1.7.0 — إلغاء تشفير GitHub Token + إصلاح async + Timeout
 - [x] **إلغاء تشفير GitHub Token** — `githubCrypto.ts` حُذف، `setGitHubConfig()` رجعت synchronous، التوكن يُحفظ plaintext في localStorage
 - [x] **إصلاح async race condition** — جميع استدعاءات `setGitHubConfig()` أصبحت `await` (كانت تسبب "غير مُعد" لأن التشفير async ما يكمل قبل API call)
@@ -578,13 +588,25 @@ App.tsx
 ### المكونات
 | الملف | الوظيفة |
 |---|---|
-| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection + Git Data API |
+| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection + Contents API |
 | `src/ai/googleDrive.ts` | Google Drive API: OAuth 2.0 + رفع محتوى JSON + رفع مشروع كامل |
 | `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive |
 
 ### المستودع الرئيسي
-- **Owner**: `project-owner`
+- **Owner**: `YoussefAhamedKamal`
 - **Repo**: `cyber-guardians-mobile`
+
+### طريقة العمل
+| الزر | الوظيفة | API المستخدم |
+|---|---|---|
+| **🔄 رفع إلى GitHub** | رفع `characters.ts` + `dialogue.ts` + `gameMeta.ts` فقط | Contents API |
+| **🟡 إنشاء مستودع جديد** | نسخ كل الملفات في مستودع جديد | Contents API |
+
+### مهلات الطلبات
+| نوع الملف | المهلة |
+|---|---|
+| ملفات نصية (.ts, .tsx, .json) | 30 ثانية |
+| ملفات وسائط (.mp4, .mp3, .wav, .ttf) | 120 ثانية |
 
 ---
 

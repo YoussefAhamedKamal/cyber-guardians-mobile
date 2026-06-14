@@ -106,6 +106,13 @@ export interface AIState {
   panelMaximized: boolean
   activeTab: 'student' | 'faculty' | 'settings'
   loading: boolean
+  forking: boolean
+  githubStatus: string | null
+  studentStreaming: string
+  facultyStreaming: string
+  driveStatus: string | null
+  driveLoading: boolean
+  githubSyncing: boolean
 }
 
 export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
@@ -124,4 +131,11 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   panelMaximized: false,
   activeTab: 'student',
   loading: false,
+  forking: false,
+  githubStatus: null,
+  studentStreaming: '',
+  facultyStreaming: '',
+  driveStatus: null,
+  driveLoading: false,
+  githubSyncing: false,
 }

@@ -36,7 +36,7 @@ interface GitHubFileContent {
   content: string
 }
 
-async function apiFetch(path: string, method: string, body?: unknown): Promise<any> {
+async function apiFetch(path: string, method: string, body?: unknown, timeoutMs = 15000): Promise<any> {
   const config = loadConfig()
   if (!config.token) throw new Error('GitHub token غير مُعد')
 
@@ -47,7 +47,7 @@ async function apiFetch(path: string, method: string, body?: unknown): Promise<a
     'X-GitHub-Api-Version': '2022-11-28',
   }
   const ac = new AbortController()
-  const timer = setTimeout(() => ac.abort(), 15000)
+  const timer = setTimeout(() => ac.abort(), timeoutMs)
   const opts: RequestInit = { method, headers, signal: ac.signal }
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
@@ -435,95 +435,61 @@ export async function copyEntireRepo(
     return results
   }
 
-  const treeItems: Array<{ path: string; mode: string; type: string; sha: string }> = []
-
   for (const item of sourceTree) {
     if (item.type !== 'blob') continue
 
+    const BINARY_EXTS = ['.mp4', '.mp3', '.wav', '.webm', '.ogg', '.avi', '.mov', '.mkv', '.flac', '.ttf', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.pdf']
+    const ext = '.' + item.path.split('.').pop()?.toLowerCase()
+    const isBinary = BINARY_EXTS.includes(ext)
+
     let contentBase64: string
     try {
-      const blobData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/blobs/${item.sha}`, 'GET')
-      contentBase64 = blobData.content
+      const blobData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/blobs/${item.sha}`, 'GET', undefined, isBinary ? 120000 : 15000)
+      if (isBinary) {
+        contentBase64 = blobData.content
+      } else {
+        contentBase64 = btoa(unescape(encodeURIComponent(decodeURIComponent(escape(atob(blobData.content))))))
+      }
     } catch (e: any) {
       results.push(`⚠️ ${item.path}: فشل تحميل (${e.message})`)
       continue
     }
 
     try {
-      if (item.path === 'src/data/characters.ts') {
-        contentBase64 = btoa(unescape(encodeURIComponent(generateCharactersTS(contentData.characters))))
-      } else if (item.path === 'src/data/dialogue.ts') {
-        contentBase64 = btoa(unescape(encodeURIComponent(generateDialogueTS(contentData.levels))))
-      } else if (item.path === 'src/data/gameMeta.ts') {
-        contentBase64 = btoa(unescape(encodeURIComponent(generateGameMetaTS(contentData.gameMeta))))
-      } else if (item.path === 'vite.config.ts') {
-        const decoded = decodeURIComponent(escape(atob(contentBase64)))
-        contentBase64 = btoa(unescape(encodeURIComponent(updateViteBasePath(decoded, targetRepo))))
-      } else if (item.path === 'package.json') {
-        const decoded = decodeURIComponent(escape(atob(contentBase64)))
-        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`))))
-      } else if (item.path === 'package-lock.json') {
-        const decoded = decodeURIComponent(escape(atob(contentBase64)))
-        contentBase64 = btoa(unescape(encodeURIComponent(decoded.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`))))
-      } else if (item.path === 'README.md' && isFromMain) {
-        const decoded = decodeURIComponent(escape(atob(contentBase64)))
-        contentBase64 = btoa(unescape(encodeURIComponent(
-          decoded.replace(/YoussefAhamedKamal/g, targetOwner).replace(/cyber-guardians-mobile/g, targetRepo)
-        )))
+      if (!isBinary) {
+        let contentStr = decodeURIComponent(escape(atob(contentBase64)))
+        if (item.path === 'src/data/characters.ts') {
+          contentStr = generateCharactersTS(contentData.characters)
+        } else if (item.path === 'src/data/dialogue.ts') {
+          contentStr = generateDialogueTS(contentData.levels)
+        } else if (item.path === 'src/data/gameMeta.ts') {
+          contentStr = generateGameMetaTS(contentData.gameMeta)
+        } else if (item.path === 'vite.config.ts') {
+          contentStr = updateViteBasePath(contentStr, targetRepo)
+        } else if (item.path === 'package.json') {
+          contentStr = contentStr.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`)
+        } else if (item.path === 'package-lock.json') {
+          contentStr = contentStr.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`)
+        } else if (item.path === 'README.md' && isFromMain) {
+          contentStr = contentStr.replace(/YoussefAhamedKamal/g, targetOwner).replace(/cyber-guardians-mobile/g, targetRepo)
+        }
+        contentBase64 = btoa(unescape(encodeURIComponent(contentStr)))
       }
 
-      const newBlob = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/blobs`, 'POST', {
+      const timeoutMs = isBinary ? 120000 : 30000
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${encodeURIComponent(item.path)}`, 'PUT', {
+        message: `🎮 إضافة ${item.path}`,
         content: contentBase64,
-        encoding: 'base64',
-      })
-      treeItems.push({ path: item.path, mode: item.mode || '100644', type: 'blob', sha: newBlob.sha })
+        branch: targetBranch,
+      }, timeoutMs)
       results.push(`✅ ${item.path}`)
     } catch (e: any) {
       results.push(`❌ ${item.path}: ${e.message}`)
     }
   }
 
-  if (treeItems.length === 0) {
+  if (results.filter(r => r.startsWith('✅')).length === 0) {
     results.push('❌ لا توجد ملفات لنسخها')
-    return results
-  }
-
-  let parentSha: string | null = null
-  try {
-    const branchData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'GET')
-    parentSha = branchData.object.sha
-  } catch {}
-
-  let newTreeSha: string
-  try {
-    const treeData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/trees`, 'POST', { tree: treeItems })
-    newTreeSha = treeData.sha
-  } catch (e: any) {
-    results.push(`❌ فشل إنشاء الشجرة: ${e.message}`)
-    return results
-  }
-
-  let commitSha: string
-  try {
-    const commitData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/commits`, 'POST', {
-      message: '🎮 نسخ كامل للمستودع مع تحديث المحتوى',
-      tree: newTreeSha,
-      parents: parentSha ? [parentSha] : [],
-    })
-    commitSha = commitData.sha
-  } catch (e: any) {
-    results.push(`❌ فشل إنشاء commit: ${e.message}`)
-    return results
-  }
-
-  try {
-    if (parentSha) {
-      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'PATCH', { sha: commitSha, force: true })
-    } else {
-      await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs`, 'POST', { ref: `refs/heads/${targetBranch}`, sha: commitSha })
-    }
-  } catch (e: any) {
-    results.push(`❌ فشل تحديث الفرع: ${e.message}`)
   }
 
   return results
