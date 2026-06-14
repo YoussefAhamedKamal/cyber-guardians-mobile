@@ -218,6 +218,13 @@ export async function pushContentToGitHub(
   const results: string[] = []
   const msg = commitMessage || '🎮 تحديث محتوى اللعبة عبر هيئة التدريس'
 
+  const config = loadConfig()
+  try {
+    await apiFetch(`/repos/${config.owner}/${config.repo}`, 'GET')
+  } catch {
+    throw new Error(`المستودع ${config.owner}/${config.repo} غير موجود. أنشئ مستودعاً جديداً أولاً.`)
+  }
+
   try {
     const ts = generateCharactersTS(contentData.characters)
     let existing: GitHubFileContent | null = null
@@ -249,10 +256,10 @@ export async function pushContentToGitHub(
   }
 
   try {
-    let existingPkg: GitHubFileContent | null = null
-    try { existingPkg = await getFileContent('package.json') } catch {}
     const pkgTs = `// هذا الملف يتم تحديثه تلقائياً عبر GitHub API\n// آخر تحديث: ${new Date().toISOString()}\n`
-    await createOrUpdateFile('src/data/LAST_SYNC.txt', pkgTs, `${msg} — آخر مزامنة`, existingPkg?.sha)
+    let existing: GitHubFileContent | null = null
+    try { existing = await getFileContent('src/data/LAST_SYNC.txt') } catch {}
+    await createOrUpdateFile('src/data/LAST_SYNC.txt', pkgTs, `${msg} — آخر مزامنة`, existing?.sha)
     results.push('✅ LAST_SYNC.txt')
   } catch (e: any) {
     results.push(`❌ LAST_SYNC.txt: ${e.message}`)
