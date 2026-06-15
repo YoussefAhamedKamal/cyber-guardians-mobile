@@ -856,6 +856,10 @@ src/
 - [x] **LevelSelectPage.tsx** — دمج DifficultySelect
 - [x] **DialoguePage.tsx** — دمج ChallengeIntro, ChallengeSummary
 - [x] **gameStore.ts** — إضافة hearts, currentCombo, lastDailyClaimDate
+- [x] **contentStore.ts** — إضافة modifiedFiles لتخزين التعديلات على أي ملف
+- [x] **github.ts** — إضافة pushSourceFilesToGitHub() لرفع أي ملف إلى GitHub
+- [x] **googleDrive.ts** — تعديل uploadContentToDrive() لرفع ملفات .ts بدلاً من JSON
+- [x] **AIPanel.tsx** — تعديل زري "رفع إلى GitHub" و"رفع المحتوى فقط" لدعم جميع الملفات
 
 ### مكتمل — الإضافات السابقة (v1.8.1)
 - [x] **فحص وجود المستودع** — `pushContentToGitHub` يتحقق من وجود المستودع قبل الرفع
@@ -911,7 +915,9 @@ src/
 ### طريقة العمل
 | الزر | الوظيفة | API المستخدم |
 |---|---|---|
-| **🔄 رفع إلى GitHub** | رفع `characters.ts` + `dialogue.ts` + `gameMeta.ts` فقط | Contents API |
+| **🔄 رفع إلى GitHub** | رفع جميع الملفات المعدّلة (characters, dialogue, gameMeta + أي ملفات أخرى من modifiedFiles) | Contents API |
+| **📄 رفع المحتوى فقط** | رفع الملفات الأصلية .ts إلى Google Drive (وليس JSON) | Google Drive API |
+| **📦 رفع المشروع كامل** | نسخ المشروع الكامل من GitHub الرئيسي إلى Google Drive | GitHub + Drive API |
 | **🟡 إنشاء مستودع جديد** | نسخ كل الملفات في مستودع جديد | Contents API |
 
 ### مهلات الطلبات
