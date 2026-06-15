@@ -887,6 +887,10 @@ src/
 - [x] **i18n** — I18nProvider + ترجمة عربية/إنجليزية
 - [x] **Admin Dashboard** — لوحة تحكم
 - [x] **Analytics** — نظام تتبع الأحداث
+
+### التوثيق والمخططات
+- [x] **cyber-guardians-diagram.excalidraw** — مخطط شامل مع Gamification + File Editor
+- [x] **AI_ADVANCED_SETTINGS_GUIDE.md** — دليل تفصيلي لـ AI & Advanced Settings
 - [x] **Cloud Save** — رفع/تحميل/مزامنة
 - [x] **Light Theme** — darkMode toggle
 - [x] **Tablet Layout** — isTablet/isMobile
