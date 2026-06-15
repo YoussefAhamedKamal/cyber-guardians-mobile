@@ -561,6 +561,7 @@ function WorkerSettings() {
     try { return JSON.parse(localStorage.getItem('cg-worker-config') || '{}').authToken || '' } catch { return '' }
   })
   const [status, setStatus] = useState<string | null>(null)
+  const [showGuide, setShowGuide] = useState(false)
 
   const save = () => {
     if (!workerUrl.trim()) {
@@ -583,7 +584,7 @@ function WorkerSettings() {
       if (res.ok) setStatus('✅ Worker يعمل بنجاح')
       else setStatus(`❌ Worker رد بـ ${res.status}`)
     } catch (e: any) {
-      setStatus(`❌ فشل الاتصال: ${e?.message || 'خطأ'}`)
+      setStatus(`❌ فشل الاتصال: ${e?.message || 'خطأ غير معروف'}`)
     }
   }
 
@@ -591,8 +592,30 @@ function WorkerSettings() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
       <div style={{ color: '#888', fontSize: '10px', lineHeight: 1.5, background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '4px' }}>
         Worker Proxy يُمرّر طلبات AI عبر Cloudflare بدلاً من المتصفح مباشرة. هذا يمنع XSS من سرقة API keys.
-        <br/>المزيد: <span style={{ color: '#4FC3F7', cursor: 'pointer' }} onClick={() => window.open('https://github.com/YoussefAhamedKamal/cyber-guardians-mobile/blob/main/worker/README.md', '_blank')}>worker/README.md</span>
+        <br/><span style={{ color: '#4FC3F7', cursor: 'pointer' }} onClick={() => setShowGuide(!showGuide)}>📖 {showGuide ? 'إخفاء الدليل' : 'عرض دليل الاستخدام'}</span>
       </div>
+
+      {showGuide && (
+        <div style={{ background: 'rgba(79,195,247,0.08)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: '6px', padding: '8px', fontSize: '10px', lineHeight: 1.8, color: '#ccc' }}>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, marginBottom: '4px' }}>🛡️ دليل إعداد Worker Proxy</div>
+          <div><b style={{ color: '#fff' }}>الخطوة 1:</b> افتح Cloudflare Dashboard → Workers & Pages</div>
+          <div><b style={{ color: '#fff' }}>الخطوة 2:</b> أنشئ Worker جديد باسم <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>cyber-guardians-proxy</code></div>
+          <div><b style={{ color: '#fff' }}>الخطوة 3:</b> ارفع كود <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>worker/index.js</code></div>
+          <div><b style={{ color: '#fff' }}>الخطوة 4:</b> في Worker → Settings → Variables أضف:
+            <div style={{ padding: '3px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', margin: '3px 0', direction: 'ltr', textAlign: 'left', fontSize: '10px' }}>
+              AUTH_TOKEN = <span style={{ color: '#81C784' }}>cg-proxy-xxxxxxxx</span><br/>
+              ALLOWED_ORIGINS = <span style={{ color: '#81C784' }}>http://localhost:5173,https://youssefahamedkamal.github.io</span>
+            </div>
+          </div>
+          <div><b style={{ color: '#fff' }}>الخطوة 5:</b> انسخ رابط Worker (من Settings → Triggers → Production)</div>
+          <div><b style={{ color: '#fff' }}>الخطوة 6:</b> الصق الرابط + Auth Token هنا</div>
+          <div><b style={{ color: '#fff' }}>الخطوة 7:</b> اضغط "💾 حفظ" ثم "🔌 اختبار"</div>
+          <div style={{ marginTop: '6px', padding: '4px', background: 'rgba(129,199,132,0.1)', borderRadius: '4px', color: '#81C784' }}>
+            ✅ عند النجاح: جميع طلبات AI ستمر عبر Worker (آمن)
+          </div>
+        </div>
+      )}
+
       <label style={{ color: '#aaa' }}>رابط Worker
         <input value={workerUrl} onChange={(e) => setWorkerUrl(e.target.value)} placeholder="https://my-proxy.workers.dev" style={{ ...inputStyle, fontSize: '11px' }} />
       </label>
