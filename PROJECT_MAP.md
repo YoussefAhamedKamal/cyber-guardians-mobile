@@ -838,10 +838,14 @@ src/
 - [x] **Difficulty Selection** — اختيار الصعوبة
 - [x] **Score Popup** — نافذة النقاط العائمة
 - [x] **Confetti** — تأثير الاحتفال
-- [ ] **Game Over Screen** — شاشة انتهاء اللعبة
+- [x] **Game Over Screen** — شاشة انتهاء اللعبة
 - [x] **Share System** — نظام المشاركة
+- [x] **Teacher Report** — تقرير المعلم
 - [x] **Encouragement Toast** — رسائل الحماس
 - [x] **Reset Confirmation** — تأكيد إعادة التعيين
+- [x] **Badge Grid** — شبكة الشارات
+- [x] **Leaderboard** — لوحة الصدارة
+- [x] **Level-Up Overlay** — نافذة الترقية
 - [x] **Notification Badge** — شارة الإشعارات
 
 ### مكتمل — الإضافات السابقة (v1.8.1)
