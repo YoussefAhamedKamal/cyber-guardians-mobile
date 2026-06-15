@@ -29,9 +29,13 @@ interface GameStore {
   unlockedBadges: string[]
   dailyStreakDays: number
   lastLoginDate: string | null
+  lastDailyClaimDate: string | null
   quizBestScore: number
   speedAnswers: number
   maxCombo: number
+  currentCombo: number
+  hearts: number
+  maxHearts: number
   hintsUsedThisQuiz: number
   quizRetries: number
   preTestScore: number
@@ -59,12 +63,16 @@ interface GameStore {
   setQuizBestScore: (score: number) => void
   addSpeedAnswer: () => void
   setMaxCombo: (combo: number) => void
+  setCurrentCombo: (combo: number) => void
+  loseHeart: () => void
+  resetHearts: () => void
   setHintsUsedThisQuiz: (hints: number) => void
   addQuizRetry: () => void
   setPreTestScore: (score: number) => void
   setPostTestScore: (score: number) => void
   updateDailyStreak: () => void
   checkAndUnlockBadges: () => string[]
+  claimDailyReward: () => void
 
   // Mission actions
   updateMissionProgress: (type: keyof MissionProgress, amount: number) => void
@@ -90,9 +98,13 @@ export const useGameStore = create<GameStore>()(
       unlockedBadges: [],
       dailyStreakDays: 0,
       lastLoginDate: null,
+      lastDailyClaimDate: null,
       quizBestScore: 0,
       speedAnswers: 0,
       maxCombo: 0,
+      currentCombo: 0,
+      hearts: 5,
+      maxHearts: 5,
       hintsUsedThisQuiz: 0,
       quizRetries: 0,
       preTestScore: 0,
@@ -143,6 +155,7 @@ export const useGameStore = create<GameStore>()(
           unlockedBadges: [],
           dailyStreakDays: 0,
           lastLoginDate: null,
+          lastDailyClaimDate: null,
           quizBestScore: 0,
           speedAnswers: 0,
           maxCombo: 0,
@@ -187,6 +200,19 @@ export const useGameStore = create<GameStore>()(
       setMaxCombo: (combo) =>
         set((s) => ({
           maxCombo: Math.max(s.maxCombo, combo),
+        })),
+
+      setCurrentCombo: (combo) =>
+        set({ currentCombo: combo }),
+
+      loseHeart: () =>
+        set((s) => ({
+          hearts: Math.max(0, s.hearts - 1),
+        })),
+
+      resetHearts: () =>
+        set((s) => ({
+          hearts: s.maxHearts,
         })),
 
       setHintsUsedThisQuiz: (hints) =>
@@ -243,6 +269,12 @@ export const useGameStore = create<GameStore>()(
         return newBadges
       },
 
+      claimDailyReward: () =>
+        set((s) => {
+          const today = new Date().toDateString()
+          return { lastDailyClaimDate: today }
+        }),
+
       // Mission actions
       updateMissionProgress: (type, amount) =>
         set((s) => ({
@@ -291,9 +323,13 @@ export const useGameStore = create<GameStore>()(
         unlockedBadges: s.unlockedBadges,
         dailyStreakDays: s.dailyStreakDays,
         lastLoginDate: s.lastLoginDate,
+        lastDailyClaimDate: s.lastDailyClaimDate,
         quizBestScore: s.quizBestScore,
         speedAnswers: s.speedAnswers,
         maxCombo: s.maxCombo,
+        currentCombo: s.currentCombo,
+        hearts: s.hearts,
+        maxHearts: s.maxHearts,
         hintsUsedThisQuiz: s.hintsUsedThisQuiz,
         quizRetries: s.quizRetries,
         preTestScore: s.preTestScore,
@@ -323,9 +359,13 @@ export const useGameStore = create<GameStore>()(
           unlockedBadges: Array.isArray(p.unlockedBadges) ? p.unlockedBadges : [],
           dailyStreakDays: typeof p.dailyStreakDays === 'number' ? p.dailyStreakDays : 0,
           lastLoginDate: typeof p.lastLoginDate === 'string' ? p.lastLoginDate : null,
+          lastDailyClaimDate: typeof p.lastDailyClaimDate === 'string' ? p.lastDailyClaimDate : null,
           quizBestScore: typeof p.quizBestScore === 'number' ? p.quizBestScore : 0,
           speedAnswers: typeof p.speedAnswers === 'number' ? p.speedAnswers : 0,
           maxCombo: typeof p.maxCombo === 'number' ? p.maxCombo : 0,
+          currentCombo: typeof p.currentCombo === 'number' ? p.currentCombo : 0,
+          hearts: typeof p.hearts === 'number' ? p.hearts : 5,
+          maxHearts: typeof p.maxHearts === 'number' ? p.maxHearts : 5,
           hintsUsedThisQuiz: typeof p.hintsUsedThisQuiz === 'number' ? p.hintsUsedThisQuiz : 0,
           quizRetries: typeof p.quizRetries === 'number' ? p.quizRetries : 0,
           preTestScore: typeof p.preTestScore === 'number' ? p.preTestScore : 0,

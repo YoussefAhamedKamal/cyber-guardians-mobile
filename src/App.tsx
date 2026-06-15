@@ -14,6 +14,14 @@ import { XPBar } from '@/components/ui/XPBar'
 import { RankBadge } from '@/components/ui/RankBadge'
 import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay'
 import { BadgeUnlockToast } from '@/components/ui/BadgeUnlockToast'
+import { DailyRewardOverlay } from '@/components/ui/DailyRewardOverlay'
+import { DailyMissions } from '@/components/ui/DailyMissions'
+import { WeeklyChallengeBanner } from '@/components/ui/WeeklyChallengeBanner'
+import { ComboDisplay } from '@/components/ui/ComboDisplay'
+import { HeartsDisplay } from '@/components/ui/HeartsDisplay'
+import { Leaderboard } from '@/components/ui/Leaderboard'
+import { ShareModal } from '@/components/ui/ShareModal'
+import { EncourageToast } from '@/components/ui/EncourageToast'
 import { getNewBadges, type Badge } from '@/data/badges'
 import type { LevelId } from '@/types'
 
@@ -58,6 +66,10 @@ export function App() {
   const [bgmHovered, setBgmHovered] = useState(false)
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [newBadges, setNewBadges] = useState<Badge[]>([])
+  const [showDailyReward, setShowDailyReward] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [encourageMsg, setEncourageMsg] = useState<string | undefined>()
   const responsive = useResponsive()
   const game = useGameStore()
   const settings = useSettingsStore()
@@ -77,6 +89,12 @@ export function App() {
 
   useEffect(() => {
     game.updateDailyStreak()
+    // Show daily reward if eligible
+    const lastClaim = game.lastDailyClaimDate
+    const today = new Date().toDateString()
+    if (lastClaim !== today) {
+      setShowDailyReward(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -157,6 +175,11 @@ export function App() {
     game.completeLevel(game.currentLevel, score)
     analytics.track('level_complete', { level: game.currentLevel, score })
     autoSave.saveNow()
+
+    // Show encourage toast for good scores
+    if (score >= 80) {
+      setEncourageMsg(score >= 90 ? 'مذهل! 🏆' : 'ممتاز! 🎯')
+    }
 
     // Check for rank up
     if (game.rank.id > prevRank.id) {
@@ -242,6 +265,14 @@ export function App() {
         </ScreenTransition>
       </Suspense>
 
+      {/* Daily Reward Overlay */}
+      {showDailyReward && (
+        <DailyRewardOverlay onDone={() => {
+          setShowDailyReward(false)
+          game.claimDailyReward()
+        }} />
+      )}
+
       {/* Gamification HUD */}
       {screen !== 'menu' && screen !== 'victory' && (
         <div style={{
@@ -250,6 +281,28 @@ export function App() {
         }}>
           <XPBar />
           <RankBadge />
+          <HeartsDisplay current={game.hearts} max={game.maxHearts} />
+          <ComboDisplay combo={game.currentCombo} />
+        </div>
+      )}
+
+      {/* Daily Missions */}
+      {screen === 'menu' && (
+        <div style={{
+          position: 'fixed', bottom: '16px', left: '16px',
+          zIndex: 9998,
+        }}>
+          <DailyMissions compact />
+        </div>
+      )}
+
+      {/* Weekly Challenge Banner */}
+      {screen === 'menu' && (
+        <div style={{
+          position: 'fixed', top: '16px', right: '16px',
+          zIndex: 9998,
+        }}>
+          <WeeklyChallengeBanner />
         </div>
       )}
 
@@ -267,6 +320,24 @@ export function App() {
           badges={newBadges}
           onDone={() => setNewBadges([])}
         />
+      )}
+
+      {/* Encourage Toast */}
+      {encourageMsg && (
+        <EncourageToast
+          message={encourageMsg}
+          onDone={() => setEncourageMsg(undefined)}
+        />
+      )}
+
+      {/* Leaderboard */}
+      {showLeaderboard && (
+        <Leaderboard onDone={() => setShowLeaderboard(false)} />
+      )}
+
+      {/* Share Modal */}
+      {showShare && (
+        <ShareModal onDone={() => setShowShare(false)} />
       )}
 
       <Suspense fallback={null}>
