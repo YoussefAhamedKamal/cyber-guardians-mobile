@@ -130,44 +130,40 @@ export const useGameStore = create<GameStore>()(
       setLevel: (level) => set({ currentLevel: level }),
 
       completeLevel: (level, score) => {
-        set((s) => {
-          const next = new Set(s.completedLevels)
-          next.add(level)
-          const xpGain = Math.floor(score / 5)
-          const newTotalXp = s.xp + xpGain
-          const newRank = getRankByXp(newTotalXp)
-          const oldRank = s.rank
-          if (newRank.id > oldRank.id) {
-            logger.info('rank_up', { oldRank: oldRank.id, newRank: newRank.id })
-          }
-          return {
-            completedLevels: next,
-            totalScore: s.totalScore + score,
-            xp: newTotalXp,
-            rank: newRank,
-          }
-        })
-        // Check badges after level completion
-        const state = get()
+        const prev = get()
+        const next = new Set(prev.completedLevels)
+        next.add(level)
+        const xpGain = Math.floor(score / 5)
+        const newTotalXp = prev.xp + xpGain
+        const newRank = getRankByXp(newTotalXp)
+        if (newRank.id > prev.rank.id) {
+          logger.info('rank_up', { oldRank: prev.rank.id, newRank: newRank.id })
+        }
         const newBadges = checkBadges({
-          completedLevels: state.completedLevels,
-          totalScore: state.totalScore,
-          xp: state.xp,
-          rankId: state.rank.id,
-          playerName: state.playerName,
-          dailyStreakDays: state.dailyStreakDays,
-          quizBestScore: state.quizBestScore,
-          speedAnswers: state.speedAnswers,
-          maxCombo: state.maxCombo,
-          hintsUsedThisQuiz: state.hintsUsedThisQuiz,
-          quizRetries: state.quizRetries,
-          preTestScore: state.preTestScore,
-          postTestScore: state.postTestScore,
-        }).filter((id) => !state.unlockedBadges.includes(id))
+          completedLevels: next,
+          totalScore: prev.totalScore + score,
+          xp: newTotalXp,
+          rankId: newRank.id,
+          playerName: prev.playerName,
+          dailyStreakDays: prev.dailyStreakDays,
+          quizBestScore: prev.quizBestScore,
+          speedAnswers: prev.speedAnswers,
+          maxCombo: prev.maxCombo,
+          hintsUsedThisQuiz: prev.hintsUsedThisQuiz,
+          quizRetries: prev.quizRetries,
+          preTestScore: prev.preTestScore,
+          postTestScore: prev.postTestScore,
+        }).filter((id) => !prev.unlockedBadges.includes(id))
         if (newBadges.length > 0) {
           logger.info('badge_unlocked', { badges: newBadges })
-          set({ unlockedBadges: [...state.unlockedBadges, ...newBadges] })
         }
+        set({
+          completedLevels: next,
+          totalScore: prev.totalScore + score,
+          xp: newTotalXp,
+          rank: newRank,
+          unlockedBadges: [...prev.unlockedBadges, ...newBadges],
+        })
       },
 
       togglePause: () => set((s) => ({ isPaused: !s.isPaused })),
@@ -206,35 +202,35 @@ export const useGameStore = create<GameStore>()(
 
       // Gamification actions
       addXp: (amount) => {
-        set((s) => {
-          const newXp = s.xp + amount
-          const newRank = getRankByXp(newXp)
-          if (newRank.id > s.rank.id) {
-            logger.info('rank_up', { oldRank: s.rank.id, newRank: newRank.id })
-          }
-          return { xp: newXp, rank: newRank }
-        })
-        // Check badges after XP change
-        const state = get()
+        const prev = get()
+        const newXp = prev.xp + amount
+        const newRank = getRankByXp(newXp)
+        if (newRank.id > prev.rank.id) {
+          logger.info('rank_up', { oldRank: prev.rank.id, newRank: newRank.id })
+        }
         const newBadges = checkBadges({
-          completedLevels: state.completedLevels,
-          totalScore: state.totalScore,
-          xp: state.xp,
-          rankId: state.rank.id,
-          playerName: state.playerName,
-          dailyStreakDays: state.dailyStreakDays,
-          quizBestScore: state.quizBestScore,
-          speedAnswers: state.speedAnswers,
-          maxCombo: state.maxCombo,
-          hintsUsedThisQuiz: state.hintsUsedThisQuiz,
-          quizRetries: state.quizRetries,
-          preTestScore: state.preTestScore,
-          postTestScore: state.postTestScore,
-        }).filter((id) => !state.unlockedBadges.includes(id))
+          completedLevels: prev.completedLevels,
+          totalScore: prev.totalScore,
+          xp: newXp,
+          rankId: newRank.id,
+          playerName: prev.playerName,
+          dailyStreakDays: prev.dailyStreakDays,
+          quizBestScore: prev.quizBestScore,
+          speedAnswers: prev.speedAnswers,
+          maxCombo: prev.maxCombo,
+          hintsUsedThisQuiz: prev.hintsUsedThisQuiz,
+          quizRetries: prev.quizRetries,
+          preTestScore: prev.preTestScore,
+          postTestScore: prev.postTestScore,
+        }).filter((id) => !prev.unlockedBadges.includes(id))
         if (newBadges.length > 0) {
           logger.info('badge_unlocked', { badges: newBadges })
-          set({ unlockedBadges: [...state.unlockedBadges, ...newBadges] })
         }
+        set({
+          xp: newXp,
+          rank: newRank,
+          unlockedBadges: [...prev.unlockedBadges, ...newBadges],
+        })
       },
 
       setPlayerName: (name) => {

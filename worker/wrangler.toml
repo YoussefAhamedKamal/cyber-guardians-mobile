@@ -1,0 +1,7 @@
+name = "cyber-guardians-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
+account_id = "43dcf5575f6f6f59439c0e28a17d3e1a"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173,https://youssefahamedkamal.github.io"

@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **2.0.0** — نظام Gamification الشامل (28 ميزة جديدة)
+> الإصدار: **2.0.0** — نظام Gamification الشامل + إصلاحات أمنية ووظيفية
 
 ---
 
@@ -131,17 +131,23 @@ Analytics: تتبع level_start, level_complete, challenge_retry, error
 src/
 ├── store/
 │   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
-│   ├── quizStore.ts                 # ★ جديد — Quiz state + timer + hints + energy
-│   └── settingsStore.ts            # موجود
+│   ├── settingsStore.ts            # موجود
+│   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
+│   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
+│   └── index.ts                    # موجود — exports
 │
 ├── data/
 │   ├── ranks.ts                     # ★ جديد — 5 مستويات ranks
 │   ├── badges.ts                    # ★ جديد — 15 شارة
 │   ├── missions.ts                  # ★ جديد — 5 قوالب مهام يومية
-│   ├── lessons.ts                   # ★ جديد — 12 درس تعليمي
 │   ├── quizQuestions.ts             # ★ جديد — بنك أسئلة الاختبار
 │   ├── assessmentQuestions.ts       # ★ جديد — أسئلة التقييم
-│   └── characters.ts               # موجود
+│   ├── referenceContent.ts          # ★ جديد — محتوى المرجع الأمني
+│   ├── challengeMeta.ts             # ★ جديد — معلومات التحديات
+│   ├── characters.ts               # موجود
+│   ├── dialogue.ts                  # موجود
+│   ├── gameMeta.ts                  # موجود
+│   └── gameData.ts                  # موجود — getLevels, getCharacters, getGameMeta
 │
 ├── components/ui/
 │   ├── XPBar.tsx                    # ★ جديد — شريط خبرة
@@ -173,21 +179,23 @@ src/
 │   └── TeacherReport.tsx           # ★ جديد — تقرير المعلم
 │
 ├── pages/
-│   ├── LearningPage.tsx             # ★ جديد — صفحة الدروس التعليمية
-│   ├── QuizPage.tsx                 # ★ جديد — صفحة الاختبار
-│   ├── BadgesPage.tsx               # ★ جديد — صفحة الشارات
-│   ├── LeaderboardPage.tsx          # ★ جديد — صفحة لوحة الصدارة
-│   └── AssessmentPage.tsx           # ★ جديد — صفحة التقييم
+│   ├── MenuPage.tsx                 # شاشة البداية
+│   ├── LevelSelectPage.tsx          # اختيار المستوى
+│   ├── DialoguePage.tsx             # الحوارات
+│   ├── GameplayPage.tsx             # التحديات
+│   ├── SettingsPage.tsx             # الإعدادات
+│   ├── CelebrationPage.tsx          # فيديو احتفال
+│   ├── VictoryPage.tsx              # شاشة النصر
+│   ├── AdminDashboard.tsx           # لوحة تحكم
+│   ├── ReferencePage.tsx            # ★ جديد — المرجع الأمني
+│   └── shared.ts                    # أنماط مشتركة
 │
 ├── hooks/
 │   ├── useTimer.ts                  # ★ جديد — مؤقت التحدي
-│   ├── useMissionProgress.ts        # ★ جديد — تتبع المهام
-│   ├── useEncouragement.ts          # ★ جديد — رسائل الحماس
 │   └── useResponsive.ts            # موجود
 │
 └── utils/
     ├── scoreCalculator.ts           # ★ جديد — حساب النقاط
-    ├── missionGenerator.ts          # ★ جديد — توليد المهام اليومية
     └── helpers.ts                   # موجود
 ```
 
@@ -256,7 +264,7 @@ src/
 **التكامل:**
 - `unlockedBadges: string[]` في gameStore
 - `checkBadges()` تُنفّذ بعد كل פעולה
-- `BadgeGrid` في صفحة BadgesPage
+- `BadgeGrid` في `MenuPage.tsx` (نافذة منبثقة)
 - `BadgeUnlockToast` يظهر عند فتح شارة جديدة
 
 ---
@@ -397,7 +405,7 @@ src/
 - يُتابع قراءة المستخدم (اختياري)
 
 #### 3.4 Quiz System (نظام الاختبار)
-**الملف:** `src/data/quizQuestions.ts` + `src/pages/QuizPage.tsx`
+**الملف:** `src/data/quizQuestions.ts` + `src/components/ui/DifficultySelect.tsx`
 
 **التصميم:**
 - بنك أسئلة متعدد (20+ سؤال)
@@ -520,9 +528,9 @@ src/
 │
 ├── ai/
 │   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded)
-│   ├── api.ts                       # OpenAI-compatible API
-│   ├── github.ts                    # GitHub API
-│   ├── googleDrive.ts               # Google Drive API
+│   ├── api.ts                       # OpenAI-compatible API + URL validation
+│   ├── github.ts                    # GitHub API + token encryption + Vite proxy
+│   ├── googleDrive.ts               # Google Drive API + proxy support
 │   └── prompts.ts                   # System prompts
 │
 ├── pages/                           # ★ محدث — صفحات lazy-loaded
@@ -534,10 +542,6 @@ src/
 │   ├── CelebrationPage.tsx          # فيديو احتفال (lazy)
 │   ├── VictoryPage.tsx              # شاشة النصر (lazy)
 │   ├── AdminDashboard.tsx           # لوحة تحكم (إحصائيات + سحابي + تصحيح)
-│   ├── QuizPage.tsx                 # ★ جديد — الاختبارات
-│   ├── BadgesPage.tsx               # ★ جديد — الشارات
-│   ├── LeaderboardPage.tsx          # ★ جديد — لوحة الصدارة
-│   ├── AssessmentPage.tsx           # ★ جديد — التقييم
 │   ├── ReferencePage.tsx            # ★ جديد — المرجع الأمني
 │   └── shared.ts                    # أنماط مشتركة
 │
@@ -600,11 +604,10 @@ src/
 │
 ├── store/
 │   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
-│   ├── quizStore.ts                 # ★ جديد — Quiz state
-│   ├── learningStore.ts             # ★ جديد — Learning state
 │   ├── settingsStore.ts            # موجود
-│   ├── contentStore.ts             # موجود
-│   └── aiStore.ts                  # موجود
+│   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
+│   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
+│   └── index.ts                    # موجود — exports
 │
 ├── i18n/
 │   ├── context.tsx
@@ -612,17 +615,15 @@ src/
 │   └── en.ts
 │
 ├── systems/
-│   ├── ProceduralAudio.ts
+│   ├── ProceduralAudio.ts         # ✅ مُصلح — cleanup leak
 │   ├── AnalyticsSystem.ts
-│   ├── AutoSaveSystem.ts
-│   ├── CloudSaveSystem.ts
+│   ├── AutoSaveSystem.ts          # ✅ مُحدّث — يتوقف عند إخفاء التبويب
+│   ├── CloudSaveSystem.ts         # ✅ مُصلح — this binding + try/catch
 │   └── LoggingSystem.ts
 │
 ├── hooks/
 │   ├── useResponsive.ts
-│   ├── useTimer.ts                  # ★ جديد
-│   ├── useMissionProgress.ts        # ★ جديد
-│   └── useEncouragement.ts          # ★ جديد
+│   └── useTimer.ts                  # ★ جديد
 │
 ├── data/
 │   ├── characters.ts
@@ -645,8 +646,8 @@ src/
 ├── utils/
 │   ├── constants.ts
 │   ├── indexedDBStorage.ts
-│   ├── apiKeyCrypto.ts
-│   ├── pinCrypto.ts
+│   ├── apiKeyCrypto.ts              # ✅ مُحدّث — تشفير XOR (يعمل على HTTP)
+│   ├── pinCrypto.ts                 # ✅ مُحدّث — SHA-256 pure JS (بدلاً من crypto.subtle)
 │   ├── helpers.ts
 │   ├── scoreCalculator.ts           # ★ جديد
 │   └── missionGenerator.ts          # ★ جديد
@@ -779,11 +780,11 @@ src/
 | الميزة | الملفات | التعقيد | الحالة |
 |--------|---------|---------|--------|
 | Daily Reward | DailyRewardOverlay, gameStore | متوسط | ✅ مكتمل |
-| Daily Missions | missions.ts, DailyMissions, useMissionProgress | عالي | ✅ مكتمل |
+| Daily Missions | missions.ts, DailyMissions | عالي | ✅ مكتمل |
 | Weekly Challenge | WeeklyChallengeBanner, gameStore | متوسط | ✅ مكتمل |
-| Combo System | ComboDisplay, quizStore, scoreCalculator | متوسط | ✅ مكتمل |
-| Hearts System | HeartsDisplay, GameOverOverlay, quizStore | متوسط | ✅ مكتمل |
-| Timer | TimerBar, useTimer, quizStore | متوسط | ✅ مكتمل |
+| Combo System | ComboDisplay, gameStore, scoreCalculator | متوسط | ✅ مكتمل |
+| Hearts System | HeartsDisplay, GameOverOverlay, gameStore | متوسط | ✅ مكتمل |
+| Timer | TimerBar, useTimer, gameStore | متوسط | ✅ مكتمل |
 | Pre/Post Assessment | assessmentQuestions, PreAssessment, PostAssessment | عالي | ✅ مكتمل |
 
 ### المرحلة 3: أنظمة التعلم والاختبار (High) — 4-6 أيام
@@ -962,14 +963,21 @@ src/
 | **Build** | `npm run build` ← مجلد `dist` |
 | **SPA support** | `public/_redirects` (`/* /index.html 200`) |
 
-### ملاحظة مهمة: base path (ديناميكي)
+### ملاحظة مهمة: base path + proxy (ديناميكي)
 ```ts
 // vite.config.ts
 base: process.env.BASE_URL || '/',
+server: {
+  port: 3001,
+  proxy: {
+    '/github-api': { target: 'https://api.github.com', changeOrigin: true, rewrite: (path) => path.replace(/^\/github-api/, '') },
+    '/github-raw': { target: 'https://raw.githubusercontent.com', changeOrigin: true, rewrite: (path) => path.replace(/^\/github-raw/, '') },
+  },
+}
 ```
 - **Cloudflare Pages**: BASE_URL غير مضبوط ← `base: '/'` ✅
 - **GitHub Actions**: BASE_URL = `/cyber-guardians-mobile/` ✅
-- **محلياً (npm run dev)**: غير مضبوط ← `base: '/'` ✅
+- **محلياً (npm run dev)**: base = '/' + proxy يحل مشكلة CORS ✅
 
 ---
 

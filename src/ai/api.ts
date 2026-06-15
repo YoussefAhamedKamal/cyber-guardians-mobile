@@ -1,8 +1,49 @@
 import type { AIMessage, AIProviderDef } from '@/types/ai'
 import { AI_PROVIDERS } from '@/types/ai'
 
+const WORKER_CONFIG_KEY = 'cg-worker-config'
+
+export interface WorkerConfig {
+  url: string
+  authToken: string
+}
+
+function getWorkerConfig(): WorkerConfig | null {
+  try {
+    const raw = localStorage.getItem(WORKER_CONFIG_KEY)
+    if (!raw) return null
+    const config = JSON.parse(raw) as WorkerConfig
+    if (!config.url) return null
+    return config
+  } catch {
+    return null
+  }
+}
+
+export function setWorkerConfig(config: WorkerConfig): void {
+  localStorage.setItem(WORKER_CONFIG_KEY, JSON.stringify(config))
+}
+
+export function getWorkerUrl(): string | null {
+  return getWorkerConfig()?.url || null
+}
+
 function getProvider(providerId: string): AIProviderDef | undefined {
   return AI_PROVIDERS.find((p) => p.id === providerId)
+}
+
+function validateCustomUrl(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) throw new Error('رابط مخصص فارغ')
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    throw new Error('رابط مخصص غير صالح')
+  }
+  if (parsed.protocol !== 'https:') throw new Error('يجب أن يبدأ الرابط بـ https://')
+  if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') throw new Error('يُمنع الروابط المحلية')
+  return parsed.origin
 }
 
 function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
@@ -29,6 +70,17 @@ function buildBody(modelId: string, messages: AIMessage[], _customBaseUrl: strin
   return body
 }
 
+async function proxyFetch(targetUrl: string, init: RequestInit): Promise<Response> {
+  const worker = getWorkerConfig()
+  if (!worker) return fetch(targetUrl, init)
+
+  const proxyUrl = `${worker.url.replace(/\/+$/, '')}?target=${encodeURIComponent(targetUrl)}`
+  const headers = new Headers(init.headers)
+  headers.set('X-Auth-Token', worker.authToken)
+
+  return fetch(proxyUrl, { ...init, headers })
+}
+
 export async function sendChatMessage(
   providerId: string,
   modelId: string,
@@ -42,10 +94,10 @@ export async function sendChatMessage(
 
   let baseUrl = provider.baseUrl
   if (providerId === 'custom' && customBaseUrl) {
-    baseUrl = customBaseUrl
+    baseUrl = validateCustomUrl(customBaseUrl)
   }
 
-  const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
   const body = buildBody(modelId, messages, customBaseUrl)
 
   const headers: Record<string, string> = {
@@ -59,7 +111,7 @@ export async function sendChatMessage(
     headers['X-Title'] = 'Cyber Guardians'
   }
 
-  const res = await fetch(url, {
+  const res = await proxyFetch(targetUrl, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -91,10 +143,10 @@ export async function* streamChatMessage(
 
   let baseUrl = provider.baseUrl
   if (providerId === 'custom' && customBaseUrl) {
-    baseUrl = customBaseUrl
+    baseUrl = validateCustomUrl(customBaseUrl)
   }
 
-  const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
   const body = { ...buildBody(modelId, messages, customBaseUrl, maxTokens ?? 4096), stream: true }
 
   const headers: Record<string, string> = {
@@ -108,7 +160,7 @@ export async function* streamChatMessage(
     headers['X-Title'] = 'Cyber Guardians'
   }
 
-  const res = await fetch(url, {
+  const res = await proxyFetch(targetUrl, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -161,10 +213,10 @@ export async function testConnection(
 
   let baseUrl = provider.baseUrl
   if (providerId === 'custom' && customBaseUrl) {
-    baseUrl = customBaseUrl
+    baseUrl = validateCustomUrl(customBaseUrl)
   }
 
-  const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -184,7 +236,7 @@ export async function testConnection(
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await proxyFetch(targetUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

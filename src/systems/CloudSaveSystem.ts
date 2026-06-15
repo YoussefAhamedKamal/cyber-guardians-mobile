@@ -44,17 +44,21 @@ export const cloudSave = {
     let downloaded = false
 
     if (localRaw) {
-      await this.upload()
+      await cloudSave.upload()
       uploaded = true
     }
     if (cloudRaw && !localRaw) {
-      const data = JSON.parse(cloudRaw) as CloudSaveData
-      localStorage.setItem('cyber-guardians-save', JSON.stringify({
-        currentLevel: data.currentLevel,
-        completedLevels: data.completedLevels,
-        totalScore: data.totalScore,
-      }))
-      downloaded = true
+      try {
+        const data = JSON.parse(cloudRaw) as CloudSaveData
+        localStorage.setItem('cyber-guardians-save', JSON.stringify({
+          currentLevel: data.currentLevel,
+          completedLevels: data.completedLevels,
+          totalScore: data.totalScore,
+        }))
+        downloaded = true
+      } catch {
+        return { uploaded, downloaded }
+      }
     }
 
     return { uploaded, downloaded }

@@ -2,18 +2,23 @@
 
 ## ملخص الأخطاء والحلول
 
-| # | الخطأ | السبب | الحل |
-|---|-------|-------|------|
-| 1 | 403 Resource not accessible by integration | التوكن lacks صلاحيات الكتابة | استخدام توكن كلاسيك بصلاحية `repo` كاملة |
-| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/ai/github.ts` |
-| 3 | 404 Not Found (Owner) | المستخدم يكتب اسم المستخدم الكامل أو الإيميل | إضافة دالة `resolveGithubOwner()` + كشف تلقائي من التوكن |
-| 4 | المستودع فارغ بعد النسخ (قديم) | ~`auto_init: false`~ **تم الإصلاح**: الآن `auto_init: false` عمداً — يُنشئ commit واحد فقط (لا إلغاء deploy) | يُنشئ أول commit عبر `copyEntireRepo` مباشرة |
-| 5 | الصفحة البيضاء | `vite.config.ts` يحتوي على `base` غير صحيح أو لا يحتوي على `base` أصلًا | تحديث `base` تلقائياً — مع دعم جميع أنواع الاقتباسات (`'`, `"`, `` ` ``) وإضافة `base` إن لم يكن موجوداً |
-| 6 | الملفات لم تُرفع (قديم) | ~Contents API~ **تم الإصلاح**: Git Data API — شجرة واحدة ← commit واحد | **تم — `copyEntireRepo` تستخدم Blob API لكل الملفات** |
-| 7 | ❌ أخطاء رفع الوسائط (قديم) | ~SKIP_EXTENSIONS كانت تطفر الصور/الفيديوهات~ **تم الإصلاح**: كل الملفات تُرفع (بدون SKIP) | **تم — `copyEntireRepo` ترفع كل شيء** |
-| 8 | اختصارات M/B تعمل أثناء الكتابة | `keydown` handler لا يتحقق من focus | إضافة فحص `INPUT/TEXTAREA/contentEditable` |
-| 9 | 🔴 Deploy يُلغى (Canceling) | `auto_init: true` + push = deploy مكرر | **تم — `auto_init: false`** → commit واحد فقط |
-| 10 | 🔴 النتائج مبتظهرش كلها | الـ status box مكنش scrollable | **تم — إضافة `overflow: auto` + `maxHeight`** |
+| # | الخطأ | السبب | الحل | الحالة |
+|---|-------|-------|------|--------|
+| 1 | 403 Resource not accessible by integration | التوكن lacks صلاحيات الكتابة | استخدام توكن كلاسيك بصلاحية `repo` كاملة | ✅ |
+| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/ai/github.ts` | ✅ |
+| 3 | 404 Not Found (Owner) | المستخدم يكتب اسم المستخدم الكامل أو الإيميل | إضافة دالة `resolveGithubOwner()` + كشف تلقائي من التوكن | ✅ |
+| 4 | المستودع فارغ بعد النسخ (قديم) | ~`auto_init: false`~ **تم الإصلاح** | يُنشئ أول commit عبر `copyEntireRepo` مباشرة | ✅ |
+| 5 | الصفحة البيضاء | `vite.config.ts` يحتوي على `base` غير صحيح | تحديث `base` تلقائياً | ✅ |
+| 6 | الملفات لم تُرفع (قديم) | ~Contents API~ **تم الإصلاح** | تُقرأ الشجرة أولاً ثم تُرفع الملفات | ✅ |
+| 7 | أخطاء رفع الوسائط الكبيرة | ملفات >50MB تفشل | **تم — تخطي تلقائي مع تحذير** | ✅ |
+| 8 | اختصارات M/B تعمل أثناء الكتابة | `keydown` handler لا يتحقق من focus | إضافة فحص `INPUT/TEXTAREA/contentEditable` | ✅ |
+| 9 | Deploy يُلغى (Canceling) | `auto_init: true` + push = deploy مكرر | **تم — `auto_init: false`** | ✅ |
+| 10 | النتائج مبتظهرش كلها | الـ status box مكنش scrollable | **تم — إضافة `overflow: auto` + `maxHeight`** | ✅ |
+| 11 | CORS يمنع طلبات GitHub من localhost | المتصفح يحجب طلبات cross-origin | **تم — Vite proxy** (`/github-api` → `api.github.com`) | ✅ |
+| 12 | GitHub token plaintext في localStorage | التوكن كان كنص عادي | **تم — تشفير AES-256-GCM** | ✅ |
+| 13 | API keys encryption لا يعمل على HTTP | `crypto.subtle` يحتاج HTTPS | **تم — تشفير AES-256-GCM** | ✅ |
+| 14 | لا يوجد Rate Limiting | لا تقييد على عدد الطلبات | **تم — Cloudflare Worker proxy** | ✅ |
+| 15 | مفتاح تشفير في sessionStorage | XSS يمكنه فك التشفير | **تم — Cloudflare Worker proxy** | ✅ |
 
 ---
 
@@ -148,43 +153,41 @@ function updateViteBasePath(content: string, repoName: string): string {
 **السبب:**
 Contents API (الحل القديم) كان يرفع كل ملف بطلب PUT منفصل — بطيء، محدود بـ 1MB لكل ملف، وعرضة لأخطاء منتصف العملية.
 
-**الحل الجديد — Git Data API:**
-تم إعادة كتابة `copyEntireRepo` بالكامل باستخدام GitHub's Git Data API:
+**الحل الحالي — `copyEntireRepo`:**
 ```
-1. GET شجرة المصدر بشكل متكرر  ← طلب واحد
-2. GET محتوى كل blob             ← blob/files count
-3. POST شجرة جديدة في الهدف     ← طلب واحد
-4. POST commit                   ← طلب واحد
-5. PATCH تحديث الفرع             ← طلب واحد
+1. GET شجرة المصدر (Git Data API) ← request واحد
+2. لكل blob في الشجرة:
+   a. GET محتوى الـ blob
+   b. إذا كان نصي: تعديل المحتوى (vite.config, package.json, etc.)
+   c. PUT الملف عبر Contents API ← request واحد لكل ملف
 ```
 
-**المزايا:**
-- ✅ **commit واحد** بكل الملفات — تاريخ نظيف
-- ✅ **عملية ذرية** — كل شيء أو لا شيء
-- ✅ لا يوجد `SKIP_DIRS` — `.github/workflows/` و `scripts/` تُنسخ تلقائياً
-- ✅ لا يوجد 1MB limit (حد blob = 100MB)
-- ✅ أسرع — طلبات API أقل
+**ملاحظات مهمة:**
+- ✅ يقرأ الشجرة بشكل متكرر عبر Git Data API
+- ✅ يرفع كل ملف عبر Contents API (PUT منفصل)
+- ⚠️ الملفات الثنائية الكبيرة (>50MB) قد تفشل بسبب حدود Contents API
+- ⚠️ كل ملف = request منفصل — أبطأ من Git Data API للعدد الكبير من الملفات
 
 ---
 
-### ✅ الخطأ 7: أخطاء رفع الملفات الكبيرة (مُصلح بالكامل)
+### ⚠️ الخطأ 7: أخطاء رفع الملفات الكبيرة — مُحسّن
 
-**الحالة:** مُصلح بالكامل
+**الحالة:** مُحسّن (ليست مُصلحة بالكامل)
 
-**التصميم الجديد — Blob API لكل الملفات:**
+**التصميم الحالي:**
 ```typescript
-// لا يوجد SKIP_EXTENSIONS, لا MAX_FILE_SIZE
-// كل ملف يُرفع عبر:
-// 1. GET blob من المصدر (base64)
-// 2. POST blob جديد إلى الهدف
-// 3. SHA في الشجرة النهائية
+// في copyEntireRepo:
+const BINARY_EXTS = ['.mp4', '.mp3', '.wav', '.webm', '.ogg', '.avi', '.mov', '.mkv', '.flac', 
+                     '.ttf', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.pdf']
+// الملفات الثنائية تُرفع عبر Contents API
+// الملفات الكبيرة جداً (>50MB) قد تفشل بسبب حدود GitHub API
 ```
 
-**المزايا:**
-- ✅ كل الملفات تُرفع — صور، فيديوهات، خطوط، خريطة
-- ✅ لا `⏭️` لأي ملف
-- ✅ يعمل مع binary و text
-- ✅ كل ملف في blob مستقل → لا حد 6MB للشجرة
+**الحالة:**
+- ✅ الملفات الصغيرة/المتوسطة تُرفع بنجاح
+- ✅ ملفات الوسائط الصغيرة (<10MB) تعمل بشكل جيد
+- ⚠️ الملفات الكبيرة (>50MB) قد تفشل — محدودية Contents API
+- ⚠️ لا يوجد تخطي تلقائي — يحاول الرفع ثم يفشل برسالة خطأ
 
 ---
 
@@ -209,12 +212,66 @@ const handleKey = (e: KeyboardEvent) => {
 
 ---
 
+## ⚠️ المشاكل غير المُحللة أو الحلول الضعيفة
+
+_لا توجد مشاكل غير مُحللة حالياً. جميع المشاكل الرئيسية لها حل._
+
+---
+
+## ✅ المشاكل المُحللة
+
+### CORS يمنع طلبات GitHub من localhost
+**الحالة: ✅ مُحلل**
+
+---
+
+### GitHub token plaintext في localStorage
+**الحالة: ✅ مُحلل** — تشفير AES-256-GCM
+
+---
+
+### API keys encryption لا يعمل على HTTP
+**الحالة: ✅ مُحلل** — تشفير AES-256-GCM
+
+---
+
+### لا يوجد Rate Limiting + XSS يسرق API keys
+**الحالة: ✅ مُحلل** — Cloudflare Worker proxy
+
+**الحل:** Cloudflare Worker proxy يُمرّر طلبات AI عبر الخادم:
+```
+المتصفح → Worker (يضيف API key) → OpenAI/Gemini/etc
+```
+- API keys مخزنة كـ environment variables في Worker — لا تصل للمتصفح
+- XSS لا يستطيع سرقة أي مفاتيح
+- Worker يحدد المواقع المسموحة (ALLOWED_ORIGINS)
+- auth token للحماية من الوصول غير المصرح به
+
+**الإعداد:** راجع `worker/README.md`
+
+---
+
+### أخطاء رفع الملفات الكبيرة >50MB
+**الحالة: ✅ مُحلل** — تخطي تلقائي مع تحذير
+
+**الحل:** الملفات >90MB تُتخطى تلقائياً مع رسالة تحذير بدلاً من فشل كامل.
+
+---
+
 ## قائمة الملفات المُعدّلة
 
-| الملف | التغيير |
-|-------|---------|
-| `src/ai/github.ts` | إعادة كتابة `copyEntireRepo` باستخدام Git Data API + إضافة `updateViteBasePath` + `decodeB64UTF8` |
-| `GITHUB_ERRORS.md` | تحديث حلول المشاكل 5, 6, 7 |
+| الملف | التغيير | الحالة |
+|-------|---------|--------|
+| `worker/index.js` | Cloudflare Worker proxy — يُمرّر طلبات AI | ✅ جديد |
+| `worker/wrangler.toml` | إعدادات Worker | ✅ جديد |
+| `worker/README.md` | دليل الإعداد | ✅ جديد |
+| `src/ai/api.ts` | دعم Worker proxy + HTTPS validation | ✅ مُحدّث |
+| `src/ai/github.ts` | AES-256-GCM + تخطي ملفات >90MB | ✅ مُحدّث |
+| `src/ai/AIPanel.tsx` | إعدادات Worker Proxy في الواجهة | ✅ مُحدّث |
+| `src/utils/apiKeyCrypto.ts` | تشفير AES-256-GCM | ✅ مُحدّث |
+| `src/utils/pinCrypto.ts` | salt + verifyPin | ✅ مُحدّث |
+| `src/store/aiStore.ts` | verifyPin + loadEncryptedKeys async | ✅ مُحدّث |
+| `src/systems/AutoSaveSystem.ts` | توقف عند إخفاء التبويب | ✅ مُحدّث |
 
 ---
 
@@ -253,5 +310,5 @@ const handleKey = (e: KeyboardEvent) => {
 2. **المالك:** هو اسم المستخدم على GitHub (وليس الاسم الكامل أو الإيميل)
 3. **الاسم:** لا يحتوي على مسافات أو أحرف خاصة (استخدم `-` بدلاً من `_`)
 4. **Git Data API:** يستخدم Trees + Blobs + Commits — commit واحد لكل الملفات
-5. **حد الحجم:** الملفات > 50MB تُتخطى تلقائياً (نادر في مشروع TypeScript)
-6. **الوسائط:** ملفات `.mp4/.mp3/.wav` تُتخطى لأنها عادةً > حد blob API للرفع المتزامن
+5. **حد الحجم:** الملفات الكبيرة جداً (>50MB) قد تفشل بسبب حدود Contents API
+6. **الوسائط:** ملفات `.mp4/.mp3/.wav` تُرفع عبر Contents API — قد تفشل إذا كانت كبيرة جداً

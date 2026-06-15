@@ -30,7 +30,7 @@ export default function GameplayPage({ level, onComplete }: Props) {
   // Lose one heart on entering challenge
   useEffect(() => {
     game.loseHeart()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Game over when hearts reach 0
   useEffect(() => {

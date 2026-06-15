@@ -94,6 +94,14 @@ export const audio = {
       const resume = () => { el.play().catch(() => {}) ; document.removeEventListener('click', resume) }
       document.addEventListener('click', resume, { once: true })
     })
-    return () => { el.pause(); el.remove(); bgAudio = null }
+    let stopped = false
+    return () => {
+      if (stopped) return
+      stopped = true
+      el.pause()
+      el.removeAttribute('src')
+      el.load()
+      if (bgAudio === el) bgAudio = null
+    }
   },
 }

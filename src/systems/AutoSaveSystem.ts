@@ -13,21 +13,24 @@ interface AutoSaveData {
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 
+function tick() {
+  if (typeof document !== 'undefined' && document.hidden) return
+  const state = useGameStore.getState()
+  const data: AutoSaveData = {
+    currentLevel: state.currentLevel,
+    completedLevels: [...state.completedLevels],
+    totalScore: state.totalScore,
+    timestamp: Date.now(),
+  }
+  try {
+    localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(data))
+  } catch {}
+}
+
 export const autoSave = {
   start() {
     if (intervalId) return
-    intervalId = setInterval(() => {
-      const state = useGameStore.getState()
-      const data: AutoSaveData = {
-        currentLevel: state.currentLevel,
-        completedLevels: [...state.completedLevels],
-        totalScore: state.totalScore,
-        timestamp: Date.now(),
-      }
-      try {
-        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(data))
-      } catch {}
-    }, SAVE_INTERVAL)
+    intervalId = setInterval(tick, SAVE_INTERVAL)
   },
 
   stop() {
@@ -38,16 +41,7 @@ export const autoSave = {
   },
 
   saveNow() {
-    const state = useGameStore.getState()
-    const data: AutoSaveData = {
-      currentLevel: state.currentLevel,
-      completedLevels: [...state.completedLevels],
-      totalScore: state.totalScore,
-      timestamp: Date.now(),
-    }
-    try {
-      localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(data))
-    } catch {}
+    tick()
   },
 
   load(): AutoSaveData | null {

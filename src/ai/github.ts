@@ -1,4 +1,5 @@
-const GITHUB_CONFIG_KEY = 'cg-github-config'
+const GITHUB_CONFIG_KEY = 'cg-github-config-enc'
+const GITHUB_KEY_SESSION = 'cg-gh-crypto-key'
 
 export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
 
@@ -9,26 +10,122 @@ export interface GitHubConfig {
   branch: string
 }
 
-function loadConfig(): GitHubConfig {
+const EMPTY_CONFIG: GitHubConfig = { token: '', owner: '', repo: '', branch: 'main' }
+
+let _cache: GitHubConfig = { ...EMPTY_CONFIG }
+
+function b64Encode(bytes: Uint8Array): string {
+  let b64 = ''
+  for (let i = 0; i < bytes.length; i++) {
+    b64 += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(b64)
+}
+
+function b64DecodeToBytes(b64: string): Uint8Array {
+  const decoded = atob(b64)
+  const bytes = new Uint8Array(decoded.length)
+  for (let i = 0; i < decoded.length; i++) {
+    bytes[i] = decoded.charCodeAt(i)
+  }
+  return bytes
+}
+
+async function getAesKey(): Promise<CryptoKey> {
+  const stored = sessionStorage.getItem(GITHUB_KEY_SESSION)
+  if (stored) {
+    const raw = b64DecodeToBytes(stored)
+    return crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+  }
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
+  const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
+  sessionStorage.setItem(GITHUB_KEY_SESSION, b64Encode(exported))
+  return key
+}
+
+function xorDecode(b64Str: string, key: number[]): string {
+  const bytes = b64DecodeToBytes(b64Str)
+  let result = ''
+  for (let i = 0; i < bytes.length; i++) {
+    result += String.fromCharCode(bytes[i]! ^ key[i % key.length]!)
+  }
+  return result
+}
+
+async function migrateXorIfNeeded(): Promise<void> {
+  const raw = localStorage.getItem(GITHUB_CONFIG_KEY)
+  if (!raw) return
   try {
-    const raw = localStorage.getItem(GITHUB_CONFIG_KEY)
-    return raw ? JSON.parse(raw) : { token: '', owner: '', repo: '', branch: 'main' }
+    const bytes = b64DecodeToBytes(raw)
+    if (bytes.length < 13) return
+    const testKey = JSON.parse(sessionStorage.getItem('cg-gh-xor-key') || '[]')
+    if (!Array.isArray(testKey) || testKey.length !== 32) return
+    const json = xorDecode(raw, testKey)
+    const config = JSON.parse(json) as GitHubConfig
+    if (!config.token && !config.owner) return
+    sessionStorage.removeItem('cg-gh-xor-key')
+    const aesKey = await getAesKey()
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encoded = new TextEncoder().encode(JSON.stringify(config))
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, encoded)
+    const combined = new Uint8Array(12 + encrypted.byteLength)
+    combined.set(iv)
+    combined.set(new Uint8Array(encrypted), 12)
+    localStorage.setItem(GITHUB_CONFIG_KEY, b64Encode(combined))
+  } catch {}
+}
+
+async function loadConfig(): Promise<GitHubConfig> {
+  const legacy = localStorage.getItem('cg-github-config')
+  if (legacy) {
+    try {
+      const parsed = JSON.parse(legacy) as GitHubConfig
+      await saveConfig(parsed)
+      localStorage.removeItem('cg-github-config')
+      return parsed
+    } catch {}
+  }
+  await migrateXorIfNeeded()
+  const raw = localStorage.getItem(GITHUB_CONFIG_KEY)
+  if (!raw) return { ...EMPTY_CONFIG }
+  try {
+    const key = await getAesKey()
+    const combined = b64DecodeToBytes(raw)
+    const iv = combined.slice(0, 12)
+    const data = combined.slice(12)
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
+    return JSON.parse(new TextDecoder().decode(decrypted))
   } catch {
-    return { token: '', owner: '', repo: '', branch: 'main' }
+    localStorage.removeItem(GITHUB_CONFIG_KEY)
+    sessionStorage.removeItem(GITHUB_KEY_SESSION)
+    return { ...EMPTY_CONFIG }
   }
 }
 
-export function getGitHubConfig(): GitHubConfig {
-  return loadConfig()
+async function saveConfig(config: GitHubConfig): Promise<void> {
+  const key = await getAesKey()
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const encoded = new TextEncoder().encode(JSON.stringify(config))
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded)
+  const combined = new Uint8Array(12 + encrypted.byteLength)
+  combined.set(iv)
+  combined.set(new Uint8Array(encrypted), 12)
+  localStorage.setItem(GITHUB_CONFIG_KEY, b64Encode(combined))
 }
 
-export function setGitHubConfig(config: GitHubConfig): void {
-  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config))
+loadConfig().then(c => { _cache = c })
+
+export function getGitHubConfig(): GitHubConfig {
+  return _cache
+}
+
+export async function setGitHubConfig(config: GitHubConfig): Promise<void> {
+  _cache = config
+  await saveConfig(config)
 }
 
 export function isGitHubConfigured(): boolean {
-  const c = loadConfig()
-  return !!(c.token && c.owner && c.repo)
+  return !!(_cache.token && _cache.owner && _cache.repo)
 }
 
 interface GitHubFileContent {
@@ -36,11 +133,15 @@ interface GitHubFileContent {
   content: string
 }
 
+const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const API_BASE = isDev ? '/github-api' : 'https://api.github.com'
+const RAW_BASE = isDev ? '/github-raw' : 'https://raw.githubusercontent.com'
+
 async function apiFetch(path: string, method: string, body?: unknown, timeoutMs = 15000): Promise<any> {
-  const config = loadConfig()
+  const config = _cache
   if (!config.token) throw new Error('GitHub token غير مُعد')
 
-  const url = `https://api.github.com${path}`
+  const url = `${API_BASE}${path}`
   const headers: Record<string, string> = {
     Authorization: `Bearer ${config.token}`,
     Accept: 'application/vnd.github+json',
@@ -76,7 +177,7 @@ async function apiFetch(path: string, method: string, body?: unknown, timeoutMs 
 
 export async function testGitHubConnection(): Promise<string> {
   try {
-    const config = loadConfig()
+    const config = _cache
     const data = await apiFetch(`/repos/${config.owner}/${config.repo}`, 'GET')
     return `✅ متصل — ${data.full_name} (${data.private ? 'خاص' : 'عام'})`
   } catch (e: any) {
@@ -85,7 +186,7 @@ export async function testGitHubConnection(): Promise<string> {
 }
 
 export async function getFileContent(filePath: string): Promise<GitHubFileContent> {
-  const config = loadConfig()
+  const config = _cache
   if (config.token) {
     try {
       const data = await apiFetch(`/repos/${config.owner}/${config.repo}/contents/${encodeURIComponent(filePath)}?ref=${config.branch}`, 'GET')
@@ -95,7 +196,7 @@ export async function getFileContent(filePath: string): Promise<GitHubFileConten
       console.warn('GitHub API failed, trying raw fallback:', e.message)
     }
   }
-  const rawUrl = `https://raw.githubusercontent.com/${config.token ? config.owner : MAIN_REPO.owner}/${config.token ? config.repo : MAIN_REPO.repo}/${config.token ? config.branch : 'main'}/${filePath}`
+  const rawUrl = `${RAW_BASE}/${config.token ? config.owner : MAIN_REPO.owner}/${config.token ? config.repo : MAIN_REPO.repo}/${config.token ? config.branch : 'main'}/${filePath}`
   const res = await fetch(rawUrl)
   if (!res.ok) throw new Error(`فشل تحميل الملف: ${res.status}`)
   return { sha: '', content: await res.text() }
@@ -107,7 +208,7 @@ export async function createOrUpdateFile(
   message: string,
   sha?: string
 ): Promise<void> {
-  const config = loadConfig()
+  const config = _cache
   const body: Record<string, unknown> = {
     message,
     content: btoa(unescape(encodeURIComponent(content))),
@@ -118,7 +219,13 @@ export async function createOrUpdateFile(
 }
 
 function escapeStr(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
 }
 
 export function generateCharactersTS(characters: Record<string, any>): string {
@@ -229,7 +336,7 @@ export async function pushContentToGitHub(
   const results: string[] = []
   const msg = commitMessage || '🎮 تحديث محتوى اللعبة عبر هيئة التدريس'
 
-  const config = loadConfig()
+  const config = _cache
   try {
     await apiFetch(`/repos/${config.owner}/${config.repo}`, 'GET')
   } catch {
@@ -295,7 +402,7 @@ export async function pushSourceFilesToGitHub(
   commitMessage: string
 ): Promise<string[]> {
   const results: string[] = []
-  const config = loadConfig()
+  const config = _cache
 
   try {
     await apiFetch(`/repos/${config.owner}/${config.repo}`, 'GET')
@@ -480,12 +587,21 @@ export async function copyEntireRepo(
     return results
   }
 
+  const LARGE_FILE_THRESHOLD = 90 * 1024 * 1024
+  const skippedLarge: string[] = []
+
   for (const item of sourceTree) {
     if (item.type !== 'blob') continue
 
     const BINARY_EXTS = ['.mp4', '.mp3', '.wav', '.webm', '.ogg', '.avi', '.mov', '.mkv', '.flac', '.ttf', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.pdf']
     const ext = '.' + item.path.split('.').pop()?.toLowerCase()
     const isBinary = BINARY_EXTS.includes(ext)
+
+    if (item.size && item.size > LARGE_FILE_THRESHOLD) {
+      skippedLarge.push(`${item.path} (${(item.size / 1024 / 1024).toFixed(1)}MB)`)
+      results.push(`⏭️ ${item.path}: تخطي — ملف كبير جداً (${(item.size / 1024 / 1024).toFixed(1)}MB > 90MB)`)
+      continue
+    }
 
     let contentBase64: string
     try {
@@ -537,11 +653,15 @@ export async function copyEntireRepo(
     results.push('❌ لا توجد ملفات لنسخها')
   }
 
+  if (skippedLarge.length > 0) {
+    results.push(`⚠️ تخطي ${skippedLarge.length} ملف كبير (>90MB): ${skippedLarge.join(', ')}`)
+  }
+
   return results
 }
 
 export async function setupDirectEdit(): Promise<{ owner: string; repo: string; pagesUrl: string }> {
-  const config = loadConfig()
+  const config = _cache
   try { await enableGitHubPages(config.owner, config.repo, config.branch) } catch {}
   return {
     owner: config.owner,

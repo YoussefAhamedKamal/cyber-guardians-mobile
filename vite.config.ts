@@ -8,7 +8,21 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') }
   },
-  server: { port: 3000 },
+  server: {
+    port: 3001,
+    proxy: {
+      '/github-api': {
+        target: 'https://api.github.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/github-api/, ''),
+      },
+      '/github-raw': {
+        target: 'https://raw.githubusercontent.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/github-raw/, ''),
+      },
+    },
+  },
   build: {
     chunkSizeWarningLimit: 200,
     rolldownOptions: {

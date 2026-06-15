@@ -3,7 +3,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
-import { streamChatMessage, testConnection } from './api'
+import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent } from './github'
 import { MAIN_REPO } from './github'
@@ -13,7 +13,7 @@ import { AI_PROVIDERS } from '@/types/ai'
 import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
 import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
-import { hashPin } from '@/utils/pinCrypto'
+import { hashPin, verifyPin } from '@/utils/pinCrypto'
 
 const FAB_POS_KEY = 'cg-ai-fab-pos'
 const PANEL_STATE_KEY = 'cg-ai-panel-state'
@@ -247,6 +247,11 @@ function AISettings() {
           color: testStatus.startsWith('✅') ? '#81C784' : '#E57373',
         }}>{testStatus}</div>
       )}
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
+        <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🛡️ Worker Proxy (أمان)</div>
+        <WorkerSettings />
+      </div>
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
         <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🔐 تغيير رمز هيئة التدريس</div>
@@ -507,8 +512,8 @@ function FacultyPinChanger() {
 
   const handleChange = async () => {
     if (currentPin.length > 0) {
-      const currentHash = await hashPin(currentPin)
-      if (currentHash !== ai.facultyPinHash) {
+      const valid = await verifyPin(currentPin, ai.facultyPinHash)
+      if (!valid) {
         setMsg('❌ الرمز الحالي خطأ')
         return
       }
@@ -546,6 +551,59 @@ function FacultyPinChanger() {
           color: msg.startsWith('✅') ? '#81C784' : '#E57373',
         }}>{msg}</div>
       )}
+    </div>
+  )
+}
+
+function WorkerSettings() {
+  const [workerUrl, setWorkerUrl] = useState(() => getWorkerUrl() || '')
+  const [authToken, setAuthToken] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cg-worker-config') || '{}').authToken || '' } catch { return '' }
+  })
+  const [status, setStatus] = useState<string | null>(null)
+
+  const save = () => {
+    if (!workerUrl.trim()) {
+      setWorkerConfig({ url: '', authToken: '' })
+      setStatus('✅ تم إلغاء Worker Proxy')
+      return
+    }
+    try { new URL(workerUrl) } catch { setStatus('❌ رابط غير صالح'); return }
+    setWorkerConfig({ url: workerUrl.trim(), authToken: authToken.trim() })
+    setStatus('✅ تم الحفظ — الطلبات ستمر عبر Worker')
+  }
+
+  const testWorker = async () => {
+    if (!workerUrl.trim()) { setStatus('❌ أدخل رابط Worker أولاً'); return }
+    try {
+      const res = await fetch(`${workerUrl.replace(/\/+$/, '')}/health`, {
+        method: 'GET',
+        headers: authToken ? { 'X-Auth-Token': authToken } : {},
+      })
+      if (res.ok) setStatus('✅ Worker يعمل بنجاح')
+      else setStatus(`❌ Worker رد بـ ${res.status}`)
+    } catch (e: any) {
+      setStatus(`❌ فشل الاتصال: ${e?.message || 'خطأ'}`)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+      <div style={{ color: '#888', fontSize: '10px', lineHeight: 1.5, background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '4px' }}>
+        Worker Proxy يُمرّر طلبات AI عبر Cloudflare بدلاً من المتصفح مباشرة. هذا يمنع XSS من سرقة API keys.
+        <br/>المزيد: <span style={{ color: '#4FC3F7', cursor: 'pointer' }} onClick={() => window.open('https://github.com/YoussefAhamedKamal/cyber-guardians-mobile/blob/main/worker/README.md', '_blank')}>worker/README.md</span>
+      </div>
+      <label style={{ color: '#aaa' }}>رابط Worker
+        <input value={workerUrl} onChange={(e) => setWorkerUrl(e.target.value)} placeholder="https://my-proxy.workers.dev" style={{ ...inputStyle, fontSize: '11px' }} />
+      </label>
+      <label style={{ color: '#aaa' }}>Auth Token (اختياري)
+        <input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)} placeholder="cg-proxy-xxxxxxxx" style={{ ...inputStyle, fontSize: '11px' }} />
+      </label>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <button onClick={save} style={{ flex: 1, padding: '6px', borderRadius: '6px', border: 'none', background: 'linear-gradient(135deg,#4FC3F7,#29B6F6)', color: '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>💾 حفظ</button>
+        <button onClick={testWorker} style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#4FC3F7', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>🔌 اختبار</button>
+      </div>
+      {status && <div style={{ padding: '6px', borderRadius: '6px', fontSize: '11px', textAlign: 'center', background: status.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)', border: `1px solid ${status.startsWith('✅') ? 'rgba(129,199,132,0.3)' : 'rgba(229,115,115,0.3)'}`, color: status.startsWith('✅') ? '#81C784' : '#E57373' }}>{status}</div>}
     </div>
   )
 }

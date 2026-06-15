@@ -4,7 +4,7 @@ import type { AIMessage, AIState, ChatSession } from '@/types/ai'
 import { DEFAULT_AI_STATE, AI_PROVIDERS } from '@/types/ai'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import { loadEncryptedKeys, saveEncryptedKeys } from '@/utils/apiKeyCrypto'
-import { hashPin } from '@/utils/pinCrypto'
+import { hashPin, verifyPin } from '@/utils/pinCrypto'
 
 const STORAGE_KEY = 'cg-ai-state'
 
@@ -81,8 +81,8 @@ export const useAIStore = create<AIStore>()(
         const now = Date.now()
         const state = get()
         if (state.pinLockedUntil > now) return false
-        const hashed = await hashPin(pin)
-        if (hashed === state.facultyPinHash) {
+        const valid = await verifyPin(pin, state.facultyPinHash)
+        if (valid) {
           set({ facultyUnlocked: true, pinAttempts: 0 })
           return true
         }
@@ -180,11 +180,12 @@ export const useAIStore = create<AIStore>()(
   )
 )
 
-loadEncryptedKeys().then((keys) => {
+;(async () => {
+  const keys = await loadEncryptedKeys()
   if (Object.keys(keys).length > 0) {
     useAIStore.getState().setApiKeys(keys)
   }
-})
+})()
 
 // حفظ مؤقت لحالة التدفق في localStorage (سريع) بدلاً من IndexedDB
 // حتى لا تضيع المحادثة عند تبديل التبويب
