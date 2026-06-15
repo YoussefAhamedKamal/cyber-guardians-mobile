@@ -848,6 +848,13 @@ src/
 - [x] **Level-Up Overlay** — نافذة الترقية
 - [x] **Notification Badge** — شارة الإشعارات
 
+### مكتمل — الدمج في اللعبة
+- [x] **App.tsx** — دمج DailyRewardOverlay, DailyMissions, WeeklyChallengeBanner, HeartsDisplay, ComboDisplay, Leaderboard, ShareModal, EncourageToast
+- [x] **GameplayPage.tsx** — دمج TimerBar, HintButton, EnergyMeter
+- [x] **LevelSelectPage.tsx** — دمج DifficultySelect
+- [x] **DialoguePage.tsx** — دمج ChallengeIntro, ChallengeSummary
+- [x] **gameStore.ts** — إضافة hearts, currentCombo, lastDailyClaimDate
+
 ### مكتمل — الإضافات السابقة (v1.8.1)
 - [x] **فحص وجود المستودع** — `pushContentToGitHub` يتحقق من وجود المستودع قبل الرفع
 - [x] **رسالة خطأ واضحة** — `المستودع X/Y غير موجود. أنشئ مستودعاً جديداً أولاً.`
