@@ -585,6 +585,7 @@ src/
 │   │   ├── ShareModal.tsx           # ★ جديد
 │   │   ├── ResetConfirmModal.tsx    # ★ جديد
 │   │   ├── PlayerNameInput.tsx      # ★ جديد
+│   │   ├── Shop.tsx                 # ★ جديد — نظام المتجر
 │   │   ├── ChallengeIntro.tsx       # ★ جديد — مقدمة التحدي
 │   │   ├── ChallengeSummary.tsx     # ★ جديد — ملخص بعد التحدي
 │   │   ├── EncourageToast.tsx       # ★ جديد
@@ -820,14 +821,14 @@ src/
 ### مكتمل — الإضافات الجديدة (v2.0.0)
 - [x] **XP System** — نظام النقاط
 - [x] **Rank System** — نظام الرتب (5 رتب)
-- [x] **Badge System** — نظام الشارات (15 شارة)
-- [x] **Player Name** — اسم اللاعب
+- [x] **Badge System** — نظام الشارات (15 شارة) — مُصلح: checkAndUnlockBadges الآن يُنفّذ بعد completeLevel و addXp
+- [x] **Player Name** — اسم اللاعب — مُصلح: زر تعديل الاسم في القائمة الرئيسية
 - [x] **Daily Reward** — مكافأة يومية
 - [x] **Daily Missions** — مهام يومية
-- [x] **Weekly Challenge** — تحدي أسبوعي
+- [x] **Weekly Challenge** — تحدي أسبوعي — مُصلح: زر "ابدأ التحدي" الآن يعمل
 - [x] **Combo System** — نظام الكومبو
 - [x] **Hearts System** — نظام القلوب
-- [x] **Timer** — مؤقت لكل سؤال
+- [x] **Timer** — مؤقت لكل سؤال — مُصلح: لا يعرض NaN بعد الآن
 - [x] **Hints System** — نظام التلميحات
 - [x] **Energy Meter** — مقياس الطاقة
 - [x] **Pre/Post Assessment** — تقييم قبل/بعد
@@ -847,6 +848,7 @@ src/
 - [x] **Leaderboard** — لوحة الصدارة
 - [x] **Level-Up Overlay** — نافذة الترقية
 - [x] **Notification Badge** — شارة الإشعارات
+- [x] **Shop System** — ★ جديد — نظام المتجر لشراء القلوب والتلميحات والسمات
 
 ### مكتمل — الدمج في اللعبة
 - [x] **App.tsx** — دمج DailyRewardOverlay, DailyMissions, WeeklyChallengeBanner, HeartsDisplay, ComboDisplay, Leaderboard, ShareModal, EncourageToast
