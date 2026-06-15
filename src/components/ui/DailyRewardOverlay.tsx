@@ -9,12 +9,16 @@ export function DailyRewardOverlay({ onDone }: Props) {
   const dailyStreakDays = useGameStore((s) => s.dailyStreakDays)
   const addXp = useGameStore((s) => s.addXp)
 
-  const reward = calculateDailyReward(dailyStreakDays, 50)
+  const baseReward = 50
+  const reward = calculateDailyReward(dailyStreakDays, baseReward)
+  const multiplier = 1 + (dailyStreakDays - 1) * 0.1
 
   const handleClaim = () => {
     addXp(reward)
     onDone()
   }
+
+  const dayLabels = ['س', 'ح', 'ن', 'ث', 'ر', 'خ', 'ج']
 
   return (
     <div style={{
@@ -28,7 +32,7 @@ export function DailyRewardOverlay({ onDone }: Props) {
         background: 'rgba(255,215,0,0.1)',
         border: '2px solid rgba(255,215,0,0.3)',
         borderRadius: '20px', padding: '32px 48px',
-        textAlign: 'center',
+        textAlign: 'center', maxWidth: '400px',
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎁</div>
         <div style={{
@@ -45,33 +49,48 @@ export function DailyRewardOverlay({ onDone }: Props) {
 
         {/* Streak Days */}
         <div style={{
-          display: 'flex', gap: '8px', justifyContent: 'center',
-          marginBottom: '24px',
+          display: 'flex', gap: '6px', justifyContent: 'center',
+          marginBottom: '16px',
         }}>
           {Array.from({ length: 7 }, (_, i) => (
             <div
               key={i}
               style={{
-                width: '32px', height: '32px', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '14px', fontWeight: 'bold',
+                width: '36px', height: '36px', borderRadius: '50%',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: '10px', fontWeight: 'bold',
                 background: i < dailyStreakDays
-                  ? 'rgba(255,215,0,0.3)'
+                  ? 'linear-gradient(135deg, #FFD700, #FFA000)'
                   : 'rgba(255,255,255,0.1)',
                 border: i < dailyStreakDays
                   ? '2px solid #FFD700'
                   : '2px solid rgba(255,255,255,0.2)',
-                color: i < dailyStreakDays ? '#FFD700' : '#888',
+                color: i < dailyStreakDays ? '#000' : '#888',
+                boxShadow: i < dailyStreakDays ? '0 0 12px rgba(255,215,0,0.4)' : 'none',
               }}
             >
-              {i < dailyStreakDays ? '✓' : i + 1}
+              <span style={{ fontSize: '14px', lineHeight: 1 }}>{dayLabels[i]}</span>
+              <span style={{ fontSize: '8px' }}>{i < dailyStreakDays ? '✓' : ''}</span>
             </div>
           ))}
         </div>
 
+        {/* Multiplier */}
+        {dailyStreakDays > 1 && (
+          <div style={{
+            fontSize: '14px', color: '#FFD700',
+            marginBottom: '8px',
+          }}>
+            ضربة: x{multiplier.toFixed(1)}
+          </div>
+        )}
+
+        {/* Reward */}
         <div style={{
-          fontSize: '32px', fontWeight: 'bold',
+          fontSize: '36px', fontWeight: 'bold',
           color: '#FFD700', marginBottom: '24px',
+          textShadow: '0 0 20px rgba(255,215,0,0.5)',
         }}>
           +{reward} XP
         </div>
@@ -83,8 +102,10 @@ export function DailyRewardOverlay({ onDone }: Props) {
             border: 'none', borderRadius: '12px',
             padding: '12px 48px', fontSize: '18px',
             fontWeight: 'bold', color: '#000',
-            cursor: 'pointer',
+            cursor: 'pointer', transition: 'transform 0.1s',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
         >
           احصل على المكافأة
         </button>
