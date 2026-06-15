@@ -86,8 +86,24 @@ export async function testGitHubConnection(): Promise<string> {
 
 export async function getFileContent(filePath: string): Promise<GitHubFileContent> {
   const config = loadConfig()
-  const data = await apiFetch(`/repos/${config.owner}/${config.repo}/contents/${encodeURIComponent(filePath)}?ref=${config.branch}`, 'GET')
-  return { sha: data.sha, content: atob(data.content) }
+  if (config.token) {
+    try {
+      const data = await apiFetch(`/repos/${config.owner}/${config.repo}/contents/${encodeURIComponent(filePath)}?ref=${config.branch}`, 'GET')
+      const decoded = decodeURIComponent(escape(atob(data.content)))
+      return { sha: data.sha, content: decoded }
+    } catch (e: any) {
+      if (e.message?.includes('404')) {
+        const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${filePath}`
+        const res = await fetch(rawUrl)
+        if (res.ok) return { sha: '', content: await res.text() }
+      }
+      throw e
+    }
+  }
+  const rawUrl = `https://raw.githubusercontent.com/${MAIN_REPO.owner}/${MAIN_REPO.repo}/main/${filePath}`
+  const res = await fetch(rawUrl)
+  if (!res.ok) throw new Error(`فشل تحميل الملف: ${res.status}`)
+  return { sha: '', content: await res.text() }
 }
 
 export async function createOrUpdateFile(
