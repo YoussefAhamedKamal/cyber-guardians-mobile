@@ -5,6 +5,8 @@ import { WeeklyChallengeBanner } from '@/components/ui/WeeklyChallengeBanner'
 import { Leaderboard } from '@/components/ui/Leaderboard'
 import { ShareModal } from '@/components/ui/ShareModal'
 import { BadgeGrid } from '@/components/ui/BadgeGrid'
+import { PlayerNameInput } from '@/components/ui/PlayerNameInput'
+import { Shop } from '@/components/ui/Shop'
 import { ReferencePage } from '@/pages/ReferencePage'
 import { useGameStore } from '@/store'
 
@@ -17,6 +19,8 @@ export default function MenuPage({ onStart, onSettings }: Props) {
   const [showShare, setShowShare] = useState(false)
   const [showBadges, setShowBadges] = useState(false)
   const [showReference, setShowReference] = useState(false)
+  const [showShop, setShowShop] = useState(false)
+  const [showName, setShowName] = useState(false)
   const [tooltip, setTooltip] = useState<string | null>(null)
 
   if (showReference) {
@@ -60,6 +64,22 @@ export default function MenuPage({ onStart, onSettings }: Props) {
 
           {/* Right: Action buttons */}
           <div style={{ display: 'flex', gap: '10px' }}>
+            <TooltipButton
+              icon="🛒"
+              tooltip="المتجر"
+              color="#FFD700"
+              border="rgba(255,215,0,0.3)"
+              onClick={() => setShowShop(true)}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="✏️"
+              tooltip="تعديل الاسم"
+              color="#4FC3F7"
+              border="rgba(79,195,247,0.3)"
+              onClick={() => setShowName(true)}
+              setTooltip={setTooltip}
+            />
             <TooltipButton
               icon="📋"
               tooltip="المهام اليومية"
@@ -135,12 +155,43 @@ export default function MenuPage({ onStart, onSettings }: Props) {
         position: 'absolute', top: '80px', right: '24px',
         zIndex: 30, width: '260px',
       }}>
-        <WeeklyChallengeBanner />
+        <WeeklyChallengeBanner onStartChallenge={onStart} />
       </div>
 
       {/* ===== MODALS ===== */}
       {showLeaderboard && <Leaderboard onDone={() => setShowLeaderboard(false)} />}
       {showShare && <ShareModal onDone={() => setShowShare(false)} />}
+      {showShop && <Shop onDone={() => setShowShop(false)} />}
+
+      {/* Player Name Modal */}
+      {showName && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+        }}>
+          <div style={{
+            background: 'rgba(20,20,40,0.95)',
+            border: '1px solid rgba(79,195,247,0.3)',
+            borderRadius: '20px', padding: '24px',
+            width: '90%', maxWidth: '360px',
+          }}>
+            <h3 style={{ margin: '0 0 16px', color: '#4FC3F7', fontSize: '18px' }}>✏️ تعديل اسم اللاعب</h3>
+            <PlayerNameInput />
+            <button
+              onClick={() => setShowName(false)}
+              style={{
+                marginTop: '16px', width: '100%', padding: '10px',
+                borderRadius: '10px', border: 'none',
+                background: 'rgba(255,255,255,0.1)', color: '#fff',
+                fontSize: '14px', cursor: 'pointer',
+              }}
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
+      )}
 
       {showBadges && (
         <div style={{

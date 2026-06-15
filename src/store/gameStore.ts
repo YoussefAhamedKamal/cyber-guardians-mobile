@@ -129,7 +129,7 @@ export const useGameStore = create<GameStore>()(
 
       setLevel: (level) => set({ currentLevel: level }),
 
-      completeLevel: (level, score) =>
+      completeLevel: (level, score) => {
         set((s) => {
           const next = new Set(s.completedLevels)
           next.add(level)
@@ -146,7 +146,29 @@ export const useGameStore = create<GameStore>()(
             xp: newTotalXp,
             rank: newRank,
           }
-        }),
+        })
+        // Check badges after level completion
+        const state = get()
+        const newBadges = checkBadges({
+          completedLevels: state.completedLevels,
+          totalScore: state.totalScore,
+          xp: state.xp,
+          rankId: state.rank.id,
+          playerName: state.playerName,
+          dailyStreakDays: state.dailyStreakDays,
+          quizBestScore: state.quizBestScore,
+          speedAnswers: state.speedAnswers,
+          maxCombo: state.maxCombo,
+          hintsUsedThisQuiz: state.hintsUsedThisQuiz,
+          quizRetries: state.quizRetries,
+          preTestScore: state.preTestScore,
+          postTestScore: state.postTestScore,
+        }).filter((id) => !state.unlockedBadges.includes(id))
+        if (newBadges.length > 0) {
+          logger.info('badge_unlocked', { badges: newBadges })
+          set({ unlockedBadges: [...state.unlockedBadges, ...newBadges] })
+        }
+      },
 
       togglePause: () => set((s) => ({ isPaused: !s.isPaused })),
 
@@ -183,7 +205,7 @@ export const useGameStore = create<GameStore>()(
       },
 
       // Gamification actions
-      addXp: (amount) =>
+      addXp: (amount) => {
         set((s) => {
           const newXp = s.xp + amount
           const newRank = getRankByXp(newXp)
@@ -191,7 +213,29 @@ export const useGameStore = create<GameStore>()(
             logger.info('rank_up', { oldRank: s.rank.id, newRank: newRank.id })
           }
           return { xp: newXp, rank: newRank }
-        }),
+        })
+        // Check badges after XP change
+        const state = get()
+        const newBadges = checkBadges({
+          completedLevels: state.completedLevels,
+          totalScore: state.totalScore,
+          xp: state.xp,
+          rankId: state.rank.id,
+          playerName: state.playerName,
+          dailyStreakDays: state.dailyStreakDays,
+          quizBestScore: state.quizBestScore,
+          speedAnswers: state.speedAnswers,
+          maxCombo: state.maxCombo,
+          hintsUsedThisQuiz: state.hintsUsedThisQuiz,
+          quizRetries: state.quizRetries,
+          preTestScore: state.preTestScore,
+          postTestScore: state.postTestScore,
+        }).filter((id) => !state.unlockedBadges.includes(id))
+        if (newBadges.length > 0) {
+          logger.info('badge_unlocked', { badges: newBadges })
+          set({ unlockedBadges: [...state.unlockedBadges, ...newBadges] })
+        }
+      },
 
       setPlayerName: (name) => {
         logger.info('player_name_set', { name })

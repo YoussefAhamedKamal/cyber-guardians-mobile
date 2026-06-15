@@ -5,7 +5,9 @@ interface Props {
 }
 
 export function TimerBar({ timeLeft, totalTime, color }: Props) {
-  const progress = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0
+  const safeTimeLeft = isNaN(timeLeft) || timeLeft < 0 ? 0 : Math.floor(timeLeft)
+  const safeTotalTime = isNaN(totalTime) || totalTime <= 0 ? 30 : totalTime
+  const progress = safeTotalTime > 0 ? (safeTimeLeft / safeTotalTime) * 100 : 0
 
   return (
     <div style={{
@@ -17,7 +19,7 @@ export function TimerBar({ timeLeft, totalTime, color }: Props) {
         background: 'rgba(255,255,255,0.1)', overflow: 'hidden',
       }}>
         <div style={{
-          width: `${progress}%`, height: '100%',
+          width: `${Math.max(0, Math.min(100, progress))}%`, height: '100%',
           background: color,
           borderRadius: '4px',
           transition: 'width 1s linear, background 0.3s ease',
@@ -27,7 +29,7 @@ export function TimerBar({ timeLeft, totalTime, color }: Props) {
         fontSize: '13px', fontWeight: 'bold',
         color: color, minWidth: '30px',
       }}>
-        {timeLeft}s
+        {safeTimeLeft}s
       </span>
     </div>
   )

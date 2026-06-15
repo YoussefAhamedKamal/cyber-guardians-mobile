@@ -18,12 +18,14 @@ interface Props {
 
 export default function GameplayPage({ level, onComplete }: Props) {
   const game = useGameStore()
-  const difficulty: DifficultyConfig = (game as unknown as { selectedDifficulty: DifficultyConfig }).selectedDifficulty || DIFFICULTIES[1]!
+  const selectedId = (game as unknown as { selectedDifficulty: string }).selectedDifficulty
+  const difficulty = DIFFICULTIES.find((d) => d.id === selectedId) || DIFFICULTIES[1]!
   const [timeLeft, setTimeLeft] = useState(difficulty.timePerQuestion)
   const totalTime = difficulty.timePerQuestion
   const [energy, setEnergy] = useState(50)
   const [hintsLeft, setHintsLeft] = useState(3)
   const completedRef = useRef(false)
+  const [tooltip, setTooltip] = useState<string | null>(null)
 
   // Lose one heart on entering challenge
   useEffect(() => {
@@ -93,7 +95,10 @@ export default function GameplayPage({ level, onComplete }: Props) {
         background: 'rgba(255,255,255,0.02)',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex', justifyContent: 'center',
-      }}>
+      }}
+        onMouseEnter={() => setTooltip('الوقت المتبقي للإجابة')}
+        onMouseLeave={() => setTooltip(null)}
+      >
         <TimerBar timeLeft={timeLeft} totalTime={totalTime} color={timerColor} />
       </div>
 
@@ -126,8 +131,28 @@ export default function GameplayPage({ level, onComplete }: Props) {
       <div style={{
         position: 'fixed', bottom: '16px', right: '16px', zIndex: 100,
       }}>
-        <HintButton hintsLeft={hintsLeft} onUse={handleUseHint} />
+        <div
+          onMouseEnter={() => setTooltip('استخدم تلميحاً لمساعدتك')}
+          onMouseLeave={() => setTooltip(null)}
+        >
+          <HintButton hintsLeft={hintsLeft} onUse={handleUseHint} />
+        </div>
       </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 99999,
+          background: 'rgba(0,0,0,0.85)', color: '#fff',
+          padding: '8px 16px', borderRadius: '8px',
+          fontSize: '13px', whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          border: '1px solid rgba(255,255,255,0.15)',
+        }}>
+          {tooltip}
+        </div>
+      )}
     </div>
   )
 }

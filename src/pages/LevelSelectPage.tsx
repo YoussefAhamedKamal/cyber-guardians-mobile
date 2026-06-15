@@ -16,6 +16,7 @@ export default function LevelSelectPage({ onSelectLevel, onBack }: Props) {
   const levels = getLevels()
   const [showDifficulty, setShowDifficulty] = useState(false)
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null)
+  const [tooltip, setTooltip] = useState<string | null>(null)
 
   const handleSelect = useCallback((id: number) => {
     audio.playClick()
@@ -81,6 +82,10 @@ export default function LevelSelectPage({ onSelectLevel, onBack }: Props) {
               key={l.id}
               disabled={!canPlay}
               onClick={() => canPlay && handleSelect(l.id)}
+              onMouseEnter={() => setTooltip(done ? 'اضغط لإعادة المستوى' : unlocked ? 'اضغط لبدء المستوى' : 'أكمل المستوى السابق لفتحه')}
+              onMouseLeave={() => setTooltip(null)}
+              onTouchStart={() => setTooltip(done ? 'اضغط لإعادة المستوى' : unlocked ? 'اضغط لبدء المستوى' : 'أكمل المستوى السابق لفتحه')}
+              onTouchEnd={() => setTimeout(() => setTooltip(null), 1500)}
               style={{
                 padding: '20px', borderRadius: 'var(--custom-border-radius)', border: 'var(--custom-border-width) solid',
                 borderColor: done ? 'var(--accent-color)' : unlocked ? 'var(--border-color-subtle)' : 'var(--border-color-faint)',
@@ -101,6 +106,21 @@ export default function LevelSelectPage({ onSelectLevel, onBack }: Props) {
         })}
       </div>
       <Button variant="ghost" onClick={onBack}>الرجوع</Button>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', bottom: '80px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 99999,
+          background: 'rgba(0,0,0,0.85)', color: '#fff',
+          padding: '8px 16px', borderRadius: '8px',
+          fontSize: '13px', whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          border: '1px solid rgba(255,255,255,0.15)',
+        }}>
+          {tooltip}
+        </div>
+      )}
     </div>
   )
 }
