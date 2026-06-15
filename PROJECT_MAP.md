@@ -890,7 +890,10 @@ src/
 
 ### التوثيق والمخططات
 - [x] **cyber-guardians-diagram.excalidraw** — مخطط شامل مع Gamification + File Editor
-- [x] **AI_ADVANCED_SETTINGS_GUIDE.md** — دليل تفصيلي لـ AI & Advanced Settings
+- [x] **خريطة اللعبة الشامة محدثة.excalidraw.png** — تصدير PNG للمخطط
+- [x] **AI_ADVANCED_SETTINGS_DIAGRAM.excalidraw** — مخطط AI & Advanced Settings (64 عنصر)
+- [x] **🤖 AI & Advanced Settings — الدليل التفصيلي الشامل.png** — تصدير PNG للمخطط
+- [x] **AI_ADVANCED_SETTINGS_GUIDE.md** — دليل تفصيلي لـ AI & Advanced Settings (9 أقسام)
 - [x] **Cloud Save** — رفع/تحميل/مزامنة
 - [x] **Light Theme** — darkMode toggle
 - [x] **Tablet Layout** — isTablet/isMobile
