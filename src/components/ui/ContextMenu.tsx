@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSettingsStore } from '@/store'
 import { useAIStore } from '@/store/aiStore'
 
@@ -15,6 +15,7 @@ const PANEL_SIZE_KEY = 'cg-panel-size-preset'
 
 export function ContextMenuProvider({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const s = useSettingsStore()
   const ai = useAIStore()
@@ -23,6 +24,7 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
     const handler = (e: MouseEvent) => {
       e.preventDefault()
       setMenu({ x: e.clientX, y: e.clientY })
+      setOpenSubmenu(null)
     }
     document.addEventListener('contextmenu', handler)
     return () => document.removeEventListener('contextmenu', handler)
@@ -33,13 +35,14 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
     const close = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenu(null)
+        setOpenSubmenu(null)
       }
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [menu])
 
-  const close = () => setMenu(null)
+  const close = () => { setMenu(null); setOpenSubmenu(null) }
 
   const setPanelSizePreset = (size: 'small' | 'medium' | 'full') => {
     localStorage.setItem(PANEL_SIZE_KEY, size)
@@ -153,14 +156,26 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
           .ctx-item:hover { background: rgba(79,195,247,0.15); color: #fff; }
           .ctx-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 8px; }
           .ctx-submenu { position: relative; }
-          .ctx-submenu-content { position: absolute; right: 100%; top: -6px; background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 6px; min-width: 200px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+          .ctx-submenu-content { position: absolute; right: 100%; top: -6px; background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 6px; min-width: 220px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transition: opacity 0.15s, visibility 0.15s; }
+          .ctx-submenu:hover .ctx-submenu-content,
+          .ctx-submenu.open .ctx-submenu-content { opacity: 1; visibility: visible; }
         `}</style>
         {menuItems.map((item, i) => {
           if (item.divider) return <div key={i} className="ctx-divider" />
           if (item.submenu) {
+            const isOpen = openSubmenu === i
             return (
-              <div key={i} className="ctx-submenu">
-                <div className="ctx-item" style={{ justifyContent: 'space-between' }}>
+              <div
+                key={i}
+                className={`ctx-submenu ${isOpen ? 'open' : ''}`}
+                onMouseEnter={() => setOpenSubmenu(i)}
+                onMouseLeave={() => setOpenSubmenu(null)}
+              >
+                <div
+                  className="ctx-item"
+                  style={{ justifyContent: 'space-between' }}
+                  onClick={() => setOpenSubmenu(isOpen ? null : i)}
+                >
                   <span>{item.label}</span>
                   <span style={{ fontSize: '10px', opacity: 0.5 }}>◀</span>
                 </div>
