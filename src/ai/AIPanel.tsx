@@ -1566,6 +1566,31 @@ export function AIPanel() {
   const dragRef = useRef({ startX: 0, startY: 0, origX: 0, origY: 0 })
   const resizeRef = useRef({ startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, handle: '' })
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const size = (e as CustomEvent).detail as 'small' | 'medium' | 'full'
+      const sizes = {
+        small: { w: Math.floor(window.innerWidth * 0.3), h: Math.floor(window.innerHeight * 0.35) },
+        medium: { w: Math.floor(window.innerWidth * 0.5), h: Math.floor(window.innerHeight * 0.5) },
+        full: { w: window.innerWidth, h: window.innerHeight },
+      }
+      const { w, h } = sizes[size]
+      const x = (window.innerWidth - w) / 2
+      const y = (window.innerHeight - h) / 2
+      setPanelState({ x, y, w, h })
+      savePanelState({ x, y, w, h })
+      if (size === 'full') {
+        setIsMaximized(true)
+        ai.setPanelMaximized(true)
+      } else {
+        setIsMaximized(false)
+        ai.setPanelMaximized(false)
+      }
+    }
+    window.addEventListener('panel-size-change', handler)
+    return () => window.removeEventListener('panel-size-change', handler)
+  }, [])
+
   const handleFacultyAuth = () => {
     setShowFacultyPinModal(true)
   }
@@ -1658,6 +1683,26 @@ export function AIPanel() {
     }
   }
 
+  const setPanelSize = (size: 'small' | 'medium' | 'full') => {
+    const sizes = {
+      small: { w: Math.floor(window.innerWidth * 0.3), h: Math.floor(window.innerHeight * 0.35) },
+      medium: { w: Math.floor(window.innerWidth * 0.5), h: Math.floor(window.innerHeight * 0.5) },
+      full: { w: window.innerWidth, h: window.innerHeight },
+    }
+    const { w, h } = sizes[size]
+    const x = (window.innerWidth - w) / 2
+    const y = (window.innerHeight - h) / 2
+    setPanelState({ x, y, w, h })
+    savePanelState({ x, y, w, h })
+    if (size === 'full') {
+      setIsMaximized(true)
+      ai.setPanelMaximized(true)
+    } else {
+      setIsMaximized(false)
+      ai.setPanelMaximized(false)
+    }
+  }
+
   const panelStyle: React.CSSProperties = isMaximized
     ? { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999 }
     : { position: 'fixed', left: panelState.x, top: panelState.y, width: panelState.w, height: panelState.h, zIndex: 9999 }
@@ -1681,24 +1726,68 @@ export function AIPanel() {
         {!isMaximized && ['top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => (
           <ResizeHandle key={pos} position={pos} onResizeStart={handleResizeStart} />
         ))}
-        {/* Header */}
+        {/* Header - Windows-style title bar */}
         <div onPointerDown={handleHeaderPointerDown} onPointerMove={handleHeaderPointerMove} onPointerUp={handleHeaderPointerUp}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(0,0,0,0.25)', cursor: isMaximized ? 'default' : 'grab',
+            display: 'flex', alignItems: 'center',
+            padding: '0', borderBottom: '1px solid rgba(255,255,255,0.08)',
+            background: 'linear-gradient(180deg, rgba(30,30,60,0.95) 0%, rgba(20,20,45,0.95) 100%)',
+            cursor: isMaximized ? 'default' : 'grab',
             flexShrink: 0, borderRadius: isMaximized ? 0 : '12px 12px 0 0',
             userSelect: 'none',
           }}>
-          <h3 style={{ margin: 0, fontSize: '14px', fontFamily: 'var(--heading-font)', color: '#CE93D8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CE93D8" strokeWidth="2"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 0 1 4-4z"/><path d="M8 14h8"/><path d="M8 17h5"/><path d="M2 22c0-3 2-5 4-5h12c2 0 4 2 4 5"/></svg>
-            AI Assistant
-          </h3>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button onClick={toggleMaximize} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '4px' }} title={isMaximized ? 'تصغير' : 'تكبير'}>
+          {/* Window icon + title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', flex: 1, minWidth: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CE93D8" strokeWidth="2">
+              <path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-4 5-2-2-4-3-4-5a4 4 0 0 1 4-4z"/>
+              <path d="M8 14h8"/><path d="M8 17h5"/>
+              <path d="M2 22c0-3 2-5 4-5h12c2 0 4 2 4 5"/>
+            </svg>
+            <span style={{ fontSize: '12px', color: '#CE93D8', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              AI Assistant
+            </span>
+          </div>
+          {/* Window control buttons - Windows style */}
+          <div style={{ display: 'flex', gap: '0', flexShrink: 0 }}>
+            <button
+              onClick={() => { ai.setPanelOpen(false) }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              title="تصغير (إخفاء)"
+              style={{
+                background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer',
+                fontSize: '12px', padding: '8px 12px', borderRadius: 0,
+                transition: 'background 0.15s',
+              }}
+            >
+              ─
+            </button>
+            <button
+              onClick={toggleMaximize}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              title={isMaximized ? 'استعادة الحجم' : 'تكبير'}
+              style={{
+                background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer',
+                fontSize: '12px', padding: '8px 12px', borderRadius: 0,
+                transition: 'background 0.15s',
+              }}
+            >
               {isMaximized ? '◻' : '□'}
             </button>
-            <button onClick={() => ai.setPanelOpen(false)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '18px', padding: '2px 6px', borderRadius: '4px' }}>✕</button>
+            <button
+              onClick={() => ai.setPanelOpen(false)}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#e81123'; e.currentTarget.style.color = '#fff' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#aaa' }}
+              title="إغلاق"
+              style={{
+                background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer',
+                fontSize: '12px', padding: '8px 12px', borderRadius: 0,
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              ✕
+            </button>
           </div>
         </div>
         {/* Main tabs */}

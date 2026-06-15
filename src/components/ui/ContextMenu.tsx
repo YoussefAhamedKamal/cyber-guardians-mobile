@@ -11,6 +11,8 @@ interface MenuItem {
   checked?: boolean
 }
 
+const PANEL_SIZE_KEY = 'cg-panel-size-preset'
+
 export function ContextMenuProvider({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -39,6 +41,14 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
 
   const close = () => setMenu(null)
 
+  const setPanelSizePreset = (size: 'small' | 'medium' | 'full') => {
+    localStorage.setItem(PANEL_SIZE_KEY, size)
+    window.dispatchEvent(new CustomEvent('panel-size-change', { detail: size }))
+    close()
+  }
+
+  const currentSizePreset = localStorage.getItem(PANEL_SIZE_KEY) || 'medium'
+
   const fontSizes = [
     { label: 'صغير (12px)', value: 12 },
     { label: 'متوسط (14px)', value: 14 },
@@ -51,7 +61,22 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
     { label: 'فاتح', value: false },
   ]
 
+  const windowSizes: { label: string; value: 'small' | 'medium' | 'full'; desc: string }[] = [
+    { label: '🔴 صغير', value: 'small', desc: '30% من الشاشة' },
+    { label: '🟡 متوسط', value: 'medium', desc: '50% من الشاشة' },
+    { label: '🟢 ملء الشاشة', value: 'full', desc: '100% من الشاشة' },
+  ]
+
   const menuItems: MenuItem[] = [
+    {
+      label: '🤖 حجم النافذة', icon: '📐', submenu: windowSizes.map(ws => ({
+        label: `${ws.label} — ${ws.desc}`,
+        icon: currentSizePreset === ws.value ? '✅' : '  ',
+        action: () => setPanelSizePreset(ws.value),
+        checked: currentSizePreset === ws.value,
+      }))
+    },
+    { divider: true, label: '', icon: '' },
     {
       label: '🎨 السمة', icon: '🎨', submenu: [
         ...themes.map(t => ({
