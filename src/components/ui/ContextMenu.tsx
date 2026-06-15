@@ -134,26 +134,26 @@ export function ContextMenuProvider({ children }: { children: React.ReactNode })
         ref={menuRef}
         style={{
           position: 'fixed',
-          left: Math.min(menu.x, window.innerWidth - 220),
-          top: Math.min(menu.y, window.innerHeight - 300),
+          left: Math.max(10, Math.min(menu.x, window.innerWidth - 230)),
+          top: Math.max(10, Math.min(menu.y, window.innerHeight - 320)),
           zIndex: 99999,
           background: 'rgba(15,15,35,0.95)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: '12px',
           padding: '6px',
-          minWidth: '200px',
+          minWidth: '210px',
           boxShadow: '0 12px 40px rgba(0,0,0,0.6), 0 0 20px rgba(79,195,247,0.1)',
           animation: 'ctx-menu-in 0.15s ease-out',
         }}
       >
         <style>{`
           @keyframes ctx-menu-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-          .ctx-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ccc; transition: all 0.15s; }
+          .ctx-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ccc; transition: all 0.15s; white-space: nowrap; }
           .ctx-item:hover { background: rgba(79,195,247,0.15); color: #fff; }
           .ctx-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 8px; }
           .ctx-submenu { position: relative; }
-          .ctx-submenu-content { position: absolute; left: 100%; top: -6px; background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 6px; min-width: 180px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+          .ctx-submenu-content { position: absolute; right: 100%; top: -6px; background: rgba(15,15,35,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 6px; min-width: 200px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
         `}</style>
         {menuItems.map((item, i) => {
           if (item.divider) return <div key={i} className="ctx-divider" />
