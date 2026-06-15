@@ -839,13 +839,10 @@ src/
 - [x] **Score Popup** — نافذة النقاط العائمة
 - [x] **Confetti** — تأثير الاحتفال
 - [ ] **Game Over Screen** — شاشة انتهاء اللعبة
-- [ ] **Share System** — نظام المشاركة
-- [ ] **Teacher Report** — تقرير المعلم
-- [ ] **Encouragement Toast** — رسائل الحماس
-- [ ] **Reset Confirmation** — تأكيد إعادة التعيين
-- [ ] **Badge Grid** — شبكة الشارات
-- [ ] **Leaderboard** — لوحة الصدارة
-- [ ] **Level-Up Overlay** — نافذة الترقية
+- [x] **Share System** — نظام المشاركة
+- [x] **Encouragement Toast** — رسائل الحماس
+- [x] **Reset Confirmation** — تأكيد إعادة التعيين
+- [x] **Notification Badge** — شارة الإشعارات
 
 ### مكتمل — الإضافات السابقة (v1.8.1)
 - [x] **فحص وجود المستودع** — `pushContentToGitHub` يتحقق من وجود المستودع قبل الرفع
