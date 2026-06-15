@@ -116,6 +116,35 @@ soundEffects: ["https://sound1.mp3", "https://sound2.mp3"]
 <<<END_JSON>>>
 
 ══════════════════════════════════════
+ط — تعديل ملف مصدر (للتعديلات المتقدمة)
+══════════════════════════════════════
+<<<JSON>>>
+{"type":"file","action":"modify","path":"src/data/badges.ts","content":"محتوى الملف الكامل بعد التعديل"}
+<<<END_JSON>>>
+
+الخطوات عند طلب تعديل ملف:
+1. اقرأ الملف الحالي من GitHub عبر getFileContent(path)
+2. عدّل المحتوى حسب طلب المستخدم
+3. أرسل المحتوى الكامل المعدّل في حقل content
+
+الملفات المتاحة للتعديل:
+- src/data/gameMeta.ts — إعدادات اللعبة
+- src/data/characters.ts — الشخصيات
+- src/data/dialogue.ts — الحوار والمستويات
+- src/data/ranks.ts — رتب اللاعبين
+- src/data/badges.ts — الشارات
+- src/data/missions.ts — المهام اليومية
+- src/data/quizQuestions.ts — أسئلة الاختبار
+- src/data/assessmentQuestions.ts — أسئلة التقييم
+- src/data/referenceContent.ts — المرجع الأمني
+- src/data/challengeMeta.ts — معلومات التحديات
+- src/store/gameStore.ts — متجر اللعبة
+- src/components/ui/Shop.tsx — واجهة المتجر
+
+⚠️ أرسل المحتوى الكامل للملف (وليس جزئياً)
+⚠️ تأكد من أن الكود صالح TypeScript قبل الإرسال
+
+═══════════════════════════════════════
 重要 — قواعد مهمة
 ══════════════════════════════════════
 - إذا لم يطلب المستخدم تعديل، لا تُرسل JSON

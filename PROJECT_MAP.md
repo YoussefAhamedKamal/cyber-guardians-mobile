@@ -860,6 +860,11 @@ src/
 - [x] **github.ts** — إضافة pushSourceFilesToGitHub() لرفع أي ملف إلى GitHub
 - [x] **googleDrive.ts** — تعديل uploadContentToDrive() لرفع ملفات .ts بدلاً من JSON
 - [x] **AIPanel.tsx** — تعديل زري "رفع إلى GitHub" و"رفع المحتوى فقط" لدعم جميع الملفات
+- [x] **contentStore.ts** — إضافة getModifiedFiles() لاسترجاع التعديلات المحفوظة
+- [x] **prompts.ts** — إضافة قسم "ط — تعديل ملف مصدر" مع JSON type "file"
+- [x] **AIPanel.tsx** — تبويب "📁 ملفات" في FacultyDataEditor لتعديل أي ملف يدوياً
+- [x] **AIPanel.tsx** — زر AI "نوع: file" يدعم تعديل الملفات عبر المحادثة
+- [x] **AIPanel.tsx** — خيار "🔄 رفع تلقائي عند التعديل" مع subscriber على contentStore
 
 ### مكتمل — الإضافات السابقة (v1.8.1)
 - [x] **فحص وجود المستودع** — `pushContentToGitHub` يتحقق من وجود المستودع قبل الرفع

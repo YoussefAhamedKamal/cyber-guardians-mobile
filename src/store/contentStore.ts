@@ -49,11 +49,12 @@ interface ContentStore {
   setFileContent: (filePath: string, content: string) => void
   removeFile: (filePath: string) => void
   clearModifiedFiles: () => void
+  getModifiedFiles: () => Record<string, string>
 }
 
 export const useContentStore = create<ContentStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       gameMeta: { ...DEFAULT_GAME_META },
       levelOverrides: {},
       characterOverrides: {},
@@ -139,6 +140,8 @@ export const useContentStore = create<ContentStore>()(
         }),
 
       clearModifiedFiles: () => set({ modifiedFiles: {} }),
+
+      getModifiedFiles: () => get().modifiedFiles,
 
       resetAll: () => set({
         gameMeta: { ...DEFAULT_GAME_META },

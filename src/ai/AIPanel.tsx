@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS } from './github'
+import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
@@ -17,6 +17,21 @@ import { hashPin } from '@/utils/pinCrypto'
 
 const FAB_POS_KEY = 'cg-ai-fab-pos'
 const PANEL_STATE_KEY = 'cg-ai-panel-state'
+
+const EDITABLE_FILES = [
+  'src/data/gameMeta.ts',
+  'src/data/characters.ts',
+  'src/data/dialogue.ts',
+  'src/data/ranks.ts',
+  'src/data/badges.ts',
+  'src/data/missions.ts',
+  'src/data/quizQuestions.ts',
+  'src/data/assessmentQuestions.ts',
+  'src/data/referenceContent.ts',
+  'src/data/challengeMeta.ts',
+  'src/store/gameStore.ts',
+  'src/components/ui/Shop.tsx',
+]
 
 function loadFabPos() {
   try { const s = localStorage.getItem(FAB_POS_KEY); return s ? JSON.parse(s) : null } catch { return null }
@@ -870,6 +885,9 @@ function applyUpdates(updates: any[]): string[] {
         if (u.action === 'add' && u.id && u.data) { store.addCharacter(u.id, u.data as Character); results.push(`✅ إضافة الشخصية "${u.data.name || u.id}"`) }
         else if (u.action === 'delete' && u.id) { store.deleteCharacter(u.id); results.push(`✅ حذف الشخصية "${u.id}"`) }
         else if (u.action === 'modify' && u.id && u.data) { store.setCharacterOverride(u.id, u.data); results.push(`✅ تعديل الشخصية "${u.id}"`) }
+      } else if (u.type === 'file') {
+        if (u.action === 'modify' && u.path && u.content) { store.setFileContent(u.path, u.content); results.push(`✅ تعديل الملف "${u.path}"`) }
+        else { results.push('⚠️ حقل file مفقود (path أو content)') }
       } else { results.push('⚠️ تنسيق JSON غير معروف') }
     } catch (e: any) { results.push(`⚠️ خطأ: ${e.message}`) }
   }
@@ -1025,16 +1043,58 @@ function FacultyDataEditor() {
   const [selectedLevel, setSelectedLevel] = useState<number>(levels[0]?.id ?? 1)
   const [editable, setEditable] = useState<LevelData>(() => structuredClone(levels[0]!))
   const [showExport, setShowExport] = useState(false)
-  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame' | 'game' | 'raw'>('levels')
+  const [editorTab, setEditorTab] = useState<'levels' | 'characters' | 'fullgame' | 'game' | 'raw' | 'files'>('levels')
   const [metaEditable, setMetaEditable] = useState<GameMeta>(() => structuredClone(gameMeta))
   const [rawJson, setRawJson] = useState('')
   const [rawError, setRawError] = useState('')
   const [showGitHubSettings, setShowGitHubSettings] = useState(false)
   const [ghConfig, setGhConfig] = useState<GitHubConfig>(() => getGitHubConfig())
   const [showInstructions, setShowInstructions] = useState(false)
+  const [editingFile, setEditingFile] = useState<string | null>(null)
+  const [fileContent, setFileContentState] = useState('')
+  const [fileLoading, setFileLoading] = useState(false)
+  const [autoUpload, setAutoUpload] = useState(() =>
+    localStorage.getItem('cg-auto-upload') === 'true'
+  )
 
   useEffect(() => { const level = levels.find((l) => l.id === selectedLevel); if (level) setEditable(structuredClone(level)) }, [selectedLevel, contentStore.levelOverrides, contentStore.newLevels, contentStore.deletedLevels])
   useEffect(() => { setMetaEditable(structuredClone(gameMeta)) }, [contentStore.gameMeta])
+
+  useEffect(() => {
+    if (!autoUpload) return
+    const unsub = useContentStore.subscribe((state) => {
+      const files = state.modifiedFiles
+      if (Object.keys(files).length === 0) return
+      pushSourceFilesToGitHub(files, 'Auto-sync: تعديل ملفات').catch((e) => {
+        console.error('Auto-upload failed:', e)
+      })
+    })
+    return unsub
+  }, [autoUpload])
+
+  const handleLoadFile = async (filePath: string) => {
+    setFileLoading(true)
+    try {
+      const modified = useContentStore.getState().modifiedFiles
+      if (modified[filePath]) {
+        setFileContentState(modified[filePath])
+      } else {
+        const { content } = await getFileContent(filePath)
+        setFileContentState(content)
+      }
+      setEditingFile(filePath)
+    } catch (e: any) {
+      alert(`❌ فشل تحميل الملف: ${e.message}`)
+    }
+    setFileLoading(false)
+  }
+
+  const handleSaveFile = () => {
+    if (!editingFile) return
+    useContentStore.getState().setFileContent(editingFile, fileContent)
+    setEditingFile(null)
+    alert(`✅ تم حفظ ${editingFile}`)
+  }
 
   const levelDataStr = () => JSON.stringify(editable, null, 2)
   const fullGameDataStr = () => JSON.stringify({ gameMeta, levels, characters: chars }, null, 2)
@@ -1136,6 +1196,7 @@ function FacultyDataEditor() {
     { id: 'game', label: '🎮 اللعبة' },
     { id: 'levels', label: 'المستويات' },
     { id: 'characters', label: 'الشخصيات' },
+    { id: 'files', label: '📁 ملفات' },
     { id: 'raw', label: '⚙ JSON' },
     { id: 'fullgame', label: 'الكل' },
   ] as const
@@ -1371,6 +1432,52 @@ function FacultyDataEditor() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+      {editorTab === 'files' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {editingFile ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px' }}>{editingFile}</div>
+                <button onClick={() => setEditingFile(null)} style={{ ...smallBtnStyle, color: '#E57373', fontSize: '10px' }}>✕ إغلاق</button>
+              </div>
+              <textarea value={fileContent} onChange={(e) => setFileContentState(e.target.value)} style={{ flex: 1, padding: '8px', margin: 0, border: 'none', background: 'rgba(0,0,0,0.3)', color: '#ddd', fontSize: '11px', fontFamily: 'monospace', direction: 'ltr', textAlign: 'left', resize: 'none', outline: 'none', lineHeight: '1.5' }} spellCheck={false} />
+              <div style={{ display: 'flex', gap: '4px', padding: '6px 8px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <button onClick={handleSaveFile} style={{ ...smallBtnStyle, color: '#81C784' }}>💾 حفظ</button>
+                <button onClick={() => { if (editingFile) handleLoadFile(editingFile) }} style={{ ...smallBtnStyle, color: '#4FC3F7' }}>🔄 إعادة تحميل</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ padding: '8px', fontSize: '10px', color: '#777', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <div style={{ marginBottom: '6px' }}>اختر ملفاً للتعديل — التعديلات تُحفظ محلياً وتُرفع عند التفعيل</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: autoUpload ? '#81C784' : '#888' }}>
+                  <input type="checkbox" checked={autoUpload} onChange={(e) => { setAutoUpload(e.target.checked); localStorage.setItem('cg-auto-upload', String(e.target.checked)) }} style={{ cursor: 'pointer' }} />
+                  🔄 رفع تلقائي عند التعديل
+                </label>
+              </div>
+              <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
+                {EDITABLE_FILES.map((fp) => {
+                  const modified = contentStore.modifiedFiles[fp]
+                  return (
+                    <div key={fp} onClick={() => handleLoadFile(fp)} style={{ padding: '10px', marginBottom: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: modified ? 'rgba(76,175,80,0.08)' : 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ color: '#ddd', fontWeight: 600, fontSize: '11px' }}>{fp.split('/').pop()}</div>
+                        <div style={{ color: '#888', fontSize: '9px', direction: 'ltr', textAlign: 'left' }}>{fp}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        {modified && <span style={{ color: '#81C784', fontSize: '9px' }}>● معدّل</span>}
+                        {modified && (
+                          <button onClick={(e) => { e.stopPropagation(); useContentStore.getState().removeFile(fp) }} style={{ ...smallBtnStyle, color: '#E57373', fontSize: '9px', padding: '2px 4px' }}>✕</button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
       {editorTab === 'raw' && (
