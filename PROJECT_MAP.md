@@ -775,15 +775,15 @@ src/
 | Player Name | PlayerNameInput, gameStore | سهل | ✅ مكتمل |
 
 ### المرحلة 2: أنظمة التفاعل (High) — 4-6 أيام
-| الميزة | الملفات | التعقيد |
-|--------|---------|---------|
-| Daily Reward | DailyRewardOverlay, gameStore | متوسط |
-| Daily Missions | missions.ts, DailyMissions, useMissionProgress | عالي |
-| Weekly Challenge | WeeklyChallengeBanner, gameStore | متوسط |
-| Combo System | ComboDisplay, quizStore, scoreCalculator | متوسط |
-| Hearts System | HeartsDisplay, GameOverOverlay, quizStore | متوسط |
-| Timer | TimerBar, useTimer, quizStore | متوسط |
-| Pre/Post Assessment | assessmentQuestions, PreAssessment, PostAssessment | عالي |
+| الميزة | الملفات | التعقيد | الحالة |
+|--------|---------|---------|--------|
+| Daily Reward | DailyRewardOverlay, gameStore | متوسط | ✅ مكتمل |
+| Daily Missions | missions.ts, DailyMissions, useMissionProgress | عالي | ✅ مكتمل |
+| Weekly Challenge | WeeklyChallengeBanner, gameStore | متوسط | ✅ مكتمل |
+| Combo System | ComboDisplay, quizStore, scoreCalculator | متوسط | ✅ مكتمل |
+| Hearts System | HeartsDisplay, GameOverOverlay, quizStore | متوسط | ✅ مكتمل |
+| Timer | TimerBar, useTimer, quizStore | متوسط | ✅ مكتمل |
+| Pre/Post Assessment | assessmentQuestions, PreAssessment, PostAssessment | عالي | ✅ مكتمل |
 
 ### المرحلة 3: أنظمة التعلم والاختبار (High) — 4-6 أيام
 | الميزة | الملفات | التعقيد |
@@ -822,15 +822,15 @@ src/
 - [x] **Rank System** — نظام الرتب (5 رتب)
 - [x] **Badge System** — نظام الشارات (15 شارة)
 - [x] **Player Name** — اسم اللاعب
-- [ ] **Daily Reward** — مكافأة يومية
-- [ ] **Daily Missions** — مهام يومية
-- [ ] **Weekly Challenge** — تحدي أسبوعي
-- [ ] **Combo System** — نظام الكومبو
-- [ ] **Hearts System** — نظام القلوب
-- [ ] **Timer** — مؤقت لكل سؤال
-- [ ] **Hints System** — نظام التلميحات
-- [ ] **Energy Meter** — مقياس الطاقة
-- [ ] **Pre/Post Assessment** — تقييم قبل/بعد
+- [x] **Daily Reward** — مكافأة يومية
+- [x] **Daily Missions** — مهام يومية
+- [x] **Weekly Challenge** — تحدي أسبوعي
+- [x] **Combo System** — نظام الكومبو
+- [x] **Hearts System** — نظام القلوب
+- [x] **Timer** — مؤقت لكل سؤال
+- [x] **Hints System** — نظام التلميحات
+- [x] **Energy Meter** — مقياس الطاقة
+- [x] **Pre/Post Assessment** — تقييم قبل/بعد
 - [ ] **Challenge Intros** — مقدمات التحديات
 - [ ] **Challenge Summary** — ملخص بعد التحدي
 - [ ] **Security Reference** — المرجع الأمني
