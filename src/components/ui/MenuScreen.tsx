@@ -116,11 +116,11 @@ export function MenuScreen({ onStart, onSettings }: Props) {
 
       {/* Buttons: bottom-center */}
       <div style={{
-        position: 'absolute', bottom: 'clamp(20px,4vw,36px)',
+        position: 'absolute', bottom: 'clamp(70px,10vw,90px)',
         left: '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center',
         gap: '35px',
-        zIndex: 30, direction: 'ltr',
+        zIndex: 50, direction: 'ltr',
       }}>
         {/* SETTINGS wrapper: label then button → label on LEFT */}
         <div className="cg-btn-wrapper">
