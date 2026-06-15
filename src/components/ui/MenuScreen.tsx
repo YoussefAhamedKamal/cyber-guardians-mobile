@@ -116,7 +116,7 @@ export function MenuScreen({ onStart, onSettings }: Props) {
 
       {/* Buttons: bottom-center */}
       <div style={{
-        position: 'absolute', bottom: 'clamp(70px,10vw,90px)',
+        position: 'absolute', bottom: 'clamp(35px,5vw,55px)',
         left: '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center',
         gap: '35px',
