@@ -1,7 +1,8 @@
-import { useCallback, startTransition } from 'react'
+import { useCallback, useState, startTransition } from 'react'
 import { Button, ProgressBar } from '@/components/ui'
 import { useGameStore } from '@/store'
 import { getLevels } from '@/data/gameData'
+import { DifficultySelect, type DifficultyConfig } from '@/components/ui/DifficultySelect'
 import { audio } from '@/systems/ProceduralAudio'
 import type { LevelId } from '@/types'
 
@@ -13,13 +14,45 @@ interface Props {
 export default function LevelSelectPage({ onSelectLevel, onBack }: Props) {
   const game = useGameStore()
   const levels = getLevels()
+  const [showDifficulty, setShowDifficulty] = useState(false)
+  const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null)
 
   const handleSelect = useCallback((id: number) => {
+    audio.playClick()
+    setSelectedLevelId(id)
+    setShowDifficulty(true)
+  }, [])
+
+  const handleDifficultySelect = useCallback((difficulty: DifficultyConfig) => {
     startTransition(() => {
       audio.playClick()
-      onSelectLevel(id)
+      if (selectedLevelId !== null) {
+        onSelectLevel(selectedLevelId)
+      }
     })
-  }, [onSelectLevel])
+  }, [selectedLevelId, onSelectLevel])
+
+  const handleBackFromDifficulty = useCallback(() => {
+    setShowDifficulty(false)
+    setSelectedLevelId(null)
+  }, [])
+
+  if (showDifficulty && selectedLevelId !== null) {
+    const level = levels.find((l) => l.id === selectedLevelId)
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', height: '100%', gap: '20px', padding: '32px',
+        position: 'relative', zIndex: 1,
+      }}>
+        <h2 style={{ fontSize: 'var(--heading-font-size)', margin: 0, fontFamily: 'var(--heading-font)', color: 'var(--heading-color)' }}>
+          {level?.title || 'اختر الصعوبة'}
+        </h2>
+        <DifficultySelect onSelect={handleDifficultySelect} />
+        <Button variant="ghost" onClick={handleBackFromDifficulty}>الرجوع</Button>
+      </div>
+    )
+  }
 
   return (
     <div style={{

@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { DialogueBox } from '@/components/ui'
+import { ChallengeIntro } from '@/components/ui/ChallengeIntro'
+import { ChallengeSummary } from '@/components/ui/ChallengeSummary'
+import { getChallengeMeta } from '@/data/challengeMeta'
 import type { LevelData } from '@/types'
 
 interface Props {
@@ -8,6 +12,20 @@ interface Props {
 }
 
 export default function DialoguePage({ level, dialogueIndex, onComplete }: Props) {
+  const [showIntro, setShowIntro] = useState(true)
+  const challengeMeta = getChallengeMeta(level.id)
+
+  // Show ChallengeIntro before first dialogue (intro)
+  if (dialogueIndex === 0 && showIntro && challengeMeta) {
+    return (
+      <ChallengeIntro
+        text={challengeMeta.introText}
+        characterName={challengeMeta.introCharacterName}
+        onDone={() => setShowIntro(false)}
+      />
+    )
+  }
+
   return (
     <div style={{
       height: '100%', position: 'relative', overflow: 'hidden',
@@ -21,6 +39,14 @@ export default function DialoguePage({ level, dialogueIndex, onComplete }: Props
         lines={dialogueIndex === 0 ? level.intro : level.outro}
         onComplete={onComplete}
       />
+      {/* Show ChallengeSummary after second dialogue (outro) */}
+      {dialogueIndex === 1 && challengeMeta && (
+        <ChallengeSummary
+          summary={challengeMeta.summary}
+          xpEarned={Math.floor(level.id * 10)}
+          onDone={() => {}}
+        />
+      )}
     </div>
   )
 }
