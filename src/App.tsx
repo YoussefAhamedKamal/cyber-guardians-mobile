@@ -10,6 +10,11 @@ import { audio } from '@/systems/ProceduralAudio'
 import { analytics } from '@/systems/AnalyticsSystem'
 import { autoSave } from '@/systems/AutoSaveSystem'
 import { BASE_URL } from '@/utils/constants'
+import { XPBar } from '@/components/ui/XPBar'
+import { RankBadge } from '@/components/ui/RankBadge'
+import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay'
+import { BadgeUnlockToast } from '@/components/ui/BadgeUnlockToast'
+import { getNewBadges, type Badge } from '@/data/badges'
 import type { LevelId } from '@/types'
 
 const MenuPage = lazy(() => import('@/pages/MenuPage'))
@@ -51,6 +56,8 @@ export function App() {
   const panelMaximized = useAIStore((s) => s.panelMaximized)
   const [dialogueIndex, setDialogueIndex] = useState(0)
   const [bgmHovered, setBgmHovered] = useState(false)
+  const [showLevelUp, setShowLevelUp] = useState(false)
+  const [newBadges, setNewBadges] = useState<Badge[]>([])
   const responsive = useResponsive()
   const game = useGameStore()
   const settings = useSettingsStore()
@@ -66,6 +73,10 @@ export function App() {
   useEffect(() => {
     autoSave.start()
     return () => autoSave.stop()
+  }, [])
+
+  useEffect(() => {
+    game.updateDailyStreak()
   }, [])
 
   useEffect(() => {
@@ -141,9 +152,37 @@ export function App() {
 
   const handleChallengeComplete = useCallback((score: number) => {
     audio.playLevelUp()
+    const prevRank = game.rank
+    const prevBadges = game.unlockedBadges
     game.completeLevel(game.currentLevel, score)
     analytics.track('level_complete', { level: game.currentLevel, score })
     autoSave.saveNow()
+
+    // Check for rank up
+    if (game.rank.id > prevRank.id) {
+      setShowLevelUp(true)
+    }
+
+    // Check for new badges
+    const newBadgeList = getNewBadges(prevBadges, {
+      completedLevels: game.completedLevels,
+      totalScore: game.totalScore,
+      xp: game.xp,
+      rankId: game.rank.id,
+      playerName: game.playerName,
+      dailyStreakDays: game.dailyStreakDays,
+      quizBestScore: game.quizBestScore,
+      speedAnswers: game.speedAnswers,
+      maxCombo: game.maxCombo,
+      hintsUsedThisQuiz: game.hintsUsedThisQuiz,
+      quizRetries: game.quizRetries,
+      preTestScore: game.preTestScore,
+      postTestScore: game.postTestScore,
+    })
+    if (newBadgeList.length > 0) {
+      setNewBadges(newBadgeList)
+    }
+
     setDialogueIndex(1)
     navigate('dialogue')
   }, [game, navigate])
@@ -203,6 +242,33 @@ export function App() {
         </ScreenTransition>
       </Suspense>
 
+      {/* Gamification HUD */}
+      {screen !== 'menu' && screen !== 'victory' && (
+        <div style={{
+          position: 'fixed', top: '16px', left: '16px',
+          display: 'flex', gap: '8px', zIndex: 9998,
+        }}>
+          <XPBar />
+          <RankBadge />
+        </div>
+      )}
+
+      {/* Level Up Overlay */}
+      {showLevelUp && (
+        <LevelUpOverlay
+          rank={game.rank}
+          onDone={() => setShowLevelUp(false)}
+        />
+      )}
+
+      {/* Badge Unlock Toast */}
+      {newBadges.length > 0 && (
+        <BadgeUnlockToast
+          badges={newBadges}
+          onDone={() => setNewBadges([])}
+        />
+      )}
+
       <Suspense fallback={null}>
         <AIPanel />
       </Suspense>
@@ -212,7 +278,7 @@ export function App() {
         position: 'fixed', bottom: '16px', left: '16px', zIndex: 9999,
         color: 'rgba(255,255,255,0.15)', fontSize: '11px', fontFamily: 'monospace', direction: 'ltr',
       }}>
-        v1.3.0
+        v2.0.0
       </div>
 
       {/* BGM toggle button */}

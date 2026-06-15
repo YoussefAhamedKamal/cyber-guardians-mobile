@@ -767,12 +767,12 @@ src/
 ## [IMPLEMENTATION_PLAN] — ★ جديد
 
 ### المرحلة 1: النظم الأساسية (Critical) — 3-5 أيام
-| الميزة | الملفات | التعقيد |
-|--------|---------|---------|
-| XP System | gameStore, XPBar, scoreCalculator | متوسط |
-| Rank System | ranks.ts, RankBadge, LevelUpOverlay | متوسط |
-| Badge System | badges.ts, BadgeGrid, BadgeUnlockToast | عالي |
-| Player Name | PlayerNameInput, gameStore | سهل |
+| الميزة | الملفات | التعقيد | الحالة |
+|--------|---------|---------|--------|
+| XP System | gameStore, XPBar, scoreCalculator | متوسط | ✅ مكتمل |
+| Rank System | ranks.ts, RankBadge, LevelUpOverlay | متوسط | ✅ مكتمل |
+| Badge System | badges.ts, BadgeGrid, BadgeUnlockToast | عالي | ✅ مكتمل |
+| Player Name | PlayerNameInput, gameStore | سهل | ✅ مكتمل |
 
 ### المرحلة 2: أنظمة التفاعل (High) — 4-6 أيام
 | الميزة | الملفات | التعقيد |
@@ -818,9 +818,10 @@ src/
 ## [ORPHANS & PENDING]
 
 ### مكتمل — الإضافات الجديدة (v2.0.0)
-- [ ] **XP System** — نظام النقاط
-- [ ] **Rank System** — نظام الرتب (5 رتب)
-- [ ] **Badge System** — نظام الشارات (15 شارة)
+- [x] **XP System** — نظام النقاط
+- [x] **Rank System** — نظام الرتب (5 رتب)
+- [x] **Badge System** — نظام الشارات (15 شارة)
+- [x] **Player Name** — اسم اللاعب
 - [ ] **Daily Reward** — مكافأة يومية
 - [ ] **Daily Missions** — مهام يومية
 - [ ] **Weekly Challenge** — تحدي أسبوعي
