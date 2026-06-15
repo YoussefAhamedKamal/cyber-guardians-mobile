@@ -1552,8 +1552,8 @@ export function AIPanel() {
   const [facultyTab, setFacultyTab] = useState<'chat' | 'editor'>('chat')
 
   const saved = loadPanelState()
-  const panelW = Math.min(420, window.innerWidth * 0.9)
-  const panelH = Math.min(window.innerHeight * 0.8, 600)
+  const panelW = Math.min(Math.floor(window.innerWidth * 0.5), 600)
+  const panelH = Math.min(Math.floor(window.innerHeight * 0.5), 500)
   const [panelState, setPanelState] = useState({
     x: saved?.x ?? (window.innerWidth - panelW) / 2,
     y: saved?.y ?? (window.innerHeight - panelH) / 2,
@@ -1562,7 +1562,7 @@ export function AIPanel() {
   })
   const [isDragging, setIsDragging] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
-  const [isMaximized, setIsMaximized] = useState(!saved)
+  const [isMaximized, setIsMaximized] = useState(false)
   const dragRef = useRef({ startX: 0, startY: 0, origX: 0, origY: 0 })
   const resizeRef = useRef({ startX: 0, startY: 0, origX: 0, origY: 0, origW: 0, origH: 0, handle: '' })
 
@@ -1646,8 +1646,8 @@ export function AIPanel() {
   const toggleMaximize = () => {
     if (isMaximized) {
       const s = loadPanelState()
-      const w = Math.min(420, window.innerWidth * 0.9)
-      const h = Math.min(window.innerHeight * 0.8, 600)
+      const w = Math.min(Math.floor(window.innerWidth * 0.5), 600)
+      const h = Math.min(Math.floor(window.innerHeight * 0.5), 500)
       setPanelState(s ?? { x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2, w, h })
       setIsMaximized(false)
       ai.setPanelMaximized(false)

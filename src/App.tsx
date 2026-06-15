@@ -20,6 +20,7 @@ import { HeartsDisplay } from '@/components/ui/HeartsDisplay'
 import { Leaderboard } from '@/components/ui/Leaderboard'
 import { ShareModal } from '@/components/ui/ShareModal'
 import { EncourageToast } from '@/components/ui/EncourageToast'
+import { ContextMenuProvider } from '@/components/ui/ContextMenu'
 import { getNewBadges, type Badge } from '@/data/badges'
 import type { LevelId } from '@/types'
 
@@ -260,6 +261,7 @@ export function App() {
   } as React.CSSProperties & Record<string, string | number>
 
   return (
+    <ContextMenuProvider>
     <div style={containerStyle}>
       <BackgroundVideo
         blur={screen === 'menu' ? 0 : 2}
@@ -379,6 +381,6 @@ export function App() {
         </div>
       )}
       </div>
-    </div>
+    </ContextMenuProvider>
   )
 }
