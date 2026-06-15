@@ -49,6 +49,9 @@ interface GameStore {
   weeklyChallengeDone: boolean
   weeklyChallengeWeek: string | null
 
+  // Difficulty
+  selectedDifficulty: string
+
   // Actions
   setLevel: (level: LevelId) => void
   completeLevel: (level: LevelId, score: number) => void
@@ -80,6 +83,9 @@ interface GameStore {
 
   // Weekly challenge actions
   completeWeeklyChallenge: () => void
+
+  // Difficulty actions
+  setSelectedDifficulty: (id: string) => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -117,6 +123,9 @@ export const useGameStore = create<GameStore>()(
       // Weekly challenge defaults
       weeklyChallengeDone: false,
       weeklyChallengeWeek: null,
+
+      // Difficulty defaults
+      selectedDifficulty: 'medium',
 
       setLevel: (level) => set({ currentLevel: level }),
 
@@ -309,6 +318,9 @@ export const useGameStore = create<GameStore>()(
             weeklyChallengeWeek: weekStr,
           }
         }),
+
+      // Difficulty actions
+      setSelectedDifficulty: (id) => set({ selectedDifficulty: id }),
     }),
     {
       name: STORAGE_KEY,
@@ -338,6 +350,7 @@ export const useGameStore = create<GameStore>()(
         missionProgress: s.missionProgress,
         weeklyChallengeDone: s.weeklyChallengeDone,
         weeklyChallengeWeek: s.weeklyChallengeWeek,
+        selectedDifficulty: s.selectedDifficulty,
       }),
       merge: (persisted, current) => {
         const p = persisted as Record<string, unknown> | undefined
@@ -376,6 +389,7 @@ export const useGameStore = create<GameStore>()(
             : { lessons: 0, correct: 0, quiz: 0, speed: 0, questions: 0 },
           weeklyChallengeDone: typeof p.weeklyChallengeDone === 'boolean' ? p.weeklyChallengeDone : false,
           weeklyChallengeWeek: typeof p.weeklyChallengeWeek === 'string' ? p.weeklyChallengeWeek : null,
+          selectedDifficulty: typeof p.selectedDifficulty === 'string' ? p.selectedDifficulty : 'medium',
         }
       },
     }

@@ -1,9 +1,10 @@
-import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { ChallengeSkeleton } from '@/components/LoadingSkeleton'
 import { useGameStore } from '@/store'
 import { TimerBar } from '@/components/ui/TimerBar'
 import { HintButton } from '@/components/ui/HintButton'
 import { EnergyMeter } from '@/components/ui/EnergyMeter'
+import { type DifficultyConfig, DIFFICULTIES } from '@/components/ui/DifficultySelect'
 import type { LevelData } from '@/types'
 
 const ChallengeRenderer = lazy(() =>
@@ -17,18 +18,46 @@ interface Props {
 
 export default function GameplayPage({ level, onComplete }: Props) {
   const game = useGameStore()
-  const [timeLeft, setTimeLeft] = useState(30)
+  const difficulty: DifficultyConfig = (game as unknown as { selectedDifficulty: DifficultyConfig }).selectedDifficulty || DIFFICULTIES[1]!
+  const [timeLeft, setTimeLeft] = useState(difficulty.timePerQuestion)
+  const totalTime = difficulty.timePerQuestion
   const [energy, setEnergy] = useState(50)
   const [hintsLeft, setHintsLeft] = useState(3)
+  const completedRef = useRef(false)
 
-  // Timer effect
+  // Lose one heart on entering challenge
   useEffect(() => {
-    if (timeLeft <= 0) return
+    game.loseHeart()
+  }, [])
+
+  // Game over when hearts reach 0
+  useEffect(() => {
+    if (game.hearts <= 0 && !completedRef.current) {
+      completedRef.current = true
+      onComplete(0)
+    }
+  }, [game.hearts, onComplete])
+
+  // Timer effect — end game when time runs out
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      if (!completedRef.current) {
+        completedRef.current = true
+        onComplete(0)
+      }
+      return
+    }
     const timer = setInterval(() => {
-      setTimeLeft((t) => Math.max(0, t - 1))
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timer)
+          return 0
+        }
+        return t - 1
+      })
     }, 1000)
     return () => clearInterval(timer)
-  }, [timeLeft])
+  }, [timeLeft, onComplete])
 
   // Energy regeneration
   useEffect(() => {
@@ -45,7 +74,7 @@ export default function GameplayPage({ level, onComplete }: Props) {
     }
   }, [hintsLeft, energy])
 
-  const timerColor = timeLeft > 20 ? '#4CAF50' : timeLeft > 10 ? '#FFC107' : '#F44336'
+  const timerColor = timeLeft > totalTime * 0.66 ? '#4CAF50' : timeLeft > totalTime * 0.33 ? '#FFC107' : '#F44336'
 
   const titleGradient: React.CSSProperties = {
     background: 'linear-gradient(135deg, #4FC3F7, #CE93D8)',
@@ -65,7 +94,7 @@ export default function GameplayPage({ level, onComplete }: Props) {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         display: 'flex', justifyContent: 'center',
       }}>
-        <TimerBar timeLeft={timeLeft} totalTime={30} color={timerColor} />
+        <TimerBar timeLeft={timeLeft} totalTime={totalTime} color={timerColor} />
       </div>
 
       <div style={{

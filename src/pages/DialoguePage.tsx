@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { DialogueBox } from '@/components/ui'
 import { ChallengeIntro } from '@/components/ui/ChallengeIntro'
 import { ChallengeSummary } from '@/components/ui/ChallengeSummary'
@@ -13,15 +13,37 @@ interface Props {
 
 export default function DialoguePage({ level, dialogueIndex, onComplete }: Props) {
   const [showIntro, setShowIntro] = useState(true)
+  const [introDone, setIntroDone] = useState(false)
+  const [summaryDone, setSummaryDone] = useState(false)
   const challengeMeta = getChallengeMeta(level.id)
 
+  const handleIntroDone = useCallback(() => {
+    setIntroDone(true)
+  }, [])
+
+  const handleSummaryDone = useCallback(() => {
+    setSummaryDone(true)
+    onComplete()
+  }, [onComplete])
+
   // Show ChallengeIntro before first dialogue (intro)
-  if (dialogueIndex === 0 && showIntro && challengeMeta) {
+  if (dialogueIndex === 0 && showIntro && challengeMeta && !introDone) {
     return (
       <ChallengeIntro
         text={challengeMeta.introText}
         characterName={challengeMeta.introCharacterName}
-        onDone={() => setShowIntro(false)}
+        onDone={handleIntroDone}
+      />
+    )
+  }
+
+  // Show ChallengeSummary after second dialogue (outro) - replaces the dialogue
+  if (dialogueIndex === 1 && challengeMeta && !summaryDone) {
+    return (
+      <ChallengeSummary
+        summary={challengeMeta.summary}
+        xpEarned={Math.floor(level.id * 10)}
+        onDone={handleSummaryDone}
       />
     )
   }
@@ -39,14 +61,6 @@ export default function DialoguePage({ level, dialogueIndex, onComplete }: Props
         lines={dialogueIndex === 0 ? level.intro : level.outro}
         onComplete={onComplete}
       />
-      {/* Show ChallengeSummary after second dialogue (outro) */}
-      {dialogueIndex === 1 && challengeMeta && (
-        <ChallengeSummary
-          summary={challengeMeta.summary}
-          xpEarned={Math.floor(level.id * 10)}
-          onDone={() => {}}
-        />
-      )}
     </div>
   )
 }

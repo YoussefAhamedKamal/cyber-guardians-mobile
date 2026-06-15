@@ -176,6 +176,23 @@ export function App() {
     analytics.track('level_complete', { level: game.currentLevel, score })
     autoSave.saveNow()
 
+    // Update daily mission progress
+    game.updateMissionProgress('lessons', 1)
+    game.updateMissionProgress('questions', 1)
+    if (score >= 80) {
+      game.updateMissionProgress('correct', 1)
+    }
+    if (score === 100) {
+      game.updateMissionProgress('speed', 1)
+    }
+    game.updateMissionProgress('quiz', 1)
+
+    // Reset combo on level complete
+    game.setCurrentCombo(0)
+
+    // Reset hearts for next level
+    game.resetHearts()
+
     // Show encourage toast for good scores
     if (score >= 80) {
       setEncourageMsg(score >= 90 ? 'مذهل! 🏆' : 'ممتاز! 🎯')

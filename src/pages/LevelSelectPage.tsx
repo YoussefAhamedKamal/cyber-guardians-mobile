@@ -26,11 +26,13 @@ export default function LevelSelectPage({ onSelectLevel, onBack }: Props) {
   const handleDifficultySelect = useCallback((difficulty: DifficultyConfig) => {
     startTransition(() => {
       audio.playClick()
+      game.setSelectedDifficulty(difficulty.id)
+      game.resetHearts()
       if (selectedLevelId !== null) {
         onSelectLevel(selectedLevelId)
       }
     })
-  }, [selectedLevelId, onSelectLevel])
+  }, [selectedLevelId, onSelectLevel, game])
 
   const handleBackFromDifficulty = useCallback(() => {
     setShowDifficulty(false)
