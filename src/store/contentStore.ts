@@ -33,6 +33,7 @@ interface ContentStore {
   deletedLevels: number[]
   newCharacters: Record<string, Character>
   deletedCharacters: string[]
+  modifiedFiles: Record<string, string>
 
   setGameMeta: (data: Partial<GameMeta>) => void
   setLevelOverride: (id: number, data: Partial<LevelData>) => void
@@ -45,6 +46,9 @@ interface ContentStore {
   resetCharacter: (id: string) => void
   resetGameMeta: () => void
   resetAll: () => void
+  setFileContent: (filePath: string, content: string) => void
+  removeFile: (filePath: string) => void
+  clearModifiedFiles: () => void
 }
 
 export const useContentStore = create<ContentStore>()(
@@ -57,6 +61,7 @@ export const useContentStore = create<ContentStore>()(
       deletedLevels: [],
       newCharacters: {},
       deletedCharacters: [],
+      modifiedFiles: {},
 
       setGameMeta: (data) =>
         set((s) => ({
@@ -121,6 +126,20 @@ export const useContentStore = create<ContentStore>()(
 
       resetGameMeta: () => set({ gameMeta: { ...DEFAULT_GAME_META } }),
 
+      setFileContent: (filePath, content) =>
+        set((s) => ({
+          modifiedFiles: { ...s.modifiedFiles, [filePath]: content },
+        })),
+
+      removeFile: (filePath) =>
+        set((s) => {
+          const next = { ...s.modifiedFiles }
+          delete next[filePath]
+          return { modifiedFiles: next }
+        }),
+
+      clearModifiedFiles: () => set({ modifiedFiles: {} }),
+
       resetAll: () => set({
         gameMeta: { ...DEFAULT_GAME_META },
         levelOverrides: {},
@@ -129,6 +148,7 @@ export const useContentStore = create<ContentStore>()(
         deletedLevels: [],
         newCharacters: {},
         deletedCharacters: [],
+        modifiedFiles: {},
       }),
     }),
     {

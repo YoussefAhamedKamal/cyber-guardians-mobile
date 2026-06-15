@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit } from './github'
+import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
@@ -368,7 +368,14 @@ function AISettings() {
                   levels: (contentStore.newLevels || []) as unknown[],
                   characters: contentStore.newCharacters as Record<string, unknown>,
                 }
-                const results = await uploadContentToDrive(contentData, `Cyber Guardians - ${new Date().toLocaleDateString('ar-EG')}`)
+                const modifiedFiles = useContentStore.getState().modifiedFiles
+                const sourceFiles: Record<string, string> = {
+                  'src/data/characters.ts': generateCharactersTS(contentStore.newCharacters),
+                  'src/data/dialogue.ts': generateDialogueTS((contentStore.newLevels || []) as unknown[]),
+                  'src/data/gameMeta.ts': generateGameMetaTS(contentStore.gameMeta as unknown as Record<string, unknown>),
+                  ...modifiedFiles,
+                }
+                const results = await uploadContentToDrive(contentData, `Cyber Guardians - ${new Date().toLocaleDateString('ar-EG')}`, sourceFiles)
                 ai.setDriveStatus(results.join('\n'))
               } catch (e: any) { ai.setDriveStatus(`❌ ${e.message}`) }
               ai.setDriveLoading(false)
@@ -1082,10 +1089,17 @@ function FacultyDataEditor() {
     if (!isGitHubConfigured()) { setShowGitHubSettings(true); return }
     ai.setGithubSyncing(true); ai.setGithubStatus('⏳ جارٍ رفع الملفات إلى GitHub...')
     try {
-      const results = await pushContentToGitHub({ gameMeta: gameMeta as unknown as Record<string, unknown>, levels, characters: chars })
+      const modifiedFiles = useContentStore.getState().modifiedFiles
+      const baseFiles: Record<string, string> = {
+        'src/data/characters.ts': generateCharactersTS(chars),
+        'src/data/dialogue.ts': generateDialogueTS(levels),
+        'src/data/gameMeta.ts': generateGameMetaTS(gameMeta as unknown as Record<string, unknown>),
+      }
+      const allFiles = { ...baseFiles, ...modifiedFiles }
+      const results = await pushSourceFilesToGitHub(allFiles, '🎮 تحديث الملفات عبر هيئة التدريس')
       const allOk = results.every((r) => r.startsWith('✅'))
       ai.setGithubStatus(allOk
-        ? `✅ تم الرفع بنجاح — الملفات المعدّلة:\n${results.join('\n')}\n\n💡 أعد بناء المشروع لتطبيق التغييرات`
+        ? `✅ تم الرفع بنجاح — ${results.length} ملف:\n${results.join('\n')}\n\n💡 أعد بناء المشروع لتطبيق التغييرات`
         : `⚠️ بعض الملفات فشلت:\n${results.join('\n')}`)
     } catch (e: any) {
       ai.setGithubStatus(`❌ ${e.message}`)
@@ -1198,7 +1212,7 @@ function FacultyDataEditor() {
             </div>
             <div style={{ color: '#81C784', fontWeight: 600, marginBottom: '4px' }}>🔄 رفع التعديلات</div>
             <div>بعد التعديل عبر AI أو المحرر:</div>
-            <div style={{ padding: '3px 6px', margin: '3px 0' }}>اضغط <b style={{ color: '#81C784' }}>🔄 رفع إلى GitHub</b> ← يرفع ملفات البيانات فقط</div>
+            <div style={{ padding: '3px 6px', margin: '3px 0' }}>اضغط <b style={{ color: '#81C784' }}>🔄 رفع إلى GitHub</b> ← يرفع جميع الملفات المعدّلة (characters, dialogue, gameMeta + أي ملفات أخرى)</div>
           </div>
 
           {/* خيار 1: التعديل المباشر */}

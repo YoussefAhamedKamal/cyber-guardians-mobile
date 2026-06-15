@@ -170,21 +170,33 @@ export async function uploadContentToDrive(
     levels: unknown[]
     characters: Record<string, unknown>
   },
-  folderName = 'Cyber Guardians - Content Backup'
+  folderName = 'Cyber Guardians - Content Backup',
+  sourceFiles?: Record<string, string>
 ): Promise<string[]> {
   const results: string[] = []
 
   const folderId = await createFolder(folderName)
   results.push(`✅ "${folderName}" تم إنشاء المجلد`)
 
-  await uploadJSONFile('gameMeta', contentData.gameMeta, folderId)
-  results.push('✅ gameMeta.json')
+  if (sourceFiles && Object.keys(sourceFiles).length > 0) {
+    for (const [filePath, content] of Object.entries(sourceFiles)) {
+      const dirPath = filePath.includes('/') ? filePath.substring(0, filePath.lastIndexOf('/')) : ''
+      const fileName = filePath.includes('/') ? filePath.substring(filePath.lastIndexOf('/') + 1) : filePath
+      const parentId = await ensureFolder(dirPath, folderId)
+      const mime = mimeFromPath(filePath)
+      await uploadTextFile(fileName, content, parentId, mime)
+      results.push(`✅ ${filePath}`)
+    }
+  } else {
+    await uploadJSONFile('gameMeta', contentData.gameMeta, folderId)
+    results.push('✅ gameMeta.json')
 
-  await uploadJSONFile('levels', contentData.levels, folderId)
-  results.push('✅ levels.json')
+    await uploadJSONFile('levels', contentData.levels, folderId)
+    results.push('✅ levels.json')
 
-  await uploadJSONFile('characters', contentData.characters, folderId)
-  results.push('✅ characters.json')
+    await uploadJSONFile('characters', contentData.characters, folderId)
+    results.push('✅ characters.json')
+  }
 
   const now = new Date().toISOString().replace(/[:.]/g, '-')
   await uploadTextFile('backup-info.txt', `تاريخ النسخ: ${now}\nالمشروع: Cyber Guardians\nعدد المستويات: ${contentData.levels.length}\nعدد الشخصيات: ${Object.keys(contentData.characters).length}\n`, folderId)

@@ -279,6 +279,33 @@ export async function pushCustomFile(
   return `✅ ${filePath}`
 }
 
+export async function pushSourceFilesToGitHub(
+  files: Record<string, string>,
+  commitMessage: string
+): Promise<string[]> {
+  const results: string[] = []
+  const config = loadConfig()
+
+  try {
+    await apiFetch(`/repos/${config.owner}/${config.repo}`, 'GET')
+  } catch {
+    throw new Error(`المستودع ${config.owner}/${config.repo} غير موجود. أنشئ مستودعاً جديداً أولاً.`)
+  }
+
+  for (const [filePath, content] of Object.entries(files)) {
+    try {
+      let existing: GitHubFileContent | null = null
+      try { existing = await getFileContent(filePath) } catch {}
+      await createOrUpdateFile(filePath, content, `${commitMessage} — ${filePath}`, existing?.sha)
+      results.push(`✅ ${filePath}`)
+    } catch (e: any) {
+      results.push(`❌ ${filePath}: ${e.message}`)
+    }
+  }
+
+  return results
+}
+
 export async function getGitHubUsername(): Promise<string> {
   const data = await apiFetch('/user', 'GET')
   return data.login
