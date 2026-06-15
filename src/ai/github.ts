@@ -92,15 +92,10 @@ export async function getFileContent(filePath: string): Promise<GitHubFileConten
       const decoded = decodeURIComponent(escape(atob(data.content)))
       return { sha: data.sha, content: decoded }
     } catch (e: any) {
-      if (e.message?.includes('404')) {
-        const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${filePath}`
-        const res = await fetch(rawUrl)
-        if (res.ok) return { sha: '', content: await res.text() }
-      }
-      throw e
+      console.warn('GitHub API failed, trying raw fallback:', e.message)
     }
   }
-  const rawUrl = `https://raw.githubusercontent.com/${MAIN_REPO.owner}/${MAIN_REPO.repo}/main/${filePath}`
+  const rawUrl = `https://raw.githubusercontent.com/${config.token ? config.owner : MAIN_REPO.owner}/${config.token ? config.repo : MAIN_REPO.repo}/${config.token ? config.branch : 'main'}/${filePath}`
   const res = await fetch(rawUrl)
   if (!res.ok) throw new Error(`فشل تحميل الملف: ${res.status}`)
   return { sha: '', content: await res.text() }
