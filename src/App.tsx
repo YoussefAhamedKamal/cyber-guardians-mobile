@@ -15,8 +15,6 @@ import { RankBadge } from '@/components/ui/RankBadge'
 import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay'
 import { BadgeUnlockToast } from '@/components/ui/BadgeUnlockToast'
 import { DailyRewardOverlay } from '@/components/ui/DailyRewardOverlay'
-import { DailyMissions } from '@/components/ui/DailyMissions'
-import { WeeklyChallengeBanner } from '@/components/ui/WeeklyChallengeBanner'
 import { ComboDisplay } from '@/components/ui/ComboDisplay'
 import { HeartsDisplay } from '@/components/ui/HeartsDisplay'
 import { Leaderboard } from '@/components/ui/Leaderboard'
@@ -300,26 +298,6 @@ export function App() {
           <RankBadge />
           <HeartsDisplay current={game.hearts} max={game.maxHearts} />
           <ComboDisplay combo={game.currentCombo} />
-        </div>
-      )}
-
-      {/* Daily Missions */}
-      {screen === 'menu' && (
-        <div style={{
-          position: 'fixed', bottom: '16px', left: '16px',
-          zIndex: 9998,
-        }}>
-          <DailyMissions compact />
-        </div>
-      )}
-
-      {/* Weekly Challenge Banner */}
-      {screen === 'menu' && (
-        <div style={{
-          position: 'fixed', top: '16px', right: '16px',
-          zIndex: 9998,
-        }}>
-          <WeeklyChallengeBanner />
         </div>
       )}
 

@@ -3,18 +3,18 @@ export interface DifficultyConfig {
   icon: string
   name: string
   nameEn: string
-  questions: number
   timePerQuestion: number
   hearts: number
   multiplier: number
   color: string
+  description: string
 }
 
 export const DIFFICULTIES: DifficultyConfig[] = [
-  { id: 'easy', icon: '🟢', name: 'مبتدئ', nameEn: 'Easy', questions: 5, timePerQuestion: 45, hearts: 3, multiplier: 1, color: '#4CAF50' },
-  { id: 'medium', icon: '🟡', name: 'متوسط', nameEn: 'Medium', questions: 7, timePerQuestion: 30, hearts: 3, multiplier: 1.5, color: '#FF9800' },
-  { id: 'hard', icon: '🔴', name: 'محترف', nameEn: 'Hard', questions: 10, timePerQuestion: 20, hearts: 2, multiplier: 2, color: '#F44336' },
-  { id: 'rush', icon: '⚡', name: 'سرعة البرق', nameEn: 'Speed Rush', questions: 10, timePerQuestion: 10, hearts: 99, multiplier: 3, color: '#9C27B0' },
+  { id: 'easy', icon: '🟢', name: 'مبتدئ', nameEn: 'Easy', timePerQuestion: 45, hearts: 5, multiplier: 1, color: '#4CAF50', description: 'وقت طويل + 5 قلوب' },
+  { id: 'medium', icon: '🟡', name: 'متوسط', nameEn: 'Medium', timePerQuestion: 30, hearts: 4, multiplier: 1.5, color: '#FF9800', description: 'وقت متوسط + 4 قلوب' },
+  { id: 'hard', icon: '🔴', name: 'محترف', nameEn: 'Hard', timePerQuestion: 20, hearts: 3, multiplier: 2, color: '#F44336', description: 'وقت قليل + 3 قلوب + نقاط مضاعفة' },
+  { id: 'rush', icon: '⚡', name: 'سرعة البرق', nameEn: 'Speed Rush', timePerQuestion: 10, hearts: 99, multiplier: 3, color: '#9C27B0', description: 'وقت سريع جداً + قلوب لا نهائية + نقاط x3' },
 ]
 
 interface Props {
@@ -48,8 +48,8 @@ export function DifficultySelect({ onSelect }: Props) {
           }}>
             {diff.name}
           </span>
-          <span style={{ fontSize: '11px', color: '#888', marginBottom: '8px' }}>
-            {diff.questions} أسئلة • {diff.timePerQuestion}s
+          <span style={{ fontSize: '11px', color: '#888', marginBottom: '8px', textAlign: 'center' }}>
+            {diff.description}
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
             <span style={{ fontSize: '12px', color: '#F44336' }}>

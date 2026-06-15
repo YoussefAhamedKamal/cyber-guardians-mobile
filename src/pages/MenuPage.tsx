@@ -6,194 +6,142 @@ import { Leaderboard } from '@/components/ui/Leaderboard'
 import { ShareModal } from '@/components/ui/ShareModal'
 import { BadgeGrid } from '@/components/ui/BadgeGrid'
 import { ReferencePage } from '@/pages/ReferencePage'
+import { useGameStore } from '@/store'
 
 interface Props { onStart: () => void; onSettings: () => void }
 
 export default function MenuPage({ onStart, onSettings }: Props) {
+  const game = useGameStore()
   const [showMissions, setShowMissions] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showBadges, setShowBadges] = useState(false)
   const [showReference, setShowReference] = useState(false)
+  const [tooltip, setTooltip] = useState<string | null>(null)
 
   if (showReference) {
     return <ReferencePage onBack={() => setShowReference(false)} />
   }
 
+  const iconBtnStyle = (color: string, border: string): React.CSSProperties => ({
+    width: '52px', height: '52px', borderRadius: '14px',
+    border: `2px solid ${border}`,
+    background: `${color}15`,
+    color: color, fontSize: '22px',
+    cursor: 'pointer', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    backdropFilter: 'blur(10px)',
+    transition: 'all 0.2s ease',
+    position: 'relative',
+  })
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <MenuScreen onStart={onStart} onSettings={onSettings} />
 
-      {/* Bottom-left: Daily Missions + Weekly Challenge */}
+      {/* ===== BOTTOM BAR: Stats + Quick Actions ===== */}
       <div style={{
-        position: 'absolute', bottom: 'clamp(80px, 12vw, 120px)',
-        left: 'clamp(16px, 3vw, 32px)', zIndex: 30,
-        display: 'flex', flexDirection: 'column', gap: '10px',
-        maxWidth: '280px', width: '100%',
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        zIndex: 30, padding: '16px 24px',
+        background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
       }}>
-        {/* Daily Missions - clickable */}
-        <div
-          onClick={() => setShowMissions(!showMissions)}
-          style={{ cursor: 'pointer' }}
-        >
-          {showMissions ? (
-            <DailyMissions />
-          ) : (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 16px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.12)'
-              e.currentTarget.style.borderColor = 'rgba(79,195,247,0.4)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
-            }}
-            >
-              <span style={{ fontSize: '20px' }}>📋</span>
-              <span style={{ fontSize: '14px', color: '#fff', fontWeight: 600 }}>
-                مهام اليوم
-              </span>
-              <span style={{ fontSize: '12px', color: '#888', marginRight: 'auto' }}>
-                ▼
-              </span>
-            </div>
-          )}
-        </div>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'flex-end', maxWidth: '1200px', margin: '0 auto',
+        }}>
+          {/* Left: Stats */}
+          <div style={{
+            display: 'flex', gap: '20px', alignItems: 'center',
+          }}>
+            <StatItem icon="⭐" label="النقاط" value={game.totalScore.toLocaleString()} color="#FFD700" />
+            <StatItem icon="📈" label="المستوى" value={`${game.currentLevel}/7`} color="#4FC3F7" />
+            <StatItem icon="🏅" label="الشارات" value={`${game.unlockedBadges.length}`} color="#FF9800" />
+          </div>
 
-        {/* Weekly Challenge - clickable */}
-        <div
-          onClick={() => {
-            if (!showMissions) {
-              alert('أكمل تحدي الصعب بدون تلميحات للحصول على +200 XP!')
-            }
-          }}
-          style={{ cursor: 'pointer' }}
-        >
-          <WeeklyChallengeBanner />
+          {/* Right: Action buttons */}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <TooltipButton
+              icon="📋"
+              tooltip="المهام اليومية"
+              color="#4FC3F7"
+              border="rgba(79,195,247,0.3)"
+              onClick={() => setShowMissions(!showMissions)}
+              active={showMissions}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="🏅"
+              tooltip="الشارات"
+              color="#FFD700"
+              border="rgba(255,215,0,0.3)"
+              onClick={() => setShowBadges(true)}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="🏆"
+              tooltip="لوحة الصدارة"
+              color="#FF9800"
+              border="rgba(255,152,0,0.3)"
+              onClick={() => setShowLeaderboard(true)}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="📤"
+              tooltip="مشاركة"
+              color="#4CAF50"
+              border="rgba(76,175,80,0.3)"
+              onClick={() => setShowShare(true)}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="📚"
+              tooltip="المرجع الأمني"
+              color="#2196F3"
+              border="rgba(33,150,243,0.3)"
+              onClick={() => setShowReference(true)}
+              setTooltip={setTooltip}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Top-right: Quick action buttons */}
+      {/* Tooltip */}
+      {tooltip && (
+        <div style={{
+          position: 'fixed', bottom: '90px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 99999,
+          background: 'rgba(0,0,0,0.85)', color: '#fff',
+          padding: '8px 16px', borderRadius: '8px',
+          fontSize: '13px', whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          border: '1px solid rgba(255,255,255,0.15)',
+        }}>
+          {tooltip}
+        </div>
+      )}
+
+      {/* ===== DAILY MISSIONS PANEL ===== */}
+      {showMissions && (
+        <div style={{
+          position: 'absolute', bottom: '100px', left: '24px',
+          zIndex: 35, width: '320px',
+        }}>
+          <DailyMissions />
+        </div>
+      )}
+
+      {/* ===== WEEKLY CHALLENGE PANEL ===== */}
       <div style={{
-        position: 'absolute', top: 'clamp(16px,3vw,32px)',
-        right: 'clamp(16px,3vw,32px)', zIndex: 30,
-        display: 'flex', gap: '10px',
+        position: 'absolute', top: '80px', right: '24px',
+        zIndex: 30, width: '260px',
       }}>
-        {/* Badges */}
-        <button
-          onClick={() => setShowBadges(true)}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            border: '2px solid rgba(255,215,0,0.3)',
-            background: 'rgba(255,215,0,0.1)',
-            color: '#FFD700', fontSize: '20px',
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,215,0,0.2)'
-            e.currentTarget.style.transform = 'scale(1.1)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,215,0,0.1)'
-            e.currentTarget.style.transform = 'scale(1)'
-          }}
-          title="الشارات"
-        >
-          🏅
-        </button>
-
-        {/* Leaderboard */}
-        <button
-          onClick={() => setShowLeaderboard(true)}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            border: '2px solid rgba(255,152,0,0.3)',
-            background: 'rgba(255,152,0,0.1)',
-            color: '#FF9800', fontSize: '20px',
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,152,0,0.2)'
-            e.currentTarget.style.transform = 'scale(1.1)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,152,0,0.1)'
-            e.currentTarget.style.transform = 'scale(1)'
-          }}
-          title="لوحة الصدارة"
-        >
-          🏆
-        </button>
-
-        {/* Share */}
-        <button
-          onClick={() => setShowShare(true)}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            border: '2px solid rgba(76,175,80,0.3)',
-            background: 'rgba(76,175,80,0.1)',
-            color: '#4CAF50', fontSize: '20px',
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(76,175,80,0.2)'
-            e.currentTarget.style.transform = 'scale(1.1)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(76,175,80,0.1)'
-            e.currentTarget.style.transform = 'scale(1)'
-          }}
-          title="مشاركة"
-        >
-          📤
-        </button>
-
-        {/* Reference */}
-        <button
-          onClick={() => setShowReference(true)}
-          style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            border: '2px solid rgba(33,150,243,0.3)',
-            background: 'rgba(33,150,243,0.1)',
-            color: '#2196F3', fontSize: '20px',
-            cursor: 'pointer', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(33,150,243,0.2)'
-            e.currentTarget.style.transform = 'scale(1.1)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(33,150,243,0.1)'
-            e.currentTarget.style.transform = 'scale(1)'
-          }}
-          title="المرجع الأمني"
-        >
-          📚
-        </button>
+        <WeeklyChallengeBanner />
       </div>
 
-      {/* Modals */}
+      {/* ===== MODALS ===== */}
       {showLeaderboard && <Leaderboard onDone={() => setShowLeaderboard(false)} />}
       {showShare && <ShareModal onDone={() => setShowShare(false)} />}
+
       {showBadges && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 10000,
@@ -229,6 +177,54 @@ export default function MenuPage({ onStart, onSettings }: Props) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function StatItem({ icon, label, value, color }: { icon: string; label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px',
+      padding: '8px 14px', borderRadius: '12px',
+      background: 'rgba(255,255,255,0.06)',
+      border: '1px solid rgba(255,255,255,0.1)',
+    }}>
+      <span style={{ fontSize: '18px' }}>{icon}</span>
+      <div>
+        <div style={{ fontSize: '11px', color: '#888' }}>{label}</div>
+        <div style={{ fontSize: '16px', fontWeight: 'bold', color }}>{value}</div>
+      </div>
+    </div>
+  )
+}
+
+function TooltipButton({
+  icon, tooltip, color, border, onClick, active, setTooltip,
+}: {
+  icon: string; tooltip: string; color: string; border: string;
+  onClick: () => void; active?: boolean; setTooltip: (t: string | null) => void;
+}) {
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setTooltip(tooltip)}
+        onMouseLeave={() => setTooltip(null)}
+        onTouchStart={() => setTooltip(tooltip)}
+        onTouchEnd={() => setTimeout(() => setTooltip(null), 1500)}
+        style={{
+          width: '52px', height: '52px', borderRadius: '14px',
+          border: `2px solid ${active ? color : border}`,
+          background: active ? `${color}30` : `${color}15`,
+          color: color, fontSize: '22px',
+          cursor: 'pointer', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(10px)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {icon}
+      </button>
     </div>
   )
 }
