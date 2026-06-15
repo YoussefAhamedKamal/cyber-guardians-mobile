@@ -786,14 +786,14 @@ src/
 | Pre/Post Assessment | assessmentQuestions, PreAssessment, PostAssessment | عالي | ✅ مكتمل |
 
 ### المرحلة 3: أنظمة التعلم والاختبار (High) — 4-6 أيام
-| الميزة | الملفات | التعقيد |
-|--------|---------|---------|
-| Challenge Intros | ChallengeIntro, dialogue.ts | سهل |
-| Challenge Summary | ChallengeSummary, dialogue.ts | سهل |
-| Security Reference | ReferencePage, referenceContent.ts | متوسط |
-| Quiz System | quizQuestions, QuizPage, quizStore | عالي |
-| Hints System | HintButton, quizStore | متوسط |
-| Energy Meter | EnergyMeter, quizStore | متوسط |
+| الميزة | الملفات | التعقيد | الحالة |
+|--------|---------|---------|--------|
+| Challenge Intros | ChallengeIntro, challengeMeta | سهل | ✅ مكتمل |
+| Challenge Summary | ChallengeSummary, challengeMeta | سهل | ✅ مكتمل |
+| Security Reference | ReferencePage, referenceContent | متوسط | ✅ مكتمل |
+| Quiz System | quizQuestions, DifficultySelect | عالي | ✅ مكتمل |
+| Score Popup | ScorePopup | سهل | ✅ مكتمل |
+| Confetti | Confetti | سهل | ✅ مكتمل |
 
 ### المرحلة 4: مكونات الواجهة (Medium) — 3-4 أيام
 | الميزة | الملفات | التعقيد |
@@ -831,16 +831,15 @@ src/
 - [x] **Hints System** — نظام التلميحات
 - [x] **Energy Meter** — مقياس الطاقة
 - [x] **Pre/Post Assessment** — تقييم قبل/بعد
-- [ ] **Challenge Intros** — مقدمات التحديات
-- [ ] **Challenge Summary** — ملخص بعد التحدي
-- [ ] **Security Reference** — المرجع الأمني
-- [ ] **Quiz System** — نظام الاختبارات
-- [ ] **Difficulty Selection** — اختيار الصعوبة
+- [x] **Challenge Intros** — مقدمات التحديات
+- [x] **Challenge Summary** — ملخص بعد التحدي
+- [x] **Security Reference** — المرجع الأمني
+- [x] **Quiz System** — نظام الاختبارات
+- [x] **Difficulty Selection** — اختيار الصعوبة
+- [x] **Score Popup** — نافذة النقاط العائمة
+- [x] **Confetti** — تأثير الاحتفال
 - [ ] **Game Over Screen** — شاشة انتهاء اللعبة
-- [ ] **Score Breakdown** — تفاصيل النقاط
-- [ ] **Player Name** — اسم اللاعب
 - [ ] **Share System** — نظام المشاركة
-- [ ] **Confetti** — تأثير الاحتفال
 - [ ] **Teacher Report** — تقرير المعلم
 - [ ] **Encouragement Toast** — رسائل الحماس
 - [ ] **Reset Confirmation** — تأكيد إعادة التعيين
