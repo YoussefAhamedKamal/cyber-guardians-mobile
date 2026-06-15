@@ -20,7 +20,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 100,
       "version": 1,
       "versionNonce": 100,
@@ -102,7 +104,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "center_hub",
       "type": "rectangle",
@@ -120,7 +121,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 200,
       "version": 1,
       "versionNonce": 200,
@@ -166,7 +169,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "arrow_to_opening",
       "type": "arrow",
@@ -184,7 +186,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 210,
       "version": 1,
       "versionNonce": 210,
@@ -193,14 +197,22 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [0, 60]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          60
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
       "endArrowhead": "arrow"
     },
-
     {
       "id": "opening_box",
       "type": "rectangle",
@@ -218,7 +230,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 220,
       "version": 1,
       "versionNonce": 220,
@@ -264,7 +278,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "arrow_to_ai_chat",
       "type": "arrow",
@@ -282,7 +295,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 300,
       "version": 1,
       "versionNonce": 300,
@@ -291,14 +306,22 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [-250, 170]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -250,
+          170
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
       "endArrowhead": "arrow"
     },
-
     {
       "id": "ai_chat_box",
       "type": "rectangle",
@@ -316,7 +339,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 310,
       "version": 1,
       "versionNonce": 310,
@@ -379,7 +404,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 312,
       "version": 1,
       "versionNonce": 312,
@@ -442,7 +469,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 314,
       "version": 1,
       "versionNonce": 314,
@@ -505,7 +534,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 316,
       "version": 1,
       "versionNonce": 316,
@@ -551,7 +582,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "arrow_to_editor",
       "type": "arrow",
@@ -569,7 +599,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 400,
       "version": 1,
       "versionNonce": 400,
@@ -578,21 +610,29 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [250, 170]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          250,
+          170
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
       "endArrowhead": "arrow"
     },
-
     {
       "id": "editor_box",
       "type": "rectangle",
-      "x": 1350,
+      "x": 1400,
       "y": 400,
-      "width": 650,
-      "height": 380,
+      "width": 570,
+      "height": 400,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "#fff3bf",
@@ -603,7 +643,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 410,
       "version": 1,
       "versionNonce": 410,
@@ -616,9 +658,9 @@
     {
       "id": "editor_title",
       "type": "text",
-      "x": 1370,
+      "x": 1420,
       "y": 410,
-      "width": 610,
+      "width": 530,
       "height": 30,
       "angle": 0,
       "strokeColor": "#e67700",
@@ -652,10 +694,10 @@
     {
       "id": "editor_tabs",
       "type": "rectangle",
-      "x": 1370,
+      "x": 1420,
       "y": 450,
-      "width": 610,
-      "height": 160,
+      "width": 530,
+      "height": 150,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "#fff9db",
@@ -666,7 +708,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 412,
       "version": 1,
       "versionNonce": 412,
@@ -679,9 +723,9 @@
     {
       "id": "editor_tabs_text",
       "type": "text",
-      "x": 1380,
+      "x": 1430,
       "y": 455,
-      "width": 590,
+      "width": 510,
       "height": 150,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -715,10 +759,10 @@
     {
       "id": "editor_fields",
       "type": "rectangle",
-      "x": 1370,
-      "y": 620,
-      "width": 610,
-      "height": 140,
+      "x": 1420,
+      "y": 610,
+      "width": 530,
+      "height": 130,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "#fff9db",
@@ -729,7 +773,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 414,
       "version": 1,
       "versionNonce": 414,
@@ -742,9 +788,9 @@
     {
       "id": "editor_fields_text",
       "type": "text",
-      "x": 1380,
-      "y": 625,
-      "width": 590,
+      "x": 1430,
+      "y": 615,
+      "width": 510,
       "height": 130,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -775,7 +821,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "arrow_to_file_editor",
       "type": "arrow",
@@ -793,7 +838,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 500,
       "version": 1,
       "versionNonce": 500,
@@ -802,21 +849,29 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [0, 60]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          60
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
       "endArrowhead": "arrow"
     },
-
     {
       "id": "file_editor_box",
       "type": "rectangle",
-      "x": 750,
-      "y": 480,
-      "width": 900,
-      "height": 280,
+      "x": 660,
+      "y": 400,
+      "width": 720,
+      "height": 400,
       "angle": 0,
       "strokeColor": "#1971c2",
       "backgroundColor": "#d0ebff",
@@ -827,7 +882,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 510,
       "version": 1,
       "versionNonce": 510,
@@ -840,9 +897,9 @@
     {
       "id": "file_editor_title",
       "type": "text",
-      "x": 950,
-      "y": 485,
-      "width": 500,
+      "x": 810,
+      "y": 410,
+      "width": 420,
       "height": 30,
       "angle": 0,
       "strokeColor": "#1971c2",
@@ -876,10 +933,10 @@
     {
       "id": "file_editor_manual",
       "type": "rectangle",
-      "x": 770,
-      "y": 520,
-      "width": 280,
-      "height": 120,
+      "x": 680,
+      "y": 450,
+      "width": 220,
+      "height": 140,
       "angle": 0,
       "strokeColor": "#1971c2",
       "backgroundColor": "#e7f5ff",
@@ -890,7 +947,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 512,
       "version": 1,
       "versionNonce": 512,
@@ -903,9 +962,9 @@
     {
       "id": "file_editor_manual_text",
       "type": "text",
-      "x": 780,
-      "y": 525,
-      "width": 260,
+      "x": 690,
+      "y": 455,
+      "width": 200,
       "height": 110,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -939,10 +998,10 @@
     {
       "id": "file_editor_ai",
       "type": "rectangle",
-      "x": 1070,
-      "y": 520,
-      "width": 280,
-      "height": 120,
+      "x": 920,
+      "y": 450,
+      "width": 220,
+      "height": 140,
       "angle": 0,
       "strokeColor": "#2f9e44",
       "backgroundColor": "#d3f9d8",
@@ -953,7 +1012,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 514,
       "version": 1,
       "versionNonce": 514,
@@ -966,9 +1027,9 @@
     {
       "id": "file_editor_ai_text",
       "type": "text",
-      "x": 1080,
-      "y": 525,
-      "width": 260,
+      "x": 930,
+      "y": 455,
+      "width": 200,
       "height": 110,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -1002,10 +1063,10 @@
     {
       "id": "file_editor_auto",
       "type": "rectangle",
-      "x": 1370,
-      "y": 520,
-      "width": 260,
-      "height": 120,
+      "x": 1160,
+      "y": 450,
+      "width": 200,
+      "height": 140,
       "angle": 0,
       "strokeColor": "#e67700",
       "backgroundColor": "#fff3bf",
@@ -1016,7 +1077,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 516,
       "version": 1,
       "versionNonce": 516,
@@ -1029,9 +1092,9 @@
     {
       "id": "file_editor_auto_text",
       "type": "text",
-      "x": 1380,
-      "y": 525,
-      "width": 240,
+      "x": 1170,
+      "y": 455,
+      "width": 180,
       "height": 110,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -1065,10 +1128,10 @@
     {
       "id": "file_editor_files",
       "type": "rectangle",
-      "x": 770,
-      "y": 650,
-      "width": 860,
-      "height": 90,
+      "x": 680,
+      "y": 600,
+      "width": 680,
+      "height": 60,
       "angle": 0,
       "strokeColor": "#868e96",
       "backgroundColor": "#f1f3f5",
@@ -1079,7 +1142,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 518,
       "version": 1,
       "versionNonce": 518,
@@ -1092,9 +1157,9 @@
     {
       "id": "file_editor_files_text",
       "type": "text",
-      "x": 780,
-      "y": 655,
-      "width": 840,
+      "x": 690,
+      "y": 605,
+      "width": 660,
       "height": 80,
       "angle": 0,
       "strokeColor": "#1e1e1e",
@@ -1125,7 +1190,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "arrow_to_github",
       "type": "arrow",
@@ -1143,7 +1207,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 2 },
+      "roundness": {
+        "type": 2
+      },
       "seed": 600,
       "version": 1,
       "versionNonce": 600,
@@ -1152,14 +1218,22 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "points": [[0, 0], [0, 60]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          60
+        ]
+      ],
       "lastCommittedPoint": null,
       "startBinding": null,
       "endBinding": null,
       "startArrowhead": null,
       "endArrowhead": "arrow"
     },
-
     {
       "id": "github_box",
       "type": "rectangle",
@@ -1177,7 +1251,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 610,
       "version": 1,
       "versionNonce": 610,
@@ -1240,7 +1316,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 612,
       "version": 1,
       "versionNonce": 612,
@@ -1303,7 +1381,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 614,
       "version": 1,
       "versionNonce": 614,
@@ -1366,7 +1446,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 616,
       "version": 1,
       "versionNonce": 616,
@@ -1412,7 +1494,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "gdrive_box",
       "type": "rectangle",
@@ -1430,7 +1511,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 700,
       "version": 1,
       "versionNonce": 700,
@@ -1493,7 +1576,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 702,
       "version": 1,
       "versionNonce": 702,
@@ -1556,7 +1641,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 704,
       "version": 1,
       "versionNonce": 704,
@@ -1619,7 +1706,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 706,
       "version": 1,
       "versionNonce": 706,
@@ -1665,7 +1754,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "settings_box",
       "type": "rectangle",
@@ -1683,7 +1771,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 800,
       "version": 1,
       "versionNonce": 800,
@@ -1746,7 +1836,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 802,
       "version": 1,
       "versionNonce": 802,
@@ -1792,7 +1884,6 @@
       "autoResize": true,
       "lineHeight": 1.25
     },
-
     {
       "id": "troubleshoot_box",
       "type": "rectangle",
@@ -1810,7 +1901,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 900,
       "version": 1,
       "versionNonce": 900,
@@ -1873,7 +1966,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 902,
       "version": 1,
       "versionNonce": 902,
@@ -1936,7 +2031,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 904,
       "version": 1,
       "versionNonce": 904,
@@ -1999,7 +2096,9 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 906,
       "version": 1,
       "versionNonce": 906,
