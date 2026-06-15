@@ -7,6 +7,14 @@ import { getRankByXp, type Rank } from '@/data/ranks'
 import { checkBadges, type BadgeCheckState } from '@/data/badges'
 import { logger } from '@/utils/logger'
 
+interface MissionProgress {
+  lessons: number
+  correct: number
+  quiz: number
+  speed: number
+  questions: number
+}
+
 interface GameStore {
   currentLevel: LevelId
   completedLevels: Set<LevelId>
@@ -29,6 +37,14 @@ interface GameStore {
   preTestScore: number
   postTestScore: number
 
+  // Daily missions
+  missionsDate: string | null
+  missionProgress: MissionProgress
+
+  // Weekly challenge
+  weeklyChallengeDone: boolean
+  weeklyChallengeWeek: string | null
+
   // Actions
   setLevel: (level: LevelId) => void
   completeLevel: (level: LevelId, score: number) => void
@@ -49,6 +65,13 @@ interface GameStore {
   setPostTestScore: (score: number) => void
   updateDailyStreak: () => void
   checkAndUnlockBadges: () => string[]
+
+  // Mission actions
+  updateMissionProgress: (type: keyof MissionProgress, amount: number) => void
+  resetMissionsIfNewDay: () => void
+
+  // Weekly challenge actions
+  completeWeeklyChallenge: () => void
 }
 
 export const useGameStore = create<GameStore>()(
@@ -74,6 +97,14 @@ export const useGameStore = create<GameStore>()(
       quizRetries: 0,
       preTestScore: 0,
       postTestScore: 0,
+
+      // Daily missions defaults
+      missionsDate: null,
+      missionProgress: { lessons: 0, correct: 0, quiz: 0, speed: 0, questions: 0 },
+
+      // Weekly challenge defaults
+      weeklyChallengeDone: false,
+      weeklyChallengeWeek: null,
 
       setLevel: (level) => set({ currentLevel: level }),
 
@@ -119,6 +150,10 @@ export const useGameStore = create<GameStore>()(
           quizRetries: 0,
           preTestScore: 0,
           postTestScore: 0,
+          missionsDate: null,
+          missionProgress: { lessons: 0, correct: 0, quiz: 0, speed: 0, questions: 0 },
+          weeklyChallengeDone: false,
+          weeklyChallengeWeek: null,
         }),
 
       getProgress: () => {
@@ -207,6 +242,41 @@ export const useGameStore = create<GameStore>()(
         }
         return newBadges
       },
+
+      // Mission actions
+      updateMissionProgress: (type, amount) =>
+        set((s) => ({
+          missionProgress: {
+            ...s.missionProgress,
+            [type]: s.missionProgress[type] + amount,
+          },
+        })),
+
+      resetMissionsIfNewDay: () =>
+        set((s) => {
+          const today = new Date().toDateString()
+          if (s.missionsDate === today) return s
+          return {
+            missionsDate: today,
+            missionProgress: { lessons: 0, correct: 0, quiz: 0, speed: 0, questions: 0 },
+          }
+        }),
+
+      // Weekly challenge actions
+      completeWeeklyChallenge: () =>
+        set((s) => {
+          const now = new Date()
+          const startOfYear = new Date(now.getFullYear(), 0, 1)
+          const days = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000)
+          const weekNumber = Math.ceil(days / 7)
+          const weekStr = `${now.getFullYear()}W${weekNumber}`
+          if (s.weeklyChallengeWeek === weekStr && s.weeklyChallengeDone) return s
+          logger.info('weekly_challenge_completed', { week: weekStr })
+          return {
+            weeklyChallengeDone: true,
+            weeklyChallengeWeek: weekStr,
+          }
+        }),
     }),
     {
       name: STORAGE_KEY,
@@ -228,6 +298,10 @@ export const useGameStore = create<GameStore>()(
         quizRetries: s.quizRetries,
         preTestScore: s.preTestScore,
         postTestScore: s.postTestScore,
+        missionsDate: s.missionsDate,
+        missionProgress: s.missionProgress,
+        weeklyChallengeDone: s.weeklyChallengeDone,
+        weeklyChallengeWeek: s.weeklyChallengeWeek,
       }),
       merge: (persisted, current) => {
         const p = persisted as Record<string, unknown> | undefined
@@ -256,6 +330,12 @@ export const useGameStore = create<GameStore>()(
           quizRetries: typeof p.quizRetries === 'number' ? p.quizRetries : 0,
           preTestScore: typeof p.preTestScore === 'number' ? p.preTestScore : 0,
           postTestScore: typeof p.postTestScore === 'number' ? p.postTestScore : 0,
+          missionsDate: typeof p.missionsDate === 'string' ? p.missionsDate : null,
+          missionProgress: (p.missionProgress && typeof p.missionProgress === 'object')
+            ? p.missionProgress as MissionProgress
+            : { lessons: 0, correct: 0, quiz: 0, speed: 0, questions: 0 },
+          weeklyChallengeDone: typeof p.weeklyChallengeDone === 'boolean' ? p.weeklyChallengeDone : false,
+          weeklyChallengeWeek: typeof p.weeklyChallengeWeek === 'string' ? p.weeklyChallengeWeek : null,
         }
       },
     }
