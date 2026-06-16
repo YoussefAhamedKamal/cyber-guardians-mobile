@@ -1147,7 +1147,7 @@ function StudentChat() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SessionBar type="student" />
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
-        {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي مفهوم في الأمن السيبراني</div>}
+        {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي موضوع — أمن سيبراني، علوم، تكنولوجيا، تاريخ، أو أي شيء آخر</div>}
         {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
         {streaming && <Bubble msg={{ role: 'assistant', content: streaming }} />}
         <div ref={bottomRef} />
