@@ -1,31 +1,29 @@
 import type { AIMessage, AIProviderDef } from '@/types/ai'
 import { AI_PROVIDERS } from '@/types/ai'
+import { loadWorkerConfig, saveWorkerConfig, AI_WORKER_KEY } from '@/utils/workerCrypto'
 
-const WORKER_CONFIG_KEY = 'cg-worker-config'
+const WORKER_CONFIG_KEY = AI_WORKER_KEY
 
 export interface WorkerConfig {
   url: string
   authToken: string
 }
 
-function getWorkerConfig(): WorkerConfig | null {
-  try {
-    const raw = localStorage.getItem(WORKER_CONFIG_KEY)
-    if (!raw) return null
-    const config = JSON.parse(raw) as WorkerConfig
-    if (!config.url) return null
-    return config
-  } catch {
-    return null
-  }
+let _workerCache: WorkerConfig | null = null
+
+async function getWorkerConfig(): Promise<WorkerConfig | null> {
+  if (_workerCache !== null) return _workerCache
+  _workerCache = await loadWorkerConfig(WORKER_CONFIG_KEY)
+  return _workerCache
 }
 
-export function setWorkerConfig(config: WorkerConfig): void {
-  localStorage.setItem(WORKER_CONFIG_KEY, JSON.stringify(config))
+export async function setWorkerConfig(config: WorkerConfig): Promise<void> {
+  _workerCache = config
+  await saveWorkerConfig(WORKER_CONFIG_KEY, config)
 }
 
-export function getWorkerUrl(): string | null {
-  return getWorkerConfig()?.url || null
+export async function getWorkerUrl(): Promise<string | null> {
+  return (await getWorkerConfig())?.url || null
 }
 
 function getProvider(providerId: string): AIProviderDef | undefined {
@@ -71,7 +69,7 @@ function buildBody(modelId: string, messages: AIMessage[], _customBaseUrl: strin
 }
 
 async function proxyFetch(targetUrl: string, init: RequestInit): Promise<Response> {
-  const worker = getWorkerConfig()
+  const worker = await getWorkerConfig()
   if (!worker) return fetch(targetUrl, init)
 
   const proxyUrl = `${worker.url.replace(/\/+$/, '')}?target=${encodeURIComponent(targetUrl)}`

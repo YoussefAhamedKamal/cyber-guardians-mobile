@@ -133,12 +133,81 @@ interface GitHubFileContent {
   content: string
 }
 
+import { loadWorkerConfig, saveWorkerConfig, GH_WORKER_KEY } from '@/utils/workerCrypto'
+
+export interface GitHubWorkerConfig {
+  url: string
+  authToken: string
+}
+
+let _ghWorkerCache: GitHubWorkerConfig | null = null
+let _ghWorkerLoaded = false
+
+async function loadGhWorkerConfig(): Promise<GitHubWorkerConfig | null> {
+  if (_ghWorkerLoaded) return _ghWorkerCache
+  _ghWorkerCache = await loadWorkerConfig(GH_WORKER_KEY) as GitHubWorkerConfig | null
+  _ghWorkerLoaded = true
+  return _ghWorkerCache
+}
+
+export async function setGitHubWorkerConfig(config: GitHubWorkerConfig): Promise<void> {
+  _ghWorkerCache = config
+  _ghWorkerLoaded = true
+  await saveWorkerConfig(GH_WORKER_KEY, config)
+}
+
+export async function getGitHubWorkerUrl(): Promise<string | null> {
+  return (await loadGhWorkerConfig())?.url || null
+}
+
+async function isGitHubWorkerEnabled(): Promise<boolean> {
+  return (await loadGhWorkerConfig()) !== null
+}
+
 const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const API_BASE = isDev ? '/github-api' : 'https://api.github.com'
 const RAW_BASE = isDev ? '/github-raw' : 'https://raw.githubusercontent.com'
 
 async function apiFetch(path: string, method: string, body?: unknown, timeoutMs = 15000): Promise<any> {
   const config = _cache
+  const worker = await loadGhWorkerConfig()
+
+  if (worker) {
+    const targetUrl = `https://api.github.com${path}`
+    const proxyUrl = `${worker.url.replace(/\/+$/, '')}?target=${encodeURIComponent(targetUrl)}`
+    const headers: Record<string, string> = {
+      'X-Auth-Token': worker.authToken,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    }
+    const ac = new AbortController()
+    const timer = setTimeout(() => ac.abort(), timeoutMs)
+    const opts: RequestInit = { method, headers, signal: ac.signal }
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json'
+      opts.body = JSON.stringify(body)
+    }
+
+    let res: Response
+    try {
+      res = await fetch(proxyUrl, opts)
+    } catch (e: any) {
+      if (e.name === 'AbortError') throw new Error('طلب GitHub لم يكتمل — انتهت المهلة')
+      throw new Error('طلب GitHub فشل — تحقق من اتصالك بالإنترنت')
+    } finally {
+      clearTimeout(timer)
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      const msg = (err as any).message || res.statusText
+      throw new Error(`GitHub API خطأ ${res.status}: ${msg}`)
+    }
+
+    if (res.status === 204) return null
+    return res.json()
+  }
+
   if (!config.token) throw new Error('GitHub token غير مُعد')
 
   const url = `${API_BASE}${path}`

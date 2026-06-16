@@ -262,12 +262,16 @@ _لا توجد مشاكل غير مُحللة حالياً. جميع المشا�
 
 | الملف | التغيير | الحالة |
 |-------|---------|--------|
-| `worker/index.js` | Cloudflare Worker proxy — يُمرّر طلبات AI | ✅ جديد |
-| `worker/wrangler.toml` | إعدادات Worker | ✅ جديد |
-| `worker/README.md` | دليل الإعداد | ✅ جديد |
-| `src/ai/api.ts` | دعم Worker proxy + HTTPS validation | ✅ مُحدّث |
-| `src/ai/github.ts` | AES-256-GCM + تخطي ملفات >90MB | ✅ مُحدّث |
-| `src/ai/AIPanel.tsx` | إعدادات Worker Proxy في الواجهة | ✅ مُحدّث |
+| `worker/index.js` | AI Worker proxy — يُمرّر طلبات AI | ✅ جديد |
+| `worker/wrangler.toml` | إعدادات AI Worker | ✅ جديد |
+| `worker-github/index.js` | GitHub Worker proxy — يُخفي GitHub token | ✅ جديد |
+| `worker-github/wrangler.toml` | إعدادات GitHub Worker | ✅ جديد |
+| `.github/workflows/deploy-worker.yml` | نشر AI Worker تلقائياً | ✅ جديد |
+| `.github/workflows/deploy-worker-github.yml` | نشر GitHub Worker تلقائياً | ✅ جديد |
+| `src/utils/workerCrypto.ts` | تشفير AUTH_TOKEN بـ AES-256-GCM | ✅ جديد |
+| `src/ai/api.ts` | دعم AI Worker proxy | ✅ مُحدّث |
+| `src/ai/github.ts` | دعم GitHub Worker proxy + تشفير | ✅ مُحدّث |
+| `src/ai/AIPanel.tsx` | إعدادات Workers + دليل الاستخدام | ✅ مُحدّث |
 | `src/utils/apiKeyCrypto.ts` | تشفير AES-256-GCM | ✅ مُحدّث |
 | `src/utils/pinCrypto.ts` | salt + verifyPin | ✅ مُحدّث |
 | `src/store/aiStore.ts` | verifyPin + loadEncryptedKeys async | ✅ مُحدّث |

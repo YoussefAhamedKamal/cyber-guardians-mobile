@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent } from './github'
+import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
@@ -260,6 +260,8 @@ function AISettings() {
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '4px' }}>
         <div style={{ color: '#aaa', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>🔗 إعدادات GitHub</div>
+
+        <GitHubWorkerSettings />
 
         {/* Instructions */}
         <div style={{ background: 'rgba(79,195,247,0.08)', border: '1px solid rgba(79,195,247,0.2)', borderRadius: '6px', padding: '8px', marginBottom: '8px', fontSize: '10px', lineHeight: 1.6, color: '#aaa' }}>
@@ -555,22 +557,102 @@ function FacultyPinChanger() {
   )
 }
 
-function WorkerSettings() {
-  const [workerUrl, setWorkerUrl] = useState(() => getWorkerUrl() || '')
-  const [authToken, setAuthToken] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cg-worker-config') || '{}').authToken || '' } catch { return '' }
-  })
+function GitHubWorkerSettings() {
+  const [workerUrl, setWorkerUrl] = useState('')
+  const [authToken, setAuthToken] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [showGuide, setShowGuide] = useState(false)
 
-  const save = () => {
+  useEffect(() => {
+    getGitHubWorkerUrl().then(url => { if (url) setWorkerUrl(url) })
+    import('@/utils/workerCrypto').then(m => m.loadWorkerConfig(m.GH_WORKER_KEY)).then(c => { if (c) setAuthToken(c.authToken) })
+  }, [])
+
+  const save = async () => {
     if (!workerUrl.trim()) {
-      setWorkerConfig({ url: '', authToken: '' })
+      await setGitHubWorkerConfig({ url: '', authToken: '' })
+      setStatus('✅ تم إلغاء GitHub Worker')
+      return
+    }
+    try { new URL(workerUrl) } catch { setStatus('❌ رابط غير صالح'); return }
+    await setGitHubWorkerConfig({ url: workerUrl.trim(), authToken: authToken.trim() })
+    setStatus('✅ تم الحفظ — طلبات GitHub ستمر عبر Worker')
+  }
+
+  const testWorker = async () => {
+    if (!workerUrl.trim()) { setStatus('❌ أدخل رابط Worker أولاً'); return }
+    try {
+      const res = await fetch(`${workerUrl.replace(/\/+$/, '')}/health`, {
+        method: 'GET',
+        headers: authToken ? { 'X-Auth-Token': authToken } : {},
+      })
+      if (res.ok) setStatus('✅ Worker يعمل بنجاح')
+      else setStatus(`❌ Worker رد بـ ${res.status}`)
+    } catch (e: any) {
+      setStatus(`❌ فشل الاتصال: ${e?.message || 'خطأ'}`)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', marginBottom: '8px' }}>
+      <div style={{ color: '#888', fontSize: '10px', lineHeight: 1.5, background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '4px' }}>
+        <b style={{ color: '#FFB74D' }}>🛡️ GitHub Worker Proxy</b> — يُخفي GitHub token في الخادم (يمنع XSS من سرقته).
+        <br/><span style={{ color: '#4FC3F7', cursor: 'pointer' }} onClick={() => setShowGuide(!showGuide)}>📖 {showGuide ? 'إخفاء' : 'دليل الإعداد'}</span>
+      </div>
+
+      {showGuide && (
+        <div style={{ background: 'rgba(255,183,77,0.08)', border: '1px solid rgba(255,183,77,0.2)', borderRadius: '6px', padding: '8px', fontSize: '10px', lineHeight: 1.8, color: '#ccc' }}>
+          <div style={{ color: '#FFB74D', fontWeight: 700, marginBottom: '4px' }}>📖 دليل إعداد GitHub Worker</div>
+          <div><b style={{ color: '#fff' }}>1.</b> في Cloudflare Dashboard → Workers & Pages</div>
+          <div><b style={{ color: '#fff' }}>2.</b> أنشئ Worker جديد: <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>cyber-guardians-github-proxy</code></div>
+          <div><b style={{ color: '#fff' }}>3.</b> ارفع كود <code style={{ background: 'rgba(0,0,0,0.3)', padding: '1px 4px', borderRadius: '3px' }}>worker-github/index.js</code></div>
+          <div><b style={{ color: '#fff' }}>4.</b> في Worker → Settings → Variables أضف:</div>
+          <div style={{ padding: '3px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', margin: '3px 0', direction: 'ltr', textAlign: 'left', fontSize: '10px' }}>
+            AUTH_TOKEN = <span style={{ color: '#81C784' }}>cg-gh-xxxxxxxx</span><br/>
+            GITHUB_TOKEN = <span style={{ color: '#81C784' }}>ghp_xxxxxxxxxxxx</span> ← توكن GitHub الخاص بك<br/>
+            ALLOWED_ORIGINS = <span style={{ color: '#81C784' }}>http://localhost:3001,http://localhost:3002,https://youssefahamedkamal.github.io</span>
+          </div>
+          <div><b style={{ color: '#fff' }}>5.</b> انسخ رابط Worker وأضفه هنا</div>
+          <div style={{ marginTop: '6px', padding: '4px', background: 'rgba(255,183,77,0.1)', borderRadius: '4px', color: '#FFB74D' }}>
+            ⚠️ GITHUB_TOKEN يُخزّن في Worker فقط — لا يصل للمتصفح أبداً
+          </div>
+        </div>
+      )}
+
+      <label style={{ color: '#aaa' }}>رابط GitHub Worker
+        <input value={workerUrl} onChange={(e) => setWorkerUrl(e.target.value)} placeholder="https://cyber-gu...workers.dev" style={{ ...inputStyle, fontSize: '11px' }} />
+      </label>
+      <label style={{ color: '#aaa' }}>Auth Token
+        <input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)} placeholder="cg-gh-xxxxxxxx" style={{ ...inputStyle, fontSize: '11px' }} />
+      </label>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <button onClick={save} style={{ flex: 1, padding: '6px', borderRadius: '6px', border: 'none', background: 'linear-gradient(135deg,#FFB74D,#FFA726)', color: '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>💾 حفظ</button>
+        <button onClick={testWorker} style={{ flex: 1, padding: '6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: '#FFB74D', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>🔌 اختبار</button>
+      </div>
+      {status && <div style={{ padding: '6px', borderRadius: '6px', fontSize: '11px', textAlign: 'center', background: status.startsWith('✅') ? 'rgba(129,199,132,0.15)' : 'rgba(229,115,115,0.15)', border: `1px solid ${status.startsWith('✅') ? 'rgba(129,199,132,0.3)' : 'rgba(229,115,115,0.3)'}`, color: status.startsWith('✅') ? '#81C784' : '#E57373' }}>{status}</div>}
+    </div>
+  )
+}
+
+function WorkerSettings() {
+  const [workerUrl, setWorkerUrl] = useState('')
+  const [authToken, setAuthToken] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [showGuide, setShowGuide] = useState(false)
+
+  useEffect(() => {
+    getWorkerUrl().then(url => { if (url) setWorkerUrl(url) })
+    import('@/utils/workerCrypto').then(m => m.loadWorkerConfig(m.AI_WORKER_KEY)).then(c => { if (c) setAuthToken(c.authToken) })
+  }, [])
+
+  const save = async () => {
+    if (!workerUrl.trim()) {
+      await setWorkerConfig({ url: '', authToken: '' })
       setStatus('✅ تم إلغاء Worker Proxy')
       return
     }
     try { new URL(workerUrl) } catch { setStatus('❌ رابط غير صالح'); return }
-    setWorkerConfig({ url: workerUrl.trim(), authToken: authToken.trim() })
+    await setWorkerConfig({ url: workerUrl.trim(), authToken: authToken.trim() })
     setStatus('✅ تم الحفظ — الطلبات ستمر عبر Worker')
   }
 
