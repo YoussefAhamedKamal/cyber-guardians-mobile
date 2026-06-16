@@ -68,6 +68,19 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     ],
   },
   {
+    id: 'gemini',
+    name: 'Google Gemini (مجاني)',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    apiKeyLabel: 'Gemini API Key',
+    docUrl: 'https://aistudio.google.com/app/apikey',
+    models: [
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', providerId: 'gemini', free: true },
+      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', providerId: 'gemini', free: true },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', providerId: 'gemini', free: true },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', providerId: 'gemini', free: true },
+    ],
+  },
+  {
     id: 'ollama',
     name: 'Ollama (محلي)',
     baseUrl: 'http://localhost:11434/v1',
@@ -121,8 +134,8 @@ export interface AIState {
 }
 
 export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
-  providerId: 'openrouter',
-  modelId: 'meta-llama/llama-3.2-3b-instruct:free',
+  providerId: 'gemini',
+  modelId: 'gemini-2.0-flash',
   customBaseUrl: '',
   useDirectApi: false,
   searchEnabled: true,
