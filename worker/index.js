@@ -4,7 +4,7 @@ export default {
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim())
     const corsHeaders = {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token, HTTP-Referer, X-Title',
       'Access-Control-Max-Age': '86400',
     }
     if (allowed.includes(origin)) {
