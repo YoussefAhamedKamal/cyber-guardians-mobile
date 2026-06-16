@@ -19,6 +19,7 @@ interface AIStore extends AIState {
   setApiKeys: (keys: Record<string, string>) => void
   getApiKey: (providerId: string) => string
   setCustomBaseUrl: (url: string) => void
+  setUseDirectApi: (v: boolean) => void
   setFacultyPin: (pin: string) => Promise<void>
   unlockFaculty: (pin: string) => Promise<boolean>
   lockFaculty: () => void
@@ -73,6 +74,7 @@ export const useAIStore = create<AIStore>()(
       setApiKeys: (keys) => set({ apiKeys: keys }),
       getApiKey: (providerId) => get().apiKeys[providerId] || '',
       setCustomBaseUrl: (url) => set({ customBaseUrl: url }),
+      setUseDirectApi: (v) => set({ useDirectApi: v }),
       setFacultyPin: async (pin) => {
         const hashed = await hashPin(pin)
         set({ facultyPinHash: hashed })

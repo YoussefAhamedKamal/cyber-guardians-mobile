@@ -182,7 +182,7 @@ function AISettings() {
   const handleTestConnection = async () => {
     setTesting(true); setTestStatus('⏳ جارٍ اختبار الاتصال...')
     try {
-      const r = await testConnection(ai.providerId, ai.modelId, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      const r = await testConnection(ai.providerId, ai.modelId, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, ai.useDirectApi)
       setTestStatus(r)
     } catch (e: any) { setTestStatus(`⚠️ ${e.message}`) }
     setTesting(false)
@@ -234,6 +234,28 @@ function AISettings() {
       <label style={{ color: '#aaa' }}>{provider?.apiKeyLabel || 'API Key'}
         <input type="password" value={ai.apiKeys[ai.providerId] || ''} onChange={(e) => ai.setApiKey(ai.providerId, e.target.value)} placeholder="sk-..." style={inputStyle} />
       </label>
+      <label style={{ 
+        display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', cursor: 'pointer',
+        padding: '8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)',
+        border: `1px solid ${ai.useDirectApi ? 'rgba(255,193,7,0.5)' : 'rgba(255,255,255,0.1)'}`,
+      }}>
+        <input 
+          type="checkbox" 
+          checked={ai.useDirectApi} 
+          onChange={(e) => ai.setUseDirectApi(e.target.checked)}
+          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+        />
+        <span>الاتصال المباشر (بدون Worker Proxy)</span>
+      </label>
+      {ai.useDirectApi && (
+        <div style={{
+          padding: '8px', borderRadius: '6px', fontSize: '11px',
+          background: 'rgba(255,193,7,0.1)', border: '1px solid rgba(255,193,7,0.3)',
+          color: '#FFC107',
+        }}>
+          ⚠️ تحذير: الاتصال المباشر يكشف مفتاح API في المتصفح. استخدمه على مسؤوليتك الخاصة.
+        </div>
+      )}
       <button onClick={handleTestConnection} disabled={testing} style={{
         padding: '8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
         background: testing ? '#444' : 'linear-gradient(135deg,#4FC3F7,#29B6F6)',
@@ -1006,7 +1028,7 @@ function StudentChat() {
     try {
       const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
       let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
       for await (const chunk of gen) {
         full += chunk
         const now = Date.now()
@@ -1170,7 +1192,7 @@ function FacultyAIChat() {
       const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
       const chatMsgs = msgs.filter((m) => m !== contextMsg)
       let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl)
+      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
       for await (const chunk of gen) {
         full += chunk
         const now = Date.now()

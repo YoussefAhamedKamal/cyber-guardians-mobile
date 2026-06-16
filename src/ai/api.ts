@@ -157,9 +157,12 @@ function buildBody(modelId: string, messages: AIMessage[], _customBaseUrl: strin
   return body
 }
 
-async function proxyFetch(targetUrl: string, init: RequestInit): Promise<Response> {
+async function proxyFetch(targetUrl: string, init: RequestInit, useDirectApi = false): Promise<Response> {
   const worker = await getWorkerConfig()
   if (!worker || !worker.url) {
+    if (useDirectApi) {
+      return fetch(targetUrl, init)
+    }
     throw new Error('⚠️ Worker Proxy غير مُعد — افتح الإعدادات وأضف رابط Worker')
   }
 
@@ -176,7 +179,8 @@ export async function sendChatMessage(
   messages: AIMessage[],
   apiKey: string,
   customBaseUrl: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  useDirectApi = false
 ): Promise<string> {
   const provider = getProvider(providerId)
   if (!provider) throw new Error('مزود AI غير معروف')
@@ -205,7 +209,7 @@ export async function sendChatMessage(
     headers,
     body: JSON.stringify(body),
     signal: signal ?? null,
-  })
+  }, useDirectApi)
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '')
@@ -225,7 +229,8 @@ export async function* streamChatMessage(
   apiKey: string,
   customBaseUrl: string,
   signal?: AbortSignal,
-  maxTokens?: number
+  maxTokens?: number,
+  useDirectApi = false
 ): AsyncGenerator<string> {
   const provider = getProvider(providerId)
   if (!provider) throw new Error('مزود AI غير معروف')
@@ -254,7 +259,7 @@ export async function* streamChatMessage(
     headers,
     body: JSON.stringify(body),
     signal: signal ?? null,
-  })
+  }, useDirectApi)
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '')
@@ -296,6 +301,7 @@ export async function testConnection(
   modelId: string,
   apiKey: string,
   customBaseUrl: string,
+  useDirectApi = false
 ): Promise<string> {
   const provider = getProvider(providerId)
   if (!provider) return '⚠️ مزود AI غير معروف'
@@ -329,7 +335,7 @@ export async function testConnection(
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-    })
+    }, useDirectApi)
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
