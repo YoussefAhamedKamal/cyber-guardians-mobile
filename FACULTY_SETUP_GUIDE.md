@@ -133,18 +133,23 @@ AI Assistant هو مساعد ذكي مدمج في اللعبة يساعدك عل
 
 #### الخطوة 2.3: إنشاء Worker جديد
 
-1. اضغط على زر **"Create"** (أزرق اللون)
-2. سترى خيارين:
-   - **"Create Worker"** ← اضغط هنا ✅
-   - **"Create Pages Project"** ← لا تضغط هنا
+1. اضغط على زر **"Create"** (أزرق اللون في الأعلى)
+2. سترى صفحة **"Ship something new"** مع عدة خيارات:
+   - Continue with GitHub
+   - Connect GitLab
+   - **Start with Hello World!** ✅ ← اختر هذا
+   - Select a template
+   - Upload your static files
 
-3. بعد الضغط على "Create Worker"، سترى نموذج:
-   - **"Name"**: اكتب اسم الـ Worker
+3. اضغط على **"Start with Hello World!"**
+
+4. الآن سترى صفحة تسمية Worker:
+   - **"Worker Name"**: اكتب اسم الـ Worker
      - مثال: `my-ai-proxy`
      - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
    - اضغط **"Deploy"**
 
-4. الآن سترى صفحة الكود (Editeur):
+5. الآن سترى صفحة الكود (Editeur):
    - هناك كود جاهز (Hello World)
    - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
 
@@ -478,18 +483,23 @@ GitHub هو موقع لتخزين ومشاركة الملفات البرمجية
 
 #### الخطوة 3.3: إنشاء Worker جديد
 
-1. اضغط على زر **"Create"** (أزرق اللون)
-2. سترى خيارين:
-   - **"Create Worker"** ← اضغط هنا ✅
-   - **"Create Pages Project"** ← لا تضغط هنا
+1. اضغط على زر **"Create"** (أزرق اللون في الأعلى)
+2. سترى صفحة **"Ship something new"** مع عدة خيارات:
+   - Continue with GitHub
+   - Connect GitLab
+   - **Start with Hello World!** ✅ ← اختر هذا
+   - Select a template
+   - Upload your static files
 
-3. بعد الضغط على "Create Worker"، سترى نموذج:
-   - **"Name"**: اكتب اسم الـ Worker
+3. اضغط على **"Start with Hello World!"**
+
+4. الآن سترى صفحة تسمية Worker:
+   - **"Worker Name"**: اكتب اسم الـ Worker
      - مثال: `my-github-proxy`
      - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
    - اضغط **"Deploy"**
 
-4. الآن سترى صفحة الكود (Editeur):
+5. الآن سترى صفحة الكود (Editeur):
    - هناك كود جاهز (Hello World)
    - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
 
