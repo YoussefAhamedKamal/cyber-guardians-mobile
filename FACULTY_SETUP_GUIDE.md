@@ -143,7 +143,7 @@ export default {
       })
     }
 
-    const allowedHosts = ['api.openai.com', 'generativelanguage.googleapis.com', 'api.anthropic.com']
+    const allowedHosts = ['api.openai.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'openrouter.ai']
     if (!allowedHosts.includes(targetUrl.hostname)) {
       return new Response(JSON.stringify({ error: 'Host not allowed: ' + targetUrl.hostname }), {
         status: 403,
@@ -155,7 +155,7 @@ export default {
     headers.delete('Origin')
     headers.delete('Referer')
     headers.delete('X-Auth-Token')
-    headers.delete('Host')
+    headers.set('Host', targetUrl.host)
 
     const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined
 
@@ -165,7 +165,7 @@ export default {
       body,
     })
 
-    const respHeaders = new Response(resp.headers).headers
+    const respHeaders = new Response(resp.headers)
     Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
     respHeaders.delete('Content-Security-Policy')
 
@@ -180,7 +180,7 @@ export default {
 
 7. اضغط **"Deploy"** لحفظ التغييرات
 
-> ✅ **الآن لديك Worker خاص بك!** رابطه سيكون مثل:
+> ✅ **الآن لديك AI Worker خاص بك!** رابطه سيكون مثل:
 > `https://my-ai-proxy.YOUR-USERNAME.workers.dev`
 
 ### الخطوة 3: إعداد المتغيرات (Environment Variables)
