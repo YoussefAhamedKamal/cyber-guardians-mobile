@@ -74,18 +74,18 @@ async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
     if (data.AbstractText) {
       results.push({
         title: data.Heading || query,
-        snippet: data.AbstractText.slice(0, 300),
+        snippet: data.AbstractText.slice(0, 500),
         source: 'web',
         url: data.AbstractURL,
       })
     }
 
     if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-      for (const topic of data.RelatedTopics.slice(0, 3)) {
+      for (const topic of data.RelatedTopics.slice(0, 5)) {
         if (topic.Text) {
           results.push({
-            title: topic.Text.slice(0, 80),
-            snippet: topic.Text.slice(0, 300),
+            title: topic.Text.slice(0, 100),
+            snippet: topic.Text.slice(0, 500),
             source: 'web',
             url: topic.FirstURL,
           })
@@ -93,7 +93,25 @@ async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
       }
     }
 
-    return results.slice(0, 4)
+    if (data.Answer) {
+      results.unshift({
+        title: data.Heading || 'إجابة DuckDuckGo',
+        snippet: data.Answer,
+        source: 'web',
+        url: data.AnswerURL,
+      })
+    }
+
+    if (results.length === 0 && data.AbstractURL) {
+      results.push({
+        title: query,
+        snippet: `لم يتم العثور على نتائج مباشرة. جرّب البحث في: ${data.AbstractURL || 'Google'}`,
+        source: 'web',
+        url: data.AbstractURL,
+      })
+    }
+
+    return results.slice(0, 6)
   } catch {
     return []
   }

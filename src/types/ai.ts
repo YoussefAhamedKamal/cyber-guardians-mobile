@@ -125,7 +125,7 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   modelId: 'meta-llama/llama-3.2-3b-instruct:free',
   customBaseUrl: '',
   useDirectApi: false,
-  searchEnabled: false,
+  searchEnabled: true,
   deepthinkEnabled: false,
   deepthinkStep: '',
   facultyPinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
