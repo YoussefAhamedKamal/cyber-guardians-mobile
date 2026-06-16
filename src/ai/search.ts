@@ -4,7 +4,7 @@ import type { AIMessage } from '@/types/ai'
 export interface SearchResult {
   title: string
   snippet: string
-  source: 'game' | 'web'
+  source: 'game' | 'web' | 'web-html' | 'web-api'
   url?: string
 }
 
@@ -13,6 +13,8 @@ export interface SearchResponse {
   results: SearchResult[]
   summary: string
 }
+
+const SEARCH_WORKER_URL = 'https://cyber-guardians-search-proxy.yousefekamal22.workers.dev'
 
 function searchGameContent(query: string): SearchResult[] {
   const results: SearchResult[] = []
@@ -63,10 +65,45 @@ function searchGameContent(query: string): SearchResult[] {
   return results.slice(0, 5)
 }
 
-async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
+async function searchViaWorker(query: string): Promise<SearchResult[]> {
   try {
-    const encoded = encodeURIComponent(query)
-    const res = await fetch(`https://api.duckduckgo.com/?q=${encoded}&format=json&no_html=1&skip_disambig=1`)
+    const res = await fetch(`${SEARCH_WORKER_URL}/search?q=${encodeURIComponent(query)}`, {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.results || []).map((r: any) => ({
+      title: r.title || '',
+      snippet: r.snippet || '',
+      source: 'web' as const,
+      url: r.url,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function searchViaWorkerHTML(query: string): Promise<SearchResult[]> {
+  try {
+    const res = await fetch(`${SEARCH_WORKER_URL}/search/html?q=${encodeURIComponent(query)}`, {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.results || []).map((r: any) => ({
+      title: r.title || '',
+      snippet: r.snippet || '',
+      source: 'web-html' as const,
+      url: r.url,
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function searchDuckDuckGoDirect(query: string): Promise<SearchResult[]> {
+  try {
+    const res = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`)
     if (!res.ok) return []
     const data = await res.json()
     const results: SearchResult[] = []
@@ -75,8 +112,17 @@ async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
       results.push({
         title: data.Heading || query,
         snippet: data.AbstractText.slice(0, 500),
-        source: 'web',
+        source: 'web-api',
         url: data.AbstractURL,
+      })
+    }
+
+    if (data.Answer) {
+      results.unshift({
+        title: data.Heading || 'إجابة',
+        snippet: data.Answer,
+        source: 'web-api',
+        url: data.AnswerURL,
       })
     }
 
@@ -86,29 +132,11 @@ async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
           results.push({
             title: topic.Text.slice(0, 100),
             snippet: topic.Text.slice(0, 500),
-            source: 'web',
+            source: 'web-api',
             url: topic.FirstURL,
           })
         }
       }
-    }
-
-    if (data.Answer) {
-      results.unshift({
-        title: data.Heading || 'إجابة DuckDuckGo',
-        snippet: data.Answer,
-        source: 'web',
-        url: data.AnswerURL,
-      })
-    }
-
-    if (results.length === 0 && data.AbstractURL) {
-      results.push({
-        title: query,
-        snippet: `لم يتم العثور على نتائج مباشرة. جرّب البحث في: ${data.AbstractURL || 'Google'}`,
-        source: 'web',
-        url: data.AbstractURL,
-      })
     }
 
     return results.slice(0, 6)
@@ -117,9 +145,28 @@ async function searchWebDuckDuckGo(query: string): Promise<SearchResult[]> {
   }
 }
 
+async function searchWebMultiLayer(query: string): Promise<SearchResult[]> {
+  const workerResults = await searchViaWorker(query)
+  if (workerResults.length >= 2) return workerResults
+
+  const workerHTMLResults = await searchViaWorkerHTML(query)
+  if (workerHTMLResults.length >= 2) return [...workerResults, ...workerHTMLResults]
+
+  const directResults = await searchDuckDuckGoDirect(query)
+  const all = [...workerResults, ...workerHTMLResults, ...directResults]
+
+  const seen = new Set<string>()
+  return all.filter((r) => {
+    const key = r.title + r.snippet
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export async function search(query: string): Promise<SearchResponse> {
   const gameResults = searchGameContent(query)
-  const webResults = await searchWebDuckDuckGo(query)
+  const webResults = await searchWebMultiLayer(query)
   const allResults = [...gameResults, ...webResults]
 
   const summary = allResults.length > 0
@@ -132,7 +179,7 @@ export async function search(query: string): Promise<SearchResponse> {
 export async function advancedSearch(query: string): Promise<SearchResponse> {
   const r1 = await search(query)
 
-  if (r1.results.length >= 2) {
+  if (r1.results.length >= 3) {
     return r1
   }
 
@@ -152,7 +199,7 @@ export async function advancedSearch(query: string): Promise<SearchResponse> {
 
   return {
     query,
-    results: merged.slice(0, 8),
+    results: merged.slice(0, 10),
     summary: `بحث متقدم: تم العثور على ${merged.length} نتيجة من جولتين`,
   }
 }
@@ -161,9 +208,9 @@ export function buildSearchContext(results: SearchResult[]): string {
   if (results.length === 0) return ''
 
   const lines = results.map((r, i) => {
-    const source = r.source === 'game' ? '[لعبة]' : '[ويب]'
+    const sourceLabel = r.source === 'game' ? '[لعبة]' : r.source === 'web' ? '[ويب]' : r.source === 'web-html' ? '[ويب-HTML]' : '[ويب-API]'
     const url = r.url ? ` (${r.url})` : ''
-    return `${i + 1}. ${source} ${r.title}: ${r.snippet}${url}`
+    return `${i + 1}. ${sourceLabel} ${r.title}: ${r.snippet}${url}`
   })
 
   return `\n\nنتائج البحث المتوفرة:\n${lines.join('\n')}\n`
