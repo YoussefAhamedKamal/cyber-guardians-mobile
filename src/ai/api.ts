@@ -50,13 +50,30 @@ function validateCustomUrl(raw: string): string {
 }
 
 function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?: string; image_url?: { url: string } }> {
-  const imageAtts = m.attachments?.filter((a) => a.type === 'image' && a.content)
-  if (!imageAtts || imageAtts.length === 0) return m.content
+  const atts = m.attachments?.filter((a) => a.content && a.uploadStatus === 'success')
+  if (!atts || atts.length === 0) return m.content
+
+  const hasImage = atts.some((a) => a.type === 'image')
+  if (!hasImage) {
+    const textParts = atts.filter((a) => a.type === 'text' || a.type === 'file')
+    if (textParts.length === 0) return m.content
+    let text = m.content || ''
+    for (const att of textParts) {
+      const truncated = att.content.length > 4000 ? att.content.slice(0, 4000) + '\n... [مقطوع]' : att.content
+      text += `\n\n--- ملف: ${att.name} ---\n${truncated}\n--- نهاية الملف ---`
+    }
+    return text
+  }
 
   const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = []
   if (m.content) parts.push({ type: 'text', text: m.content })
-  for (const att of imageAtts) {
-    parts.push({ type: 'image_url', image_url: { url: att.content } })
+  for (const att of atts) {
+    if (att.type === 'image') {
+      parts.push({ type: 'image_url', image_url: { url: att.content } })
+    } else if (att.type === 'text' || att.type === 'file') {
+      const truncated = att.content.length > 4000 ? att.content.slice(0, 4000) + '\n... [مقطوع]' : att.content
+      parts.push({ type: 'text', text: `\n--- ملف: ${att.name} ---\n${truncated}\n--- نهاية الملف ---` })
+    }
   }
   return parts
 }
