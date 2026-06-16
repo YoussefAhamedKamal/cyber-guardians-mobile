@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **2.0.0** — نظام Gamification الشامل + إصلاحات أمنية ووظيفية
+> الإصدار: **2.2.0** — نظام البحث المتقدم + Gemini المجاني + Cloudflare Workers
 
 ---
 
@@ -31,6 +31,8 @@
 | Deploy | **Cloudflare Pages** (auto-deploy via Git) | — | نشر آلي مع كل push على `main` |
 | Old Deploy | GitHub Actions → GitHub Pages (معطل) | — | كان يستخدم workflow_dispatch |
 | AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
+| Search Worker | Cloudflare Worker | — | بحث في الويب عبر DuckDuckGo (API + HTML) |
+| AI Provider | Google Gemini (مجاني) | — | Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash |
 
 ### قيود تقنية
 - Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
@@ -528,10 +530,12 @@ src/
 │
 ├── ai/
 │   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded)
-│   ├── api.ts                       # OpenAI-compatible API + URL validation
-│   ├── github.ts                    # GitHub API + token encryption + Vite proxy
+│   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
+│   ├── search.ts                    # ★ جديد — بحث في الويب (DuckDuckGo API + HTML + Worker)
+│   ├── deepthink.ts                 # ★ جديد — تفكير عميق متعدد الخطوات
+│   ├── github.ts                    # GitHub API + token encryption + Vite proxy + sync to existing repo
 │   ├── googleDrive.ts               # Google Drive API + proxy support
-│   └── prompts.ts                   # System prompts
+│   └── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
 │
 ├── pages/                           # ★ محدث — صفحات lazy-loaded
 │   ├── MenuPage.tsx                 # شاشة البداية (lazy)
@@ -826,7 +830,22 @@ src/
 
 ## [ORPHANS & PENDING]
 
-### مكتمل — الإضافات الجديدة (v2.0.0)
+### مكتمل — الإضافات الجديدة (v2.2.0)
+- [x] **Web Search** — بحث في الويب عبر DuckDuckGo (API + HTML)
+- [x] **Search Worker** — Cloudflare Worker للبحث (يتجاوز CORS)
+- [x] **Multi-layer Search** — بحث متعدد الطبقات (Worker → HTML → Direct API)
+- [x] **Search by Default** — البحث مفعّل تلقائياً (searchEnabled: true)
+- [x] **Deepthink** — تفكير عميق متعدد الخطوات (think → review → answer)
+- [x] **Direct API Mode** — وضع الاتصال المباشر بالـ API (بدون Worker)
+- [x] **Google Gemini Provider** — مزود Gemini المجاني (1500 طلب/يوم)
+- [x] **Gemini 3.x Models** — Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash
+- [x] **Sync to Existing Repo** — مزامنة مع مستودع موجود (ليس فقط جديد)
+- [x] **Improved Auto-upload** — رفع جميع التعديلات (ليس فقط modifiedFiles)
+- [x] **compatibility_date 2026-06-01** — Cloudflare API v4 + Workflows API
+- [x] **Expanded AI Knowledge** — AI يغطي جميع المواضيع (ليس فقط الأمن السيبراني)
+- [x] **Search Worker Setup Guide** — دليل إعداد Worker البحث للمعلمين
+
+### مكتمل — الإضافات السابقة (v2.1.0)
 - [x] **XP System** — نظام النقاط
 - [x] **Rank System** — نظام الرتب (5 رتب)
 - [x] **Badge System** — نظام الشارات (15 شارة) — مُصلح: checkAndUnlockBadges الآن يُنفّذ بعد completeLevel و addXp
