@@ -248,7 +248,7 @@ export async function uploadFullRepoToDrive(
   }
 ): Promise<string[]> {
   const results: string[] = []
-  const GH_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? '/github-api' : 'https://api.github.com'
+  const GH_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '/github-api' : 'https://api.github.com'
   const ghHeaders: Record<string, string> = {
     Authorization: `Bearer ${ghToken}`,
     Accept: 'application/vnd.github+json',

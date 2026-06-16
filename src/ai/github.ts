@@ -133,7 +133,7 @@ interface GitHubFileContent {
   content: string
 }
 
-const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const API_BASE = isDev ? '/github-api' : 'https://api.github.com'
 const RAW_BASE = isDev ? '/github-raw' : 'https://raw.githubusercontent.com'
 
