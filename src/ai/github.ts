@@ -774,6 +774,123 @@ export async function copyEntireRepo(
   return results
 }
 
+export async function syncContentToExistingRepo(
+  sourceOwner: string,
+  sourceRepo: string,
+  targetOwner: string,
+  targetRepo: string,
+  targetBranch: string,
+  contentData: {
+    gameMeta: Record<string, unknown>
+    levels: unknown[]
+    characters: Record<string, unknown>
+  }
+): Promise<string[]> {
+  const results: string[] = []
+  const isFromMain = sourceOwner === MAIN_REPO.owner && sourceRepo === MAIN_REPO.repo
+
+  let sourceTree: Array<{ path: string; mode: string; type: string; sha: string; size: number }>
+  try {
+    const refData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/refs/heads/main`, 'GET')
+    const commitData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/commits/${refData.object.sha}`, 'GET')
+    const treeData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/trees/${commitData.tree.sha}?recursive=1`, 'GET')
+    sourceTree = treeData.tree
+  } catch (e: any) {
+    results.push(`❌ فشل قراءة شجرة المصدر: ${e.message}`)
+    return results
+  }
+
+  let targetTree: Record<string, { sha: string }> = {}
+  try {
+    const targetRefData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/refs/heads/${targetBranch}`, 'GET')
+    const targetCommitData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/commits/${targetRefData.object.sha}`, 'GET')
+    const targetTreeData = await apiFetch(`/repos/${targetOwner}/${targetRepo}/git/trees/${targetCommitData.tree.sha}?recursive=1`, 'GET')
+    for (const item of targetTreeData.tree) {
+      if (item.type === 'blob') targetTree[item.path] = { sha: item.sha }
+    }
+  } catch {
+    results.push('📦 المستودع الهدف فارغ — جارٍ نسخ كل الملفات...')
+    return copyEntireRepo(sourceOwner, sourceRepo, targetOwner, targetRepo, targetBranch, contentData)
+  }
+
+  const LARGE_FILE_THRESHOLD = 90 * 1024 * 1024
+  const BINARY_EXTS = ['.mp4', '.mp3', '.wav', '.webm', '.ogg', '.avi', '.mov', '.mkv', '.flac', '.ttf', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.pdf']
+  let updated = 0
+  let added = 0
+  let skipped = 0
+
+  for (const item of sourceTree) {
+    if (item.type !== 'blob') continue
+
+    const ext = '.' + item.path.split('.').pop()?.toLowerCase()
+    const isBinary = BINARY_EXTS.includes(ext)
+
+    if (item.size && item.size > LARGE_FILE_THRESHOLD) {
+      results.push(`⏭️ ${item.path}: تخطي — ملف كبير جداً (${(item.size / 1024 / 1024).toFixed(1)}MB)`)
+      skipped++
+      continue
+    }
+
+    let contentBase64: string
+    try {
+      const blobData = await apiFetch(`/repos/${sourceOwner}/${sourceRepo}/git/blobs/${item.sha}`, 'GET', undefined, isBinary ? 120000 : 15000)
+      if (isBinary) {
+        contentBase64 = blobData.content
+      } else {
+        contentBase64 = btoa(unescape(encodeURIComponent(decodeURIComponent(escape(atob(blobData.content))))))
+      }
+    } catch (e: any) {
+      results.push(`⚠️ ${item.path}: فشل تحميل (${e.message})`)
+      continue
+    }
+
+    try {
+      if (!isBinary) {
+        let contentStr = decodeURIComponent(escape(atob(contentBase64)))
+        if (item.path === 'src/data/characters.ts') {
+          contentStr = generateCharactersTS(contentData.characters)
+        } else if (item.path === 'src/data/dialogue.ts') {
+          contentStr = generateDialogueTS(contentData.levels)
+        } else if (item.path === 'src/data/gameMeta.ts') {
+          contentStr = generateGameMetaTS(contentData.gameMeta)
+        } else if (item.path === 'vite.config.ts') {
+          contentStr = updateViteBasePath(contentStr, targetRepo)
+        } else if (item.path === 'package.json') {
+          contentStr = contentStr.replace(/"name":\s*"[^"]*"/, `"name": "${targetRepo}"`)
+        } else if (item.path === 'package-lock.json') {
+          contentStr = contentStr.replace(/"name":\s*"[^"]*"/g, `"name": "${targetRepo}"`)
+        } else if (item.path === 'README.md' && isFromMain) {
+          contentStr = contentStr.replace(/YoussefAhamedKamal/g, targetOwner).replace(/cyber-guardians-mobile/g, targetRepo)
+        }
+        contentBase64 = btoa(unescape(encodeURIComponent(contentStr)))
+      }
+
+      const existingSha = targetTree[item.path]?.sha
+      const timeoutMs = isBinary ? 120000 : 30000
+      await apiFetch(`/repos/${targetOwner}/${targetRepo}/contents/${encodeURIComponent(item.path)}`, 'PUT', {
+        message: existingSha ? `🔄 تحديث ${item.path}` : `➕ إضافة ${item.path}`,
+        content: contentBase64,
+        branch: targetBranch,
+        ...(existingSha ? { sha: existingSha } : {}),
+      }, timeoutMs)
+
+      if (existingSha) {
+        results.push(`🔄 ${item.path}: تم التحديث`)
+        updated++
+      } else {
+        results.push(`✅ ${item.path}: تمت الإضافة`)
+        added++
+      }
+    } catch (e: any) {
+      results.push(`❌ ${item.path}: ${e.message}`)
+    }
+  }
+
+  results.push(`\n📊 الملخص: 🔄 ${updated} تحديث | ✅ ${added} إضافة | ⏭️ ${skipped} تخطي`)
+
+  return results
+}
+
 export async function setupDirectEdit(): Promise<{ owner: string; repo: string; pagesUrl: string }> {
   const config = _cache
   try { await enableGitHubPages(config.owner, config.repo, config.branch) } catch {}

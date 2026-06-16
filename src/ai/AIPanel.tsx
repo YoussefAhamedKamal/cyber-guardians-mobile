@@ -5,7 +5,7 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
-import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
+import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
 import type { GitHubConfig } from './github'
@@ -367,6 +367,39 @@ function AISettings() {
             setGhForking(false)
           }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#FFB74D,#FF9800)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
             {ghForking ? '⏳ جارٍ الإنشاء والرفع...' : '🟡 إنشاء مستودع جديد'}
+          </button>
+        </div>
+
+        {/* خيار 3: مزامنة مع مستودع موجود */}
+        <div style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+          <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginBottom: '6px' }}>🔄 الخيار 3: مزامنة مع مستودع موجود</div>
+          <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>يُحدّث الملفات الموجودة ويضيف الملفات الناقصة في مستودعك</div>
+          <button onClick={async () => {
+            if (!ghConfig.token) { setGhTestStatus('❌ أدخل Token أولاً'); return }
+            if (!ghConfig.repo) { setGhTestStatus('❌ أدخل اسم المستودع'); return }
+            setGhForking(true); setGhTestStatus('⏳ جارٍ المزامنة مع المستودع...')
+            await setGitHubConfig(ghConfig)
+            try {
+              const username = await getGitHubUsername()
+              setGhConfig({ ...ghConfig, owner: username })
+              await setGitHubConfig({ ...ghConfig, owner: username })
+              setGhTestStatus(`⏳ جارٍ مزامنة الملفات مع ${username}/${ghConfig.repo}...`)
+              const contentData = {
+                gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
+                levels: (contentStore.newLevels || []) as unknown[],
+                characters: contentStore.newCharacters as Record<string, unknown>,
+              }
+              const results = await syncContentToExistingRepo(MAIN_REPO.owner, MAIN_REPO.repo, username, ghConfig.repo, ghConfig.branch || 'main', contentData)
+              setGhConfig({ ...ghConfig, owner: username })
+              await setGitHubConfig({ ...ghConfig, owner: username })
+              const ok = results.filter(r => r.startsWith('✅') || r.startsWith('🔄')).length
+              const fail = results.filter(r => r.startsWith('❌')).length
+              const warn = results.filter(r => r.startsWith('⚠️')).length
+              setGhTestStatus(`✅ تمت المزامنة!\n📦 ${username}/${ghConfig.repo}\n✅ نجح ${ok} | ❌ فشل ${fail} | ⚠️ تحذير ${warn}\n\n${results.join('\n')}`)
+            } catch (e: any) { setGhTestStatus(`❌ ${e.message}`) }
+            setGhForking(false)
+          }} disabled={ghForking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ghForking ? '#444' : 'linear-gradient(135deg,#4FC3F7,#29B6F6)', color: ghForking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ghForking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+            {ghForking ? '⏳ جارٍ المزامنة...' : '🔄 مزامنة مع مستودع موجود'}
           </button>
         </div>
 
@@ -1328,14 +1361,25 @@ function FacultyDataEditor() {
   useEffect(() => {
     if (!autoUpload) return
     const unsub = useContentStore.subscribe((state) => {
-      const files = state.modifiedFiles
-      if (Object.keys(files).length === 0) return
-      pushSourceFilesToGitHub(files, 'Auto-sync: تعديل ملفات').catch((e) => {
+      const baseFiles: Record<string, string> = {
+        'src/data/characters.ts': generateCharactersTS(chars),
+        'src/data/dialogue.ts': generateDialogueTS(levels),
+        'src/data/gameMeta.ts': generateGameMetaTS(gameMeta as unknown as Record<string, unknown>),
+      }
+      const allFiles = { ...baseFiles, ...state.modifiedFiles }
+      ai.setGithubStatus('⏳ جارٍ الرفع التلقائي...')
+      pushSourceFilesToGitHub(allFiles, '🔄 رفع تلقائي — تعديل تلقائي').then((results) => {
+        const allOk = results.every((r) => r.startsWith('✅'))
+        ai.setGithubStatus(allOk
+          ? `✅ تم الرفع التلقائي — ${results.length} ملف`
+          : `⚠️ الرفع التلقائي: بعض الملفات فشلت`)
+      }).catch((e) => {
         console.error('Auto-upload failed:', e)
+        ai.setGithubStatus(`❌ فشل الرفع التلقائي: ${e.message}`)
       })
     })
     return unsub
-  }, [autoUpload])
+  }, [autoUpload, chars, levels, gameMeta])
 
   const handleLoadFile = async (filePath: string) => {
     setFileLoading(true)
@@ -1601,6 +1645,37 @@ function FacultyDataEditor() {
             </button>
           </div>
 
+          {/* خيار 3: مزامنة مع مستودع موجود */}
+          <div style={{ background: 'rgba(79,195,247,0.1)', border: '1px solid rgba(79,195,247,0.3)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
+            <div style={{ color: '#4FC3F7', fontWeight: 700, fontSize: '11px', marginBottom: '4px' }}>🔄 مزامنة مع مستودع موجود</div>
+            <div style={{ color: '#aaa', fontSize: '10px', marginBottom: '6px' }}>يُحدّث الملفات ويضيف الناقصة في مستودعك</div>
+            <button onClick={async () => {
+              if (!ghConfig.token) { ai.setGithubStatus('❌ أدخل Token أولاً'); return }
+              if (!ghConfig.repo) { ai.setGithubStatus('❌ أدخل اسم المستودع'); return }
+              ai.setForking(true); ai.setGithubStatus('⏳ جارٍ المزامنة...')
+              await setGitHubConfig(ghConfig)
+              try {
+                const username = await getGitHubUsername()
+                setGhConfig({ ...ghConfig, owner: username })
+                await setGitHubConfig({ ...ghConfig, owner: username })
+                ai.setGithubStatus(`⏳ جارٍ مزامنة الملفات مع ${username}/${ghConfig.repo}...`)
+                const contentData = {
+                  gameMeta: contentStore.gameMeta as unknown as Record<string, unknown>,
+                  levels: (contentStore.newLevels || []) as unknown[],
+                  characters: contentStore.newCharacters as Record<string, unknown>,
+                }
+                const results = await syncContentToExistingRepo(MAIN_REPO.owner, MAIN_REPO.repo, username, ghConfig.repo, ghConfig.branch || 'main', contentData)
+                const ok = results.filter(r => r.startsWith('✅') || r.startsWith('🔄')).length
+                const fail = results.filter(r => r.startsWith('❌')).length
+                const warn = results.filter(r => r.startsWith('⚠️')).length
+                ai.setGithubStatus(`✅ تمت المزامنة!\n📦 ${username}/${ghConfig.repo}\n✅ نجح ${ok} | ❌ فشل ${fail} | ⚠️ تحذير ${warn}\n\n${results.join('\n')}`)
+              } catch (e: any) { ai.setGithubStatus(`❌ ${e.message}`) }
+              ai.setForking(false)
+            }} disabled={ai.forking || !ghConfig.token} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: ai.forking ? '#444' : 'linear-gradient(135deg,#4FC3F7,#29B6F6)', color: ai.forking ? '#888' : '#0a0a1a', fontWeight: 700, fontSize: '11px', cursor: ai.forking ? 'not-allowed' : 'pointer', opacity: !ghConfig.token ? 0.5 : 1 }}>
+              {ai.forking ? '⏳ جارٍ المزامنة...' : '🔄 مزامنة مع مستودع موجود'}
+            </button>
+          </div>
+
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>GitHub Token<input type="password" value={ghConfig.token} onChange={(e) => setGhConfig({ ...ghConfig, token: e.target.value })} placeholder="ghp_..." style={inputStyle} /></label>
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Owner (اسم المستخدم أو الإيميل)<input value={ghConfig.owner} onChange={(e) => setGhConfig({ ...ghConfig, owner: e.target.value })} placeholder="your-username أو email@github.com" style={inputStyle} /></label>
           <label style={{ color: '#aaa', display: 'block', marginBottom: '4px' }}>Repo (اسم المستودع)<input value={ghConfig.repo} onChange={(e) => setGhConfig({ ...ghConfig, repo: e.target.value })} placeholder="cyber-guardians-mobile" style={inputStyle} /></label>
@@ -1717,10 +1792,16 @@ function FacultyDataEditor() {
             <>
               <div style={{ padding: '8px', fontSize: '10px', color: '#777', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
                 <div style={{ marginBottom: '6px' }}>اختر ملفاً للتعديل — التعديلات تُحفظ محلياً وتُرفع عند التفعيل</div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: autoUpload ? '#81C784' : '#888' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: autoUpload ? '#81C784' : '#888', padding: '6px', borderRadius: '4px', background: autoUpload ? 'rgba(129,199,132,0.1)' : 'transparent', border: `1px solid ${autoUpload ? 'rgba(129,199,132,0.3)' : 'rgba(255,255,255,0.1)'}` }}>
                   <input type="checkbox" checked={autoUpload} onChange={(e) => { setAutoUpload(e.target.checked); localStorage.setItem('cg-auto-upload', String(e.target.checked)) }} style={{ cursor: 'pointer' }} />
-                  🔄 رفع تلقائي عند التعديل
+                  <span>🔄 رفع تلقائي عند التعديل</span>
+                  {autoUpload && <span style={{ fontSize: '9px', color: '#81C784', marginRight: 'auto' }}>● مفعّل</span>}
                 </label>
+                {autoUpload && (
+                  <div style={{ marginTop: '4px', padding: '4px 6px', borderRadius: '4px', background: 'rgba(129,199,132,0.08)', fontSize: '9px', color: '#81C784', lineHeight: 1.4 }}>
+                    💡 يُرفع تلقائياً: الشخصيات + المستويات + الإعدادات + الملفات المعدّلة يدوياً
+                  </div>
+                )}
               </div>
               <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
                 {EDITABLE_FILES.map((fp) => {
