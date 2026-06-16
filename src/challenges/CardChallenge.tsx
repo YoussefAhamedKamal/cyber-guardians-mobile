@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { PhishingEmail } from '@/types'
 import { Button } from '@/components/ui'
 import { audio } from '@/systems/ProceduralAudio'
@@ -17,14 +17,25 @@ function shuffle<T>(arr: T[]): T[] {
 interface Props {
   emails: PhishingEmail[]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
-export function CardChallenge({ emails, onComplete }: Props) {
+const HINTS = [
+  'افحص عنوان المرسل بعناية — هل يبدو رسمياً؟',
+  'الروابط المختصرة مشبوهة دائماً',
+  'الشركات الحقيقية لا تطلب كلمات المرور عبر الإيميل',
+  'التهديد بالغلق أسلوب تخويف كلاسيكي'
+]
+
+export function CardChallenge({ emails, onComplete, onRequestHint }: Props) {
   const [shuffledEmails] = useState(() => shuffle(emails))
   const [index, setIndex] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState<string[]>([])
   const [done, setDone] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
+  const [isShaking, setIsShaking] = useState(false)
 
   const email = shuffledEmails[index]
   if (!email) return null
@@ -34,16 +45,25 @@ export function CardChallenge({ emails, onComplete }: Props) {
     setCorrect(0)
     setWrong([])
     setDone(false)
+    setHintText(null)
   }
+
+  const showFeedback = useCallback((isCorrect: boolean) => {
+    setFlashColor(isCorrect ? 'rgba(76,175,80,0.3)' : 'rgba(229,115,115,0.3)')
+    if (!isCorrect) setIsShaking(true)
+    setTimeout(() => { setFlashColor(null); setIsShaking(false) }, 400)
+  }, [])
 
   const handleChoice = (isPhishing: boolean) => {
     if (done) return
     if (isPhishing === email.isPhishing) {
       setCorrect((c) => c + 1)
       audio.playCorrect()
+      showFeedback(true)
     } else {
       setWrong((w) => [...w, email.id])
       audio.playWrong()
+      showFeedback(false)
     }
     const next = index + 1
     if (next >= shuffledEmails.length) {
@@ -51,6 +71,13 @@ export function CardChallenge({ emails, onComplete }: Props) {
       return
     }
     setIndex(next)
+  }
+
+  const handleHint = () => {
+    const hint = HINTS[index % HINTS.length] ?? 'افحص عنوان المرسل بعناية'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
   }
 
   if (done) {
@@ -78,7 +105,21 @@ export function CardChallenge({ emails, onComplete }: Props) {
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto',
+      animation: isShaking ? 'cg-shake 0.3s ease-in-out' : undefined,
+      position: 'relative',
+    }}>
+      <style>{`
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+          animation: 'cg-fade 0.4s ease-out',
+        }} />
+      )}
       <div style={{ color: '#888', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
         إيميل {index + 1} من {emails.length}
       </div>
@@ -90,6 +131,15 @@ export function CardChallenge({ emails, onComplete }: Props) {
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{email.subject}</div>
         <div style={{ color: '#ccc', lineHeight: 1.6 }}>{email.body}</div>
       </div>
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
         <Button onClick={() => handleChoice(false)} variant="secondary">آمن <span style={{color:'#81C784', fontWeight:700}}>✓</span></Button>
         <Button onClick={() => handleChoice(true)}>تصيد <span style={{color:'#E57373', fontWeight:700}}>✗</span></Button>

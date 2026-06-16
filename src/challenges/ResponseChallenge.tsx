@@ -26,14 +26,25 @@ function shuffleStepOptions(steps: IncidentStep[]): IncidentStep[] {
 interface Props {
   steps: IncidentStep[]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
-export function ResponseChallenge({ steps, onComplete }: Props) {
+const HINTS = [
+  'افصل النظام المتضرر فوراً عن الشبكة',
+  'لا تحذف الأدلة — احفظها للتحليل',
+  'أبلغ فريق الأمن والجهات المختصة',
+  'غيّر كلمات المرور للمستخدمين المتأثرين'
+]
+
+export function ResponseChallenge({ steps, onComplete, onRequestHint }: Props) {
   const [shuffledSteps] = useState(() => shuffleStepOptions(steps))
   const [index, setIndex] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
+  const [isShaking, setIsShaking] = useState(false)
 
   const step = shuffledSteps[index]
   if (!step) {
@@ -43,6 +54,7 @@ export function ResponseChallenge({ steps, onComplete }: Props) {
       setCorrect(0)
       setSelected(null)
       setShowResult(false)
+      setHintText(null)
     }
     return (
       <div style={{ textAlign: 'center', padding: '32px', direction: 'rtl' }}>
@@ -57,21 +69,52 @@ export function ResponseChallenge({ steps, onComplete }: Props) {
     )
   }
 
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'افصل النظام المتضرر فوراً'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
+  }
+
   const handleSelect = (idx: number) => {
     if (showResult) return
     setSelected(idx)
     setShowResult(true)
-    if (idx === step.correctIndex) { setCorrect((c) => c + 1); audio.playCorrect() } else { audio.playWrong() }
+    if (idx === step.correctIndex) {
+      setCorrect((c) => c + 1)
+      audio.playCorrect()
+      setFlashColor('rgba(76,175,80,0.3)')
+      setTimeout(() => setFlashColor(null), 400)
+    } else {
+      audio.playWrong()
+      setIsShaking(true)
+      setFlashColor('rgba(229,115,115,0.3)')
+      setTimeout(() => { setIsShaking(false); setFlashColor(null) }, 400)
+    }
   }
 
   const handleNext = () => {
     setSelected(null)
     setShowResult(false)
+    setHintText(null)
     setIndex((i) => i + 1)
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto',
+      position: 'relative',
+      animation: isShaking ? 'cg-shake 0.3s ease-in-out' : undefined,
+    }}>
+      <style>{`
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+        }} />
+      )}
       <div style={{ color: '#888', fontSize: '14px', marginBottom: '8px', textAlign: 'center' }}>
         خطوة {index + 1} من {shuffledSteps.length}
       </div>
@@ -81,6 +124,15 @@ export function ResponseChallenge({ steps, onComplete }: Props) {
       }}>
         <div style={{ fontSize: '18px', lineHeight: 1.6 }}>{step.question}</div>
       </div>
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
         {step.options.map((opt, idx) => {
           let bg = 'rgba(255,255,255,0.03)'
@@ -101,6 +153,7 @@ export function ResponseChallenge({ steps, onComplete }: Props) {
                 padding: '14px 18px', borderRadius: 'var(--custom-border-radius)', border: `var(--custom-border-width) solid ${border}`,
                 background: bg, color: '#fff', cursor: showResult ? 'default' : 'pointer',
                 fontSize: '15px', textAlign: 'right', lineHeight: 1.4,
+                transition: 'all 0.2s ease',
               }}
             >
               {showResult && idx === step.correctIndex && '✅ '}
@@ -110,19 +163,23 @@ export function ResponseChallenge({ steps, onComplete }: Props) {
           )
         })}
       </div>
-      {showResult && (
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            background: 'rgba(79,195,247,0.1)', borderRadius: '8px',
-            padding: '12px', marginBottom: '12px', fontSize: '14px', color: '#4FC3F7',
-          }}>
-            {step.explanation}
-          </div>
-          <Button onClick={handleNext}>
-            {index < steps.length - 1 ? 'الخطوة التالية' : 'إظهار النتيجة'}
-          </Button>
-        </div>
-      )}
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <Button variant="secondary" onClick={handleHint}>💡 تلميح</Button>
+        {showResult && (
+          <>
+            <div style={{
+              background: 'rgba(79,195,247,0.1)', borderRadius: '8px',
+              padding: '12px', marginBottom: '12px', fontSize: '14px', color: '#4FC3F7',
+              width: '100%',
+            }}>
+              {step.explanation}
+            </div>
+            <Button onClick={handleNext}>
+              {index < steps.length - 1 ? 'الخطوة التالية' : 'إظهار النتيجة'}
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

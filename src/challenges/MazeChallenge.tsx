@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { MazeCell } from '@/types'
 import { Button } from '@/components/ui'
 import { audio } from '@/systems/ProceduralAudio'
@@ -6,9 +6,17 @@ import { audio } from '@/systems/ProceduralAudio'
 interface Props {
   grid: MazeCell[][]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
-export function MazeChallenge({ grid, onComplete }: Props) {
+const HINTS = [
+  'ادفع الملفات الخبيثة إلى النقاط الخضراء فقط',
+  'تجنب الجدران — لا يمكن اختراقها',
+  'حرك اللاعب أولاً ثم ادفع الملف',
+  'كل ملف يحتاج دفعة واحدة على الأقل'
+]
+
+export function MazeChallenge({ grid, onComplete, onRequestHint }: Props) {
   const size = grid.length
 
   const initialMalware = grid
@@ -21,14 +29,24 @@ export function MazeChallenge({ grid, onComplete }: Props) {
   const totalMalware = initialMalware.length
   const secured = totalMalware - malware.length
   const [done, setDone] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
 
-  function reset() {
+  const reset = () => {
     setPlayer({ x: 0, y: 0 })
     setMalware(initialMalware.map((m) => ({ ...m })))
     setDone(false)
+    setHintText(null)
   }
 
-  function move(dx: number, dy: number) {
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'ادفع الملفات الخبيثة إلى النقاط الخضراء'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
+  }
+
+  const move = (dx: number, dy: number) => {
     if (done) return
     setPlayer((prev) => {
       const nx = prev.x + dx
@@ -51,6 +69,8 @@ export function MazeChallenge({ grid, onComplete }: Props) {
           )
           if (pushTarget.isEndpoint) {
             audio.playLevelUp()
+            setFlashColor('rgba(76,175,80,0.3)')
+            setTimeout(() => setFlashColor(null), 400)
             const remaining = updated.filter((m) => !(m.x === pushX && m.y === pushY))
             if (remaining.length === 0) {
               setTimeout(() => setDone(true), 400)
@@ -87,15 +107,38 @@ export function MazeChallenge({ grid, onComplete }: Props) {
   const cellSize = size > 6 ? 48 : 56
 
   return (
-    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+    <div style={{
+      padding: '24px', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', gap: '12px', position: 'relative',
+    }}>
+      <style>{`
+        @keyframes cg-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.6 } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+          animation: 'cg-pulse 0.4s ease-out',
+        }} />
+      )}
       <div style={{ color: '#888', fontSize: '14px' }}>
         &#x1F3AF; ادفع الملفات الخبيثة (<span style={{ color: '#E57373' }}>&#x25CF;</span>) إلى نقطة الأمان (<span style={{ color: '#81C784' }}>&#x25C9;</span>)
       </div>
       <div style={{ color: '#E57373', fontSize: '13px' }}>
         معزول: {secured} / {totalMalware}
       </div>
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '8px' }}>
         <Button variant="ghost" onClick={reset}>إعادة تعيين</Button>
+        <Button variant="ghost" onClick={handleHint}>💡 تلميح</Button>
       </div>
       <div
         style={{

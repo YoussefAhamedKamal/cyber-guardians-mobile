@@ -123,7 +123,7 @@ export default function GameplayPage({ level, onComplete }: Props) {
 
       <div style={{ flex: 1, overflow: 'auto' }}>
         <Suspense fallback={<ChallengeSkeleton />}>
-          <ChallengeRenderer level={level} onComplete={onComplete} />
+          <ChallengeRenderer level={level} onComplete={onComplete} onRequestHint={handleUseHint} />
         </Suspense>
       </div>
 

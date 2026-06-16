@@ -27,15 +27,26 @@ function shuffleCodeOptions(codes: VulnCode[]): VulnCode[] {
 interface Props {
   codes: VulnCode[]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
-export function CodeFixChallenge({ codes, onComplete }: Props) {
+const HINTS = [
+  'افحص التعامل مع المدخلات — هل يتم التحقق منها؟',
+  'ابحث عن ثغرات SQL Injection أو XSS',
+  'تحقق من تعامل الكود مع الأخطاء',
+  'هل الكود يتحقق من الصلاحيات قبل التنفيذ؟'
+]
+
+export function CodeFixChallenge({ codes, onComplete, onRequestHint }: Props) {
   const monoFont = useSettingsStore((s) => s.monoFont)
   const [shuffledCodes] = useState(() => shuffleCodeOptions(codes))
   const [index, setIndex] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
+  const [isShaking, setIsShaking] = useState(false)
 
   const code = shuffledCodes[index]
   if (!code) {
@@ -45,6 +56,7 @@ export function CodeFixChallenge({ codes, onComplete }: Props) {
       setCorrect(0)
       setSelected(null)
       setShowResult(false)
+      setHintText(null)
     }
     return (
       <div style={{ textAlign: 'center', padding: '32px', direction: 'rtl' }}>
@@ -59,21 +71,52 @@ export function CodeFixChallenge({ codes, onComplete }: Props) {
     )
   }
 
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'افحص التعامل مع المدخلات'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
+  }
+
   const handleSelect = (idx: number) => {
     if (showResult) return
     setSelected(idx)
     setShowResult(true)
-    if (idx === code.correctIndex) { setCorrect((c) => c + 1); audio.playCorrect() } else { audio.playWrong() }
+    if (idx === code.correctIndex) {
+      setCorrect((c) => c + 1)
+      audio.playCorrect()
+      setFlashColor('rgba(76,175,80,0.3)')
+      setTimeout(() => setFlashColor(null), 400)
+    } else {
+      audio.playWrong()
+      setIsShaking(true)
+      setFlashColor('rgba(229,115,115,0.3)')
+      setTimeout(() => { setIsShaking(false); setFlashColor(null) }, 400)
+    }
   }
 
   const handleNext = () => {
     setSelected(null)
     setShowResult(false)
+    setHintText(null)
     setIndex((i) => i + 1)
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '550px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '550px', margin: '0 auto',
+      position: 'relative',
+      animation: isShaking ? 'cg-shake 0.3s ease-in-out' : undefined,
+    }}>
+      <style>{`
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+        }} />
+      )}
       <div style={{ color: '#888', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
         ثغرة {index + 1} من {shuffledCodes.length}: {code.vulnerability}
       </div>
@@ -85,6 +128,15 @@ export function CodeFixChallenge({ codes, onComplete }: Props) {
         <div style={{ color: '#4FC3F7', fontSize: '12px', marginBottom: '8px' }}>{code.language}</div>
         {code.code}
       </div>
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ color: '#aaa', fontSize: '14px', marginBottom: '12px' }}>
         أي قطعة الكود التالية هي الإصلاح الصحيح؟
       </div>
@@ -108,7 +160,7 @@ export function CodeFixChallenge({ codes, onComplete }: Props) {
                 padding: '12px 16px', borderRadius: 'var(--custom-border-radius)', border: `var(--custom-border-width) solid ${border}`,
                 background: bg, color: '#fff', cursor: showResult ? 'default' : 'pointer',
                 fontSize: '13px', fontFamily: `${monoFont}, monospace`, direction: 'ltr', textAlign: 'left',
-                lineHeight: 1.4,
+                lineHeight: 1.4, transition: 'all 0.2s ease',
               }}
             >
               {showResult && idx === code.correctIndex && '✅ '}
@@ -118,13 +170,14 @@ export function CodeFixChallenge({ codes, onComplete }: Props) {
           )
         })}
       </div>
-      {showResult && (
-        <div style={{ textAlign: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <Button variant="secondary" onClick={handleHint}>💡 تلميح</Button>
+        {showResult && (
           <Button onClick={handleNext}>
             {index < codes.length - 1 ? 'الثغرة التالية' : 'إظهار النتيجة'}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

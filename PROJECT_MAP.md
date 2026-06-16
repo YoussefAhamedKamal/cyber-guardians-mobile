@@ -730,13 +730,20 @@ src/
 | `cg-fade-in` | ظهور الشاشات (fade + scale) | 0.25s |
 | `cg-fade-out` | اختفاء الشاشات (fade + scale) | 0.15s |
 | `cg-shimmer` | تأثير تحميل متحرك (skeleton) | 1.5s |
-| `cg-xp-fill` | **★ جديد** — تعبئة شريط XP | 0.5s |
-| `cg-badge-unlock` | **★ جديد** — فتح شارة | 0.8s |
-| `cg-level-up` | **★ جديد** — ترقية رتبة | 2.5s |
-| `cg-combo-pop` | **★ جديد** — ظهور الكومبو | 0.3s |
-| `cg-confetti-fall` | **★ جديد** — سقوط الاحتفال | 3s |
-| `cg-float-up` | **★ جديد** — صعود النقاط العائمة | 1.5s |
-| `cg-heart-beat` | **★ جديد** — نبض القلب | 1s |
+| `cg-xp-fill` | تعبئة شريط XP | 0.5s |
+| `cg-badge-unlock` | فتح شارة | 0.8s |
+| `cg-level-up` | ترقية رتبة | 2.5s |
+| `cg-combo-pop` | ظهور الكومبو | 0.3s |
+| `cg-confetti-fall` | سقوط الاحتفال | 3s |
+| `cg-float-up` | صعود النقاط العائمة | 1.5s |
+| `cg-heart-beat` | نبض القلب | 1s |
+| `cg-heart-pulse` | **★ جديد** — نبض القلب الأخير | 1.5s |
+| `cg-heart-glow` | **★ جديد** — توهج القلب | 2s |
+| `cg-rank-glow` | **★ جديد** — توهج الرتبة | 3s |
+| `cg-rank-spin` | **★ جديد** — دوران أيقونة الرتبة | 4s |
+| `cg-xp-icon-pulse` | **★ جديد** — نبض أيقونة الخبرة | 2s |
+| `cg-xp-shimmer` | **★ جديد** — تأثير لمعان شريط الخبرة | 2s |
+| `cg-shake` | **★ جديد** — اهتزاز عند إجابة خاطئة | 0.3s |
 
 ---
 
@@ -830,7 +837,7 @@ src/
 - [x] **Combo System** — نظام الكومبو
 - [x] **Hearts System** — نظام القلوب
 - [x] **Timer** — مؤقت لكل سؤال — مُصلح: لا يعرض NaN بعد الآن
-- [x] **Hints System** — نظام التلميحات
+- [x] **Hints System** — نظام التلميحات — مُصلح: يعرض محتوى التلميح الفعلي الآن
 - [x] **Energy Meter** — مقياس الطاقة
 - [x] **Pre/Post Assessment** — تقييم قبل/بعد
 - [x] **Challenge Intros** — مقدمات التحديات
@@ -849,7 +856,12 @@ src/
 - [x] **Leaderboard** — لوحة الصدارة
 - [x] **Level-Up Overlay** — نافذة الترقية
 - [x] **Notification Badge** — شارة الإشعارات
-- [x] **Shop System** — ★ جديد — نظام المتجر لشراء القلوب والتلميحات والسمات
+- [x] **Shop System** — نظام المتجر لشراء القلوب والتلميحات والسمات — مُصلح: استخدام xp بدل totalScore
+- [x] **Visual Effects** — تأثيرات بصرية للإجابات الصحيحة/الخاطئة (وميض + اهتزاز)
+- [x] **Audio Effects** — تأثيرات صوتية محسّنة في جميع التحديات
+- [x] **Hearts UI** — تأثيرات نبض وتوهج للقلوب
+- [x] **Rank UI** — تأثيرات دوران وتوهج للرتبة
+- [x] **XP Bar UI** — تأثير shimmer لشريط الخبرة
 
 ### مكتمل — الدمج في اللعبة
 - [x] **App.tsx** — دمج DailyRewardOverlay, DailyMissions, WeeklyChallengeBanner, HeartsDisplay, ComboDisplay, Leaderboard, ShareModal, EncourageToast

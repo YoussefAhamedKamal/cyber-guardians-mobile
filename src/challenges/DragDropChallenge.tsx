@@ -6,17 +6,35 @@ import { audio } from '@/systems/ProceduralAudio'
 interface Props {
   ports: FirewallPort[]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
-export function DragDropChallenge({ ports, onComplete }: Props) {
+const HINTS = [
+  'المنافذ الأساسية (◆) يجب أن تبقى مفتوحة دائماً',
+  'أغلق المنافذ غير الضرورية لتقليل الهجوم',
+  'افحص كل منفذ وتحقق من وظيفته',
+  'المنافذ المفتوحة هي نقاط الدخول المحتملة'
+]
+
+export function DragDropChallenge({ ports, onComplete, onRequestHint }: Props) {
   const [portList, setPortList] = useState(
     ports.map((p) => ({ ...p }))
   )
   const [done, setDone] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
 
   const reset = () => {
     setPortList(ports.map((p) => ({ ...p })))
     setDone(false)
+    setHintText(null)
+  }
+
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'المنافذ الأساسية يجب أن تبقى مفتوحة'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
   }
 
   const togglePort = (id: string) => {
@@ -28,12 +46,19 @@ export function DragDropChallenge({ ports, onComplete }: Props) {
   }
 
   const handleSubmit = () => {
-    audio.playLevelUp()
-    let score = 0
-    portList.forEach((p) => {
-      if (p.isCritical && p.status === 'open') score += 50
-      if (!p.isCritical && p.status === 'closed') score += 50
-    })
+    const openCritical = portList.filter((p) => p.isCritical && p.status === 'open').length
+    const closedNonCritical = portList.filter((p) => !p.isCritical && p.status === 'closed').length
+    const total = portList.length
+    const score = Math.round(((openCritical + closedNonCritical) / total) * 100)
+
+    if (score >= 80) {
+      audio.playLevelUp()
+      setFlashColor('rgba(76,175,80,0.3)')
+    } else {
+      audio.playWrong()
+      setFlashColor('rgba(229,115,115,0.3)')
+    }
+    setTimeout(() => setFlashColor(null), 400)
     setDone(true)
     onComplete(score)
   }
@@ -58,10 +83,32 @@ export function DragDropChallenge({ ports, onComplete }: Props) {
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '500px', margin: '0 auto',
+      position: 'relative',
+    }}>
+      <style>{`
+        @keyframes cg-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.6 } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+          animation: 'cg-pulse 0.4s ease-out',
+        }} />
+      )}
       <div style={{ color: '#aaa', fontSize: '14px', marginBottom: '16px', textAlign: 'center' }}>
         ↑ اضغط على المنفذ لتغيير حالته (افتح/أغلق). المنافذ الأساسية (<span style={{color:'#4FC3F7'}}>◆</span>) يجب أن تبقى مفتوحة.
       </div>
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
         {portList.map((p) => (
           <button
@@ -75,6 +122,7 @@ export function DragDropChallenge({ ports, onComplete }: Props) {
                 ? `rgba(79,195,247,${p.isCritical ? 0.15 : 0.05})`
                 : 'rgba(229,115,115,0.1)',
               color: '#fff', cursor: 'pointer', fontSize: '14px',
+              transition: 'all 0.2s ease',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -97,7 +145,8 @@ export function DragDropChallenge({ ports, onComplete }: Props) {
           </button>
         ))}
       </div>
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <Button variant="secondary" onClick={handleHint}>💡 تلميح</Button>
         <Button onClick={handleSubmit}>تطبيق الجدار الناري</Button>
       </div>
     </div>

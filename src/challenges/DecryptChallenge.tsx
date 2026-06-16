@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/store'
 interface Props {
   cipher: CipherChallenge
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -24,11 +25,20 @@ function caesarShift(text: string, shift: number): string {
   }).join('')
 }
 
-export function DecryptChallenge({ cipher, onComplete }: Props) {
+const HINTS = [
+  'جرّب الإزاحة 3 — الأكثر شيوعاً في تشفير Caesar',
+  'الحرف H يتحول إلى E عند الإزاحة 3',
+  'ابحث عن كلمات معروفة مثل THE أو AND',
+  'المسافة بين الحروف في الأبجدية تساعدك'
+]
+
+export function DecryptChallenge({ cipher, onComplete, onRequestHint }: Props) {
   const monoFont = useSettingsStore((s) => s.monoFont)
   const [shift, setShift] = useState(1)
   const [correct, setCorrect] = useState(false)
-  const [showHint, setShowHint] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
+  const [isShaking, setIsShaking] = useState(false)
 
   const decrypted = useMemo(() => caesarShift(cipher.encrypted, shift), [cipher.encrypted, shift])
   const isCorrect = decrypted.trim().toUpperCase() === cipher.solution.trim().toUpperCase()
@@ -36,7 +46,14 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
   const reset = () => {
     setShift(1)
     setCorrect(false)
-    setShowHint(false)
+    setHintText(null)
+  }
+
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'جرّب الإزاحة 3'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
   }
 
   const handleShift = (delta: number) => {
@@ -52,9 +69,14 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
   const handleSubmit = () => {
     if (isCorrect) {
       audio.playCorrect()
+      setFlashColor('rgba(76,175,80,0.3)')
+      setTimeout(() => setFlashColor(null), 400)
       setCorrect(true)
     } else {
       audio.playWrong()
+      setIsShaking(true)
+      setFlashColor('rgba(229,115,115,0.3)')
+      setTimeout(() => { setIsShaking(false); setFlashColor(null) }, 400)
     }
   }
 
@@ -74,7 +96,20 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '520px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '520px', margin: '0 auto',
+      position: 'relative',
+      animation: isShaking ? 'cg-shake 0.3s ease-in-out' : undefined,
+    }}>
+      <style>{`
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+        }} />
+      )}
       {/* Simple explanation */}
       <div style={{
         background: 'rgba(79,195,247,0.1)', borderRadius: '12px',
@@ -108,6 +143,17 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
         </div>
       </div>
 
+      {/* Hint display */}
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
+
       {/* Shift controller */}
       <div style={{
         background: 'rgba(255,255,255,0.03)', borderRadius: '12px',
@@ -129,7 +175,7 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
           </button>
           <div style={{
             width: '72px', height: '72px', borderRadius: '16px',
-            background: 'rgba(79,195,247,0.15)',             border: 'var(--custom-border-width) solid var(--accent-color)',
+            background: 'rgba(79,195,247,0.15)', border: 'var(--custom-border-width) solid var(--accent-color)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '32px', fontWeight: 700, color: '#4FC3F7',
           }}>
@@ -169,6 +215,7 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
         borderRadius: '12px', padding: '16px', marginBottom: '20px', textAlign: 'center',
         background: isCorrect ? 'rgba(129,199,132,0.15)' : 'rgba(255,255,255,0.03)',
         border: isCorrect ? 'var(--custom-border-width) solid var(--border-color-success)' : 'none',
+        transition: 'all 0.3s ease',
       }}>
         <div style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>
           📝 النص بعد فك التشفير (Shift {shift})
@@ -186,29 +233,11 @@ export function DecryptChallenge({ cipher, onComplete }: Props) {
         )}
       </div>
 
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <Button variant="secondary" onClick={handleHint}>💡 تلميح</Button>
         <Button onClick={handleSubmit}>
           {isCorrect ? 'فتح الرسالة 🔓' : 'محاولة'}
         </Button>
-        <div style={{ marginTop: '8px' }}>
-          <button
-            onClick={() => setShowHint((h) => !h)}
-            style={{
-              background: 'none', border: 'none', color: '#666', cursor: 'pointer',
-              fontSize: '13px', textDecoration: 'underline',
-            }}
-          >
-            {showHint ? 'إخفاء المساعدة' : '💡 مساعدة'}
-          </button>
-        </div>
-        {showHint && (
-          <div style={{
-            marginTop: '8px', color: '#FFB74D', fontSize: '13px', background: 'rgba(255,183,77,0.1)',
-            padding: '10px', borderRadius: '8px',
-          }}>
-            جرّب Shift = 3. الحرف H يتحول إلى E, الحرف V يتحول إلى S ...
-          </div>
-        )}
       </div>
     </div>
   )

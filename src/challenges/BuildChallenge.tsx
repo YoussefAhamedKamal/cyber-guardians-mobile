@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import type { PasswordRule } from '@/types'
 import { Button } from '@/components/ui'
 import { audio } from '@/systems/ProceduralAudio'
@@ -6,6 +6,7 @@ import { audio } from '@/systems/ProceduralAudio'
 interface Props {
   rules: PasswordRule[]
   onComplete: (score: number) => void
+  onRequestHint?: (() => void) | undefined
 }
 
 function evaluatePassword(pw: string, rules: PasswordRule[]): PasswordRule[] {
@@ -20,9 +21,18 @@ function evaluatePassword(pw: string, rules: PasswordRule[]): PasswordRule[] {
   })
 }
 
-export function BuildChallenge({ rules, onComplete }: Props) {
+const HINTS = [
+  'كلمة المرور القوية تحتوي على 8 أحرف على الأقل',
+  'أضف أرقاماً ورموزاً خاصة لتعزيز القوة',
+  'لا تستخدم كلمات معروفة أو أسماء',
+  'استخدم خليطاً من الأحرف الكبيرة والصغيرة'
+]
+
+export function BuildChallenge({ rules, onComplete, onRequestHint }: Props) {
   const [password, setPassword] = useState('')
   const [done, setDone] = useState(false)
+  const [hintText, setHintText] = useState<string | null>(null)
+  const [flashColor, setFlashColor] = useState<string | null>(null)
 
   const evaluated = useMemo(() => evaluatePassword(password, rules), [password, rules])
   const satisfied = evaluated.filter((r) => r.satisfied).length
@@ -31,10 +41,18 @@ export function BuildChallenge({ rules, onComplete }: Props) {
   const reset = () => {
     setPassword('')
     setDone(false)
+    setHintText(null)
   }
 
   const strength = allSatisfied ? 'قوية' : satisfied >= 2 ? 'متوسطة' : 'ضعيفة'
   const strengthColor = allSatisfied ? '#81C784' : satisfied >= 2 ? '#FFB74D' : '#E57373'
+
+  const handleHint = () => {
+    const hint = HINTS[Math.floor(Math.random() * HINTS.length)] ?? 'استخدم خليطاً من الأحرف والأرقام'
+    setHintText(hint)
+    onRequestHint?.()
+    setTimeout(() => setHintText(null), 5000)
+  }
 
   if (done) {
     return (
@@ -51,7 +69,20 @@ export function BuildChallenge({ rules, onComplete }: Props) {
   }
 
   return (
-    <div style={{ padding: '24px', direction: 'rtl', maxWidth: '450px', margin: '0 auto' }}>
+    <div style={{
+      padding: '24px', direction: 'rtl', maxWidth: '450px', margin: '0 auto',
+      position: 'relative',
+    }}>
+      <style>{`
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-8px) } 75% { transform: translateX(8px) } }
+      `}</style>
+      {flashColor && (
+        <div style={{
+          position: 'absolute', inset: 0, background: flashColor,
+          borderRadius: '12px', pointerEvents: 'none',
+          animation: 'cg-fade 0.4s ease-out',
+        }} />
+      )}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <div style={{ fontSize: '14px', color: strengthColor, fontWeight: 700 }}>القوة: {strength}</div>
       </div>
@@ -67,12 +98,22 @@ export function BuildChallenge({ rules, onComplete }: Props) {
           direction: 'ltr', marginBottom: '20px',
         }}
       />
+      {hintText && (
+        <div style={{
+          background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+          borderRadius: '8px', padding: '10px', marginBottom: '12px',
+          color: '#FFD700', fontSize: '14px', textAlign: 'center',
+        }}>
+          💡 {hintText}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
         {evaluated.map((r) => (
           <div key={r.type} style={{
             display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px',
             borderRadius: 'var(--custom-border-radius)', background: r.satisfied ? 'rgba(129,199,132,0.1)' : 'rgba(255,255,255,0.03)',
             border: `var(--custom-border-width) solid ${r.satisfied ? 'var(--border-color-success)' : 'var(--border-color-faint)'}`,
+            transition: 'all 0.3s ease',
           }}>
             <span style={{ fontSize: '18px', color: r.satisfied ? '#81C784' : '#E57373' }}>
               {r.satisfied ? '✓' : '✗'}

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGameStore } from '@/store'
+import { audio } from '@/systems/ProceduralAudio'
 
 interface ShopItem {
   id: string
@@ -13,11 +14,13 @@ interface ShopItem {
 const SHOP_ITEMS: ShopItem[] = [
   { id: 'hearts_refill', name: 'تعبئة القلوب', description: 'استعد 5 قلوب فوراً', icon: '❤️', price: 100, type: 'hearts' },
   { id: 'hints_pack', name: 'حزمة تلميحات', description: 'احصل على 3 تلميحات إضافية', icon: '💡', price: 150, type: 'hints' },
-  { id: 'xp_boost', name: 'تعزيز XP', description: 'نقاط الخبرة接下来 2x لمدة 5 دقائق', icon: '⚡', price: 200, type: 'xp_boost' },
+  { id: 'xp_boost', name: 'تعزيز XP', description: 'نقاط الخبرة 2x لمدة 5 دقائق', icon: '⚡', price: 200, type: 'xp_boost' },
   { id: 'theme_dark', name: 'سمة ليلية', description: 'خلفية ليلية مميزة', icon: '🌙', price: 300, type: 'theme' },
   { id: 'theme_neon', name: 'سمة نيون', description: 'تأثيرات نيون متوهجة', icon: '✨', price: 400, type: 'theme' },
-  { id: 'title_pro', name: 'لقب المحترف', description: 'القب "محترف الأمن" بجانب اسمك', icon: '👑', price: 500, type: 'theme' },
+  { id: 'title_pro', name: 'لقب المحترف', description: 'لقب "محترف الأمن" بجانب اسمك', icon: '👑', price: 500, type: 'theme' },
 ]
+
+const BOUGHT_KEY = 'cg-shop-bought'
 
 interface Props {
   onDone: () => void
@@ -25,21 +28,29 @@ interface Props {
 
 export function Shop({ onDone }: Props) {
   const game = useGameStore()
-  const [boughtItems, setBoughtItems] = useState<string[]>([])
+  const [boughtItems, setBoughtItems] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(BOUGHT_KEY) || '[]') } catch { return [] }
+  })
   const [message, setMessage] = useState<string | null>(null)
+  const [shakeItem, setShakeItem] = useState<string | null>(null)
+
+  useEffect(() => {
+    localStorage.setItem(BOUGHT_KEY, JSON.stringify(boughtItems))
+  }, [boughtItems])
 
   const handleBuy = (item: ShopItem) => {
-    if (game.totalScore < item.price) {
+    if (boughtItems.includes(item.id)) return
+    if (game.xp < item.price) {
+      audio.playWrong()
       setMessage('ليس لديك نقاط كافية!')
-      setTimeout(() => setMessage(null), 2000)
+      setShakeItem(item.id)
+      setTimeout(() => { setMessage(null); setShakeItem(null) }, 1500)
       return
     }
 
-    // Deduct points
-    const currentXp = game.xp
     game.addXp(-item.price)
+    audio.playCorrect()
 
-    // Apply effect
     switch (item.type) {
       case 'hearts':
         game.resetHearts()
@@ -52,10 +63,10 @@ export function Shop({ onDone }: Props) {
         setMessage('تعزيز XP مفعّل! ⚡')
         break
       case 'theme':
-        setBoughtItems([...boughtItems, item.id])
         setMessage(`تم شراء ${item.name}! 🎨`)
         break
     }
+    setBoughtItems((prev) => [...prev, item.id])
     setTimeout(() => setMessage(null), 2000)
   }
 
@@ -65,13 +76,20 @@ export function Shop({ onDone }: Props) {
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
+      animation: 'cg-fade-in 0.3s ease-out',
     }}>
+      <style>{`
+        @keyframes cg-fade-in { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes cg-shake { 0%,100% { transform: translateX(0) } 25% { transform: translateX(-6px) } 75% { transform: translateX(6px) } }
+        @keyframes cg-bounce { 0%,100% { transform: scale(1) } 50% { transform: scale(1.05) } }
+      `}</style>
       <div style={{
         background: 'rgba(20,20,40,0.95)',
         border: '1px solid rgba(255,215,0,0.3)',
         borderRadius: '20px', padding: '24px',
         width: '90%', maxWidth: '500px', maxHeight: '80vh',
         overflow: 'auto',
+        animation: 'cg-bounce 0.3s ease-out',
       }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between',
@@ -79,8 +97,8 @@ export function Shop({ onDone }: Props) {
         }}>
           <h3 style={{ margin: 0, color: '#FFD700', fontSize: '20px' }}>🛒 المتجر</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ color: '#FFD700', fontSize: '14px' }}>
-              ⭐ {game.totalScore.toLocaleString()} نقطة
+            <span style={{ color: '#FFD700', fontSize: '14px', fontWeight: 'bold' }}>
+              ⭐ {game.xp.toLocaleString()} نقطة
             </span>
             <button
               onClick={onDone}
@@ -99,10 +117,11 @@ export function Shop({ onDone }: Props) {
         {message && (
           <div style={{
             padding: '10px', borderRadius: '10px',
-            background: 'rgba(76,175,80,0.15)',
-            border: '1px solid rgba(76,175,80,0.3)',
-            color: '#4CAF50', fontSize: '14px',
-            textAlign: 'center', marginBottom: '12px',
+            background: message.includes('كافية') ? 'rgba(229,115,115,0.15)' : 'rgba(76,175,80,0.15)',
+            border: `1px solid ${message.includes('كافية') ? 'rgba(229,115,115,0.3)' : 'rgba(76,175,80,0.3)'}`,
+            color: message.includes('كافية') ? '#E57373' : '#4CAF50',
+            fontSize: '14px', textAlign: 'center', marginBottom: '12px',
+            animation: 'cg-bounce 0.3s ease-out',
           }}>
             {message}
           </div>
@@ -113,8 +132,9 @@ export function Shop({ onDone }: Props) {
           gap: '12px',
         }}>
           {SHOP_ITEMS.map((item) => {
-            const canAfford = game.totalScore >= item.price
+            const canAfford = game.xp >= item.price
             const isBought = boughtItems.includes(item.id)
+            const isShaking = shakeItem === item.id
             return (
               <div
                 key={item.id}
@@ -125,6 +145,8 @@ export function Shop({ onDone }: Props) {
                     ? '1px solid rgba(76,175,80,0.3)'
                     : '1px solid rgba(255,255,255,0.1)',
                   opacity: isBought ? 0.6 : 1,
+                  animation: isShaking ? 'cg-shake 0.3s ease-in-out' : undefined,
+                  transition: 'all 0.2s ease',
                 }}
               >
                 <div style={{ fontSize: '28px', marginBottom: '8px' }}>{item.icon}</div>
@@ -154,6 +176,7 @@ export function Shop({ onDone }: Props) {
                     color: isBought ? '#4CAF50' : canAfford ? '#000' : '#888',
                     fontWeight: 'bold', fontSize: '12px',
                     cursor: isBought || !canAfford ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   {isBought ? '✓ مملوك' : `⭐ ${item.price}`}
