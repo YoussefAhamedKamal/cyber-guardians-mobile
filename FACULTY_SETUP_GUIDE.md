@@ -929,20 +929,61 @@ export default {
 - يتجاوز مشاكل CORS في المتصفح
 - يُعطي نتائج بحث أدق وأكثر
 - يدعم البحث بطرق متعددة (DuckDuckGo API + HTML)
+- مجاني تماماً — 100,000 طلب/يوم
+
+### مقارنة: بدون Worker vs مع Worker
+
+| | بدون Worker | مع Worker |
+|---|---|---|
+| **النتائج** | محدودة (DuckDuckGo Instant فقط) | كاملة (API + HTML) |
+| **CORS** | قد يفشل | يعمل دائماً |
+| **السرعة** | بطيء | سريع (Cloudflare edge) |
+| **التكلفة** | مجاني | مجاني |
+
+---
 
 ### الخطوة 1: إنشاء Worker البحث
 
-1. اذهب إلى: **https://dash.cloudflare.com** → Workers & Pages
-2. اضغط **"Create Worker"**
-3. اختر اسم: `cyber-guardians-search-proxy` (أو أي اسم تريده)
-4. اضغط **"Deploy"**
+#### الخطوة 1.1: تسجيل الدخول إلى Cloudflare
+1. اذهب إلى: **https://dash.cloudflare.com**
+2. سجّل الدخول بحسابك (أو أنشئ حساباً جديداً مجاناً)
+
+#### الخطوة 1.2: الوصول إلى Workers & Pages
+1. في القائمة左侧، اضغط على **"Workers & Pages"**
+2. سترى صفحة Overview — اضغط على **"Create"** (زر أزرق في الأعلى)
+
+#### الخطوة 1.3: اختيار نوع الإنشاء
+1. سترى صفحة **"Ship something new"** مع عدة خيارات:
+   - Continue with GitHub
+   - Connect GitLab
+   - **Start with Hello World!** ✅ ← اختر هذا
+   - Select a template
+   - Upload your static files
+
+2. اضغط على **"Start with Hello World!"**
+
+#### الخطوة 1.4: تسمية Worker
+1. في حقل **"Worker Name"**، اكتب: `cyber-guardians-search-proxy`
+   (أو أي اسم تريده — استخدم أحرف إنجليزية وشرطات فقط)
+2. سترى رابط الـ Worker يتغير تلقائياً:
+   ```
+   https://cyber-guardians-search-proxy.your-username.workers.dev
+   ```
+3. اضغط على **"Deploy"** (زر أزرق في الأسفل)
 
 ### الخطوة 2: نسخ الكود
 
-1. افتح الـ Worker الذي أنشأته
-2. اذهب إلى تبويب **"Edit Code"**
-3. احذف الكود الموجود بالكامل
-4. انسخ الكود التالي:
+#### الخطوة 2.1: فتح محرر الكود
+1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
+2. اضغط على **"Edit code"** (زر رمادي في الأعلى)
+
+#### الخطوة 2.2: حذف الكود الموجود
+1. سترى محرر كود على اليمين (كود Hello World الافتراضي)
+2. اضغط على `Ctrl+A` (أو `Cmd+A` على Mac) لتحديد كل الكود
+3. اضغط على `Delete` لحذفه
+
+#### الخطوة 2.3: نسخ الكود الجديد
+1. انسخ الكود التالي بالكامل وضعه في المحرر:
 
 ```javascript
 export default {
@@ -1125,29 +1166,98 @@ async function handleSearchHTML(request, corsHeaders) {
 }
 ```
 
-5. اضغط **"Deploy"**
+#### الخطوة 2.4: حفظ الكود
+1. اضغط على `Ctrl+S` (أو `Cmd+S` على Mac) لحفظ الكود
+2. أو اضغط على **"Save"** (زر أزرق في الأعلى)
+
+#### الخطوة 2.5: نشر الكود
+1. اضغط على **"Deploy"** (زر أزرق في الأعلى)
+2. انتظر حتى ترى رسالة **"Successfully deployed"**
+
+---
 
 ### الخطوة 3: نسخ رابط Worker
 
-1. انسخ رابط الـ Worker (يبدو مثل):
+#### الخطوة 3.1: العثور على الرابط
+1. في الأعلى من صفحة الـ Worker، سترى رابطاً مثل:
    ```
    https://cyber-guardians-search-proxy.your-username.workers.dev
    ```
+2. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
+
+#### الخطوة 3.2: التحقق من الرابط
+1. تأكد من أن الرابط ينتهي بـ `.workers.dev`
+2. تأكد من أن الاسم يطابق ما كتبته في الخطوة 1.4
+
+---
 
 ### الخطوة 4: اختبار Worker
 
-افتح الرابط في المتصفح وأضف `?q=hello` في النهاية:
-```
-https://cyber-guardians-search-proxy.your-username.workers.dev/search?q=hello
-```
+#### الخطوة 4.1: اختبار البحث الأساسي
+1. افتح الرابط في المتصفح وأضف `?q=hello` في النهاية:
+   ```
+   https://cyber-guardians-search-proxy.your-username.workers.dev/search?q=hello
+   ```
+2. يجب أن ترى نتائج JSON مثل:
+   ```json
+   {
+     "query": "hello",
+     "results": [...],
+     "total": 5
+   }
+   ```
 
-يجب أن ترى نتائج JSON.
+#### الخطوة 4.2: اختبار البحث المتقدم
+1. جرّب البحث عن شيء محدد:
+   ```
+   https://cyber-guardians-search-proxy.your-username.workers.dev/search?q=GPT-5
+   ```
+2. يجب أن ترى نتائج关于 GPT-5
+
+#### الخطوة 4.3: اختبار البحث HTML
+1. جرّب الـ HTML search:
+   ```
+   https://cyber-guardians-search-proxy.your-username.workers.dev/search/html?q=cybersecurity
+   ```
+2. يجب أن ترى نتائج أكثر تفصيلاً
+
+---
+
+### أخطاء شائعة وكيفية حلها
+
+#### الخطأ: "Worker not found"
+- **السبب:** الرابط غير صحيح أو الـ Worker لم يُنشر بعد
+- **الحل:** تأكد من نسخ الرابط بشكل صحيح، أو أعد النشر
+
+#### الخطأ: "CORS error"
+- **السبب:** الكود غير مكتمل
+- **الحل:** تأكد من نسخ الكود بالكامل (لا ت deix任何 سطر)
+
+#### الخطأ: "No results"
+- **السبب:** DuckDuckGo لا يُرجع نتائج لهذا الاستعلام
+- **الحل:** جرّب استعلاماً مختلفاً
+
+---
+
+### Checklist: تأكد من إتمام كل خطوة
+
+- [ ] Cloudflare Account منشئ
+- [ ] Worker منشئ باسم `cyber-guardians-search-proxy`
+- [ ] الكود منسخ بالكامل
+- [ ] الكود محفوظ ومنشور
+- [ ] رابط Worker منسخ
+- [ ] اختبار `/search?q=hello` ناجح ✅
+- [ ] اختبار `/search?q=GPT-5` ناجح ✅
+- [ ] رابط Worker مضبوط في اللعبة (اختياري)
+
+---
 
 ### ملاحظات مهمة:
 - **مجاني تماماً** — 100,000 طلب/يوم مجاناً
 - **لا يحتاج مفاتيح API** — يستخدم DuckDuckGo المجاني
 - **يتجاوز CORS** — لا مشاكل مع المتصفح
 - **اختياري** — اللعبة تعمل بدونه (باستخدام DuckDuckGo مباشرة)
+- **لا يحتاج Environment Variables** — لا حاجة لمتغيرات AUTH_TOKEN
 
 ---
 
