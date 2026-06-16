@@ -84,13 +84,40 @@ AI Assistant هو مساعد ذكي مدمج في اللعبة يساعدك عل
 
 > ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
 
-1. من لوحة التحكم، اضغط على **"Workers & Pages"** في القائمة左侧
-2. اضغط **"Create"** ثم **"Create Worker"**
-3. اختر أي اسم (مثل: `my-ai-proxy`)
-4. اضغط **"Deploy"**
-5. الآن اضغط على الملف الذي أنشأته وتظهر لك كود
+#### الخطوة 2.1: فتح لوحة تحكم Cloudflare
 
-6. امسح الكود الموجود واستبدل به هذا الكود:
+1. اذهب إلى: **https://dash.cloudflare.com**
+2. سجّل الدخول بحسابك
+3. سترى لوحة التحكم الرئيسية
+
+#### الخطوة 2.2: الانتقال إلى Workers
+
+1. في القائمة左侧 (على اليسار)، ابحث عن **"Workers & Pages"**
+2. اضغط عليه
+3. سترى صفحة Workers
+
+#### الخطوة 2.3: إنشاء Worker جديد
+
+1. اضغط على زر **"Create"** (أزرق اللون)
+2. سترى خيارين:
+   - **"Create Worker"** ← اضغط هنا ✅
+   - **"Create Pages Project"** ← لا تضغط هنا
+
+3. بعد الضغط على "Create Worker"، سترى نموذج:
+   - **"Name"**: اكتب اسم الـ Worker
+     - مثال: `my-ai-proxy`
+     - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
+   - اضغط **"Deploy"**
+
+4. الآن سترى صفحة الكود (Editeur):
+   - هناك كود جاهز (Hello World)
+   - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
+
+#### الخطوة 2.4: وضع الكود الجديد
+
+1. في صفحة Editeur، سترى مربع كود
+2. **امسح كل الكود الموجود** (Ctrl+A ثم Delete)
+3. **انسخ الكود التالي والصقه**:
 
 ```javascript
 export default {
@@ -178,25 +205,80 @@ export default {
 }
 ```
 
-7. اضغط **"Deploy"** لحفظ التغييرات
+4. اضغط **"Deploy"** (زر أزرق في الأسفل)
 
-> ✅ **الآن لديك AI Worker خاص بك!** رابطه سيكون مثل:
-> `https://my-ai-proxy.YOUR-USERNAME.workers.dev`
+#### الخطوة 2.5: نسخ رابط Worker
+
+1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
+2. في الأعلى، سترى رابط الـ Worker مثل:
+   ```
+   https://my-ai-proxy.your-username.workers.dev
+   ```
+3. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
+
+> ✅ **الآن لديك AI Worker خاص بك!**
 
 ### الخطوة 3: إعداد المتغيرات (Environment Variables)
 
-1. من صفحة Worker، اذهب إلى تبويب **"Settings"** ثم **"Variables and Secrets"**
-2. اضغط **"Add variable"** وأضف المتغيرات التالية:
+> هذه الخطوة مهمة جداً — بدونها لن يعمل Worker!
 
-| الاسم | القيمة | ملاحظات |
-|-------|--------|---------|
-| `AUTH_TOKEN` | أي نص تختاره (مثل: `my-secret-token-123`) | هذا سرّك — لا تشاركه مع أحد |
-| `ALLOWED_ORIGINS` | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` | استبدل YOUR-USERNAME باسم المستخدم الخاص بك |
-| `OPENAI_API_KEY` | مفتاح OpenAI الخاص بك (اختياري) | فقط إذا كنت تستخدم OpenAI |
-| `GEMINI_API_KEY` | مفتاح Gemini الخاص بك (اختياري) | فقط إذا كنت تستخدم Gemini |
+#### الخطوة 3.1: الوصول إلى إعدادات المتغيرات
 
-3. اضغط **"Encrypt"** بجانب كل متغير (مهم للأمان)
-4. اضغط **"Deploy"** مرة أخرى
+1. من صفحة الـ Worker، اضغط على تبويب **"Settings"** (في الأعلى)
+2. ثم اضغط على **"Variables and Secrets"** (في القائمة左侧)
+
+#### الخطوة 3.2: إضافة المتغير الأول (AUTH_TOKEN)
+
+1. اضغط **"Add variable"**
+2. املأ:
+
+| الحقل | القيمة |
+|-------|--------|
+| **Variable name** | `AUTH_TOKEN` |
+| **Value** | اكتب نصاً سرياً تختاره (مثل: `my-ai-secret-123`) |
+| **Encrypt** | ✅ فعّل هذا الخيار |
+
+3. اضغط **"Save"**
+
+> **ما هو AUTH_TOKEN؟**
+> هذا مفتاح حماية — اللعبة سترسله مع كل طلب للتأكد أنه منك.
+
+#### الخطوة 3.3: إضافة المتغير الثاني (ALLOWED_ORIGINS)
+
+1. اضغط **"Add variable"** مرة أخرى
+2. املأ:
+
+| الحقل | القيمة |
+|-------|--------|
+| **Variable name** | `ALLOWED_ORIGINS` |
+| **Value** | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` |
+| **Encrypt** | ❌ لا تفعّل |
+
+3. اضغط **"Save"**
+
+> **مهم:** استبدل `YOUR-USERNAME` باسم المستخدم الخاص بك على GitHub!
+
+#### الخطوة 3.4: إضافة المتغير الثالث (API Key)
+
+1. اضغط **"Add variable"** مرة أخرى
+2. املأ:
+
+| الحقل | القيمة |
+|-------|--------|
+| **Variable name** | `GEMINI_API_KEY` (إذا تستخدم Gemini) أو `OPENAI_API_KEY` (إذا تستخدم OpenAI) |
+| **Value** | المفتاح الذي حصلت عليه من Google أو OpenAI |
+| **Encrypt** | ✅ فعّل هذا الخيار |
+
+3. اضغط **"Save"**
+
+#### الخطوة 3.5: تأكيد الحفظ
+
+1. تأكد من أن لديك 3 متغيرات على الأقل:
+   - ✅ `AUTH_TOKEN`
+   - ✅ `ALLOWED_ORIGINS`
+   - ✅ `GEMINI_API_KEY` أو `OPENAI_API_KEY`
+
+2. اضغط **"Deploy"** مرة أخرى (في الأعلى) لتطبيق التغييرات
 
 ### الخطوة 4: الحصول على مفتاح AI (API Key)
 
@@ -319,11 +401,40 @@ GitHub هو موقع لتخزين ومشاركة الملفات البرمجية
 
 > ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
 
-1. اذهب إلى لوحة تحكم Cloudflare: **https://dash.cloudflare.com**
-2. اضغط على **"Workers & Pages"** → **"Create"** → **"Create Worker"**
-3. اختر اسم مختلف (مثل: `my-github-proxy`)
-4. اضغط **"Deploy"**
-5. امسح الكود واستبدل به هذا الكود:
+#### الخطوة 3.1: فتح لوحة تحكم Cloudflare
+
+1. اذهب إلى: **https://dash.cloudflare.com**
+2. سجّل الدخول بحسابك
+3. سترى لوحة التحكم الرئيسية
+
+#### الخطوة 3.2: الانتقال إلى Workers
+
+1. في القائمة左侧 (على اليسار)، ابحث عن **"Workers & Pages"**
+2. اضغط عليه
+3. سترى صفحة Workers
+
+#### الخطوة 3.3: إنشاء Worker جديد
+
+1. اضغط على زر **"Create"** (أزرق اللون)
+2. سترى خيارين:
+   - **"Create Worker"** ← اضغط هنا ✅
+   - **"Create Pages Project"** ← لا تضغط هنا
+
+3. بعد الضغط على "Create Worker"، سترى نموذج:
+   - **"Name"**: اكتب اسم الـ Worker
+     - مثال: `my-github-proxy`
+     - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
+   - اضغط **"Deploy"**
+
+4. الآن سترى صفحة الكود (Editeur):
+   - هناك كود جاهز (Hello World)
+   - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
+
+#### الخطوة 3.4: وضع الكود الجديد
+
+1. في صفحة Editeur، سترى مربع كود
+2. **امسح كل الكود الموجود** (Ctrl+A ثم Delete)
+3. **انسخ الكود التالي والصقه**:
 
 ```javascript
 export default {
@@ -409,7 +520,7 @@ export default {
       body,
     })
 
-    const respHeaders = new Response(resp.headers).headers
+    const respHeaders = new Response(resp.headers)
     Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
     respHeaders.delete('Content-Security-Policy')
 
@@ -422,24 +533,82 @@ export default {
 }
 ```
 
-6. اضغط **"Deploy"**
+4. اضغط **"Deploy"** (زر أزرق في الأسفل)
 
-> ✅ **الآن لديك GitHub Worker خاص بك!** رابطه سيكون مثل:
-> `https://my-github-proxy.YOUR-USERNAME.workers.dev`
+#### الخطوة 3.5: نسخ رابط Worker
 
-### الخطوة 4: إعداد متغيرات GitHub Worker
+1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
+2. في الأعلى، سترى رابط الـ Worker مثل:
+   ```
+   https://my-github-proxy.your-username.workers.dev
+   ```
+3. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
 
-1. من صفحة Worker، اذهب إلى **"Settings"** ثم **"Variables and Secrets"**
-2. أضف المتغيرات التالية:
+> ✅ **الآن لديك GitHub Worker خاص بك!**
 
-| الاسم | القيمة |
+---
+
+### الخطوة 4: إعداد المتغيرات (Environment Variables)
+
+> هذه الخطوة مهمة جداً — بدونها لن يعمل Worker!
+
+#### الخطوة 4.1: الوصول إلى إعدادات المتغيرات
+
+1. من صفحة الـ Worker، اضغط على تبويب **"Settings"** (في الأعلى)
+2. ثم اضغط على **"Variables and Secrets"** (في القائمة左侧)
+
+#### الخطوة 4.2: إضافة المتغير الأول (AUTH_TOKEN)
+
+1. اضغط **"Add variable"**
+2. املأ:
+
+| الحقل | القيمة |
 |-------|--------|
-| `AUTH_TOKEN` | أي نص تختاره (مثل: `gh-my-secret-123`) |
-| `ALLOWED_ORIGINS` | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` |
-| `GITHUB_TOKEN` | التوكن الذي أنشأته في GitHub (`ghp_...`) |
+| **Variable name** | `AUTH_TOKEN` |
+| **Value** | اكتب نصاً سرياً تختاره (مثل: `my-gh-secret-123`) |
+| **Encrypt** | ✅ فعّل هذا الخيار |
 
-3. فعّل **"Encrypt"** لكل متغير
-4. اضغط **"Deploy"**
+3. اضغط **"Save"**
+
+> **ما هو AUTH_TOKEN؟**
+> هذا مفتاح حماية — اللعبة سترسله مع كل طلب للتأكد أنه منك.
+
+#### الخطوة 4.3: إضافة المتغير الثاني (ALLOWED_ORIGINS)
+
+1. اضغط **"Add variable"** مرة أخرى
+2. املأ:
+
+| الحقل | القيمة |
+|-------|--------|
+| **Variable name** | `ALLOWED_ORIGINS` |
+| **Value** | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` |
+| **Encrypt** | ❌ لا تفعّل |
+
+3. اضغط **"Save"**
+
+> **مهم:** استبدل `YOUR-USERNAME` باسم المستخدم الخاص بك على GitHub!
+
+#### الخطوة 4.4: إضافة المتغير الثالث (GITHUB_TOKEN)
+
+1. اضغط **"Add variable"** مرة أخرى
+2. املأ:
+
+| الحقل | القيمة |
+|-------|--------|
+| **Variable name** | `GITHUB_TOKEN` |
+| **Value** | التوكن الذي حصلت عليه من GitHub (`ghp_...`) |
+| **Encrypt** | ✅ فعّل هذا الخيار |
+
+3. اضغط **"Save"**
+
+#### الخطوة 4.5: تأكيد الحفظ
+
+1. تأكد من أن لديك 3 متغيرات:
+   - ✅ `AUTH_TOKEN`
+   - ✅ `ALLOWED_ORIGINS`
+   - ✅ `GITHUB_TOKEN`
+
+2. اضغط **"Deploy"** مرة أخرى (في الأعلى) لتطبيق التغييرات
 
 ### الخطوة 5: إعداد اللعبة للاتصال بـ GitHub Worker
 
