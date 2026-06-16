@@ -13,6 +13,7 @@ export interface ChatAttachment {
   mimeType: string
   uploadStatus?: UploadStatus
   uploadError?: string
+  videoFrames?: string[]
 }
 
 export interface ChatSession {

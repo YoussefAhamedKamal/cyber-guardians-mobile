@@ -883,27 +883,107 @@ function FileUploadButton({ onFiles }: { onFiles: (files: File[]) => void }) {
   )
 }
 
+function extractVideoFrames(file: File, maxFrames = 5): Promise<string[]> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.muted = true
+    const url = URL.createObjectURL(file)
+    video.src = url
+    video.onloadedmetadata = async () => {
+      const duration = video.duration || 10
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { URL.revokeObjectURL(url); resolve([]); return }
+      canvas.width = 640
+      canvas.height = 360
+      const frames: string[] = []
+      const step = duration / (maxFrames + 1)
+      for (let i = 1; i <= maxFrames; i++) {
+        try {
+          video.currentTime = step * i
+          await new Promise((r) => { video.onseeked = () => r(undefined) })
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          frames.push(canvas.toDataURL('image/jpeg', 0.7))
+        } catch { break }
+      }
+      URL.revokeObjectURL(url)
+      resolve(frames)
+    }
+    video.onerror = () => { URL.revokeObjectURL(url); resolve([]) }
+  })
+}
+
+function transcribeAudio(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      resolve(`[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`)
+      return
+    }
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    const ctx = new AudioCtx()
+    file.arrayBuffer().then((buf) => ctx.decodeAudioData(buf)).then((audioBuf) => {
+      const duration = audioBuf.duration.toFixed(1)
+      const channels = audioBuf.numberOfChannels
+      const sampleRate = audioBuf.sampleRate
+      const data = audioBuf.getChannelData(0)
+      let rms = 0
+      for (let i = 0; i < data.length; i += 1000) rms += data[i]! * data[i]!
+      rms = Math.sqrt(rms / (data.length / 1000))
+      const peak = Math.max(...Array.from(data).filter((_, i) => i % 1000 === 0).map(Math.abs))
+      const silenceThreshold = peak * 0.05
+      let speechSegments = 0
+      let inSpeech = false
+      for (let i = 0; i < data.length; i += sampleRate * 0.1) {
+        const chunkRms = Math.sqrt(Array.from(data.slice(i, i + sampleRate * 0.1)).reduce((s, v) => s + v * v, 0) / (sampleRate * 0.1))
+        if (chunkRms > silenceThreshold && !inSpeech) { speechSegments++; inSpeech = true }
+        else if (chunkRms <= silenceThreshold) inSpeech = false
+      }
+      ctx.close()
+      const desc = `[صوت: ${file.name}]\nالمدة: ${duration}ث | القنوات: ${channels} | معدل العينات: ${sampleRate}Hz\nالصوت: ${peak > 0.1 ? 'واضح' : 'هادئ'} (${(rms * 100).toFixed(1)}% مستوى)\nتقدير كلمات: ~${Math.round(speechSegments * 2.5)} كلمة`
+      resolve(desc)
+    }).catch(() => {
+      resolve(`[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`)
+    })
+  })
+}
+
 function readFiles(files: File[], onStatus?: (idx: number, status: 'success' | 'error', error?: string) => void): Promise<ChatAttachment[]> {
-  return Promise.all(files.map((file, idx) => new Promise<ChatAttachment>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const content = reader.result as string
-      const att: ChatAttachment = file.type.startsWith('image/')
-        ? { name: file.name, type: 'image', content, mimeType: file.type, uploadStatus: 'success' }
-        : file.type.startsWith('video/')
-        ? { name: file.name, type: 'video', content: `[فيديو: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)]`, mimeType: file.type, uploadStatus: 'success' }
-        : file.type.startsWith('audio/')
-        ? { name: file.name, type: 'audio', content: `[صوت: ${file.name} (${(file.size / 1024).toFixed(0)}KB)]`, mimeType: file.type, uploadStatus: 'success' }
-        : { name: file.name, type: 'text', content, mimeType: file.type, uploadStatus: 'success' }
+  return Promise.all(files.map(async (file, idx) => {
+    try {
+      if (file.type.startsWith('image/')) {
+        const content = await new Promise<string>((res, rej) => {
+          const r = new FileReader()
+          r.onload = () => res(r.result as string)
+          r.onerror = () => rej(new Error('read failed'))
+          r.readAsDataURL(file)
+        })
+        onStatus?.(idx, 'success')
+        return { name: file.name, type: 'image' as const, content, mimeType: file.type, uploadStatus: 'success' as const }
+      }
+      if (file.type.startsWith('video/')) {
+        const frames = await extractVideoFrames(file)
+        onStatus?.(idx, 'success')
+        return { name: file.name, type: 'video' as const, content: frames.join('|||'), mimeType: file.type, uploadStatus: 'success' as const, videoFrames: frames }
+      }
+      if (file.type.startsWith('audio/')) {
+        const desc = await transcribeAudio(file)
+        onStatus?.(idx, 'success')
+        return { name: file.name, type: 'audio' as const, content: desc, mimeType: file.type, uploadStatus: 'success' as const }
+      }
+      const content = await new Promise<string>((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res(r.result as string)
+        r.onerror = () => rej(new Error('read failed'))
+        r.readAsText(file)
+      })
       onStatus?.(idx, 'success')
-      resolve(att)
-    }
-    reader.onerror = () => {
+      return { name: file.name, type: 'text' as const, content, mimeType: file.type, uploadStatus: 'success' as const }
+    } catch {
       onStatus?.(idx, 'error', 'فشل قراءة الملف')
-      resolve({ name: file.name, type: 'file', content: `[ملف: ${file.name}]`, mimeType: file.type, uploadStatus: 'error', uploadError: 'فشل قراءة الملف' })
+      return { name: file.name, type: 'file' as const, content: `[ملف: ${file.name}]`, mimeType: file.type, uploadStatus: 'error' as const, uploadError: 'فشل قراءة الملف' }
     }
-    if (file.type.startsWith('image/')) reader.readAsDataURL(file); else reader.readAsText(file)
-  })))
+  }))
 }
 
 function StudentChat() {

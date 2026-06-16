@@ -53,14 +53,18 @@ function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?
   const atts = m.attachments?.filter((a) => a.content && a.uploadStatus === 'success')
   if (!atts || atts.length === 0) return m.content
 
-  const hasImage = atts.some((a) => a.type === 'image')
-  if (!hasImage) {
-    const textParts = atts.filter((a) => a.type === 'text' || a.type === 'file')
+  const hasVisual = atts.some((a) => a.type === 'image' || a.type === 'video')
+  if (!hasVisual) {
+    const textParts = atts.filter((a) => a.type === 'text' || a.type === 'file' || a.type === 'audio')
     if (textParts.length === 0) return m.content
     let text = m.content || ''
     for (const att of textParts) {
-      const truncated = att.content.length > 4000 ? att.content.slice(0, 4000) + '\n... [مقطوع]' : att.content
-      text += `\n\n--- ملف: ${att.name} ---\n${truncated}\n--- نهاية الملف ---`
+      if (att.type === 'audio') {
+        text += `\n\n--- تحليل صوتي: ${att.name} ---\n${att.content}\n--- نهاية ---`
+      } else {
+        const truncated = att.content.length > 4000 ? att.content.slice(0, 4000) + '\n... [مقطوع]' : att.content
+        text += `\n\n--- ملف: ${att.name} ---\n${truncated}\n--- نهاية الملف ---`
+      }
     }
     return text
   }
@@ -70,6 +74,16 @@ function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?
   for (const att of atts) {
     if (att.type === 'image') {
       parts.push({ type: 'image_url', image_url: { url: att.content } })
+    } else if (att.type === 'video') {
+      const frames = att.content.split('|||').filter(Boolean)
+      if (frames.length > 0) {
+        parts.push({ type: 'text', text: `📋 إطارات من فيديو: ${att.name} (${frames.length} إطارات)` })
+        for (const frame of frames) {
+          parts.push({ type: 'image_url', image_url: { url: frame } })
+        }
+      }
+    } else if (att.type === 'audio') {
+      parts.push({ type: 'text', text: `\n--- تحليل صوتي: ${att.name} ---\n${att.content}` })
     } else if (att.type === 'text' || att.type === 'file') {
       const truncated = att.content.length > 4000 ? att.content.slice(0, 4000) + '\n... [مقطوع]' : att.content
       parts.push({ type: 'text', text: `\n--- ملف: ${att.name} ---\n${truncated}\n--- نهاية الملف ---` })
