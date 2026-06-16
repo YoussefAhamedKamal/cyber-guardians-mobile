@@ -10,15 +10,20 @@ export interface WorkerConfig {
 }
 
 let _workerCache: WorkerConfig | null = null
+let _workerLoadAttempted = false
 
 async function getWorkerConfig(): Promise<WorkerConfig | null> {
   if (_workerCache !== null) return _workerCache
-  _workerCache = await loadWorkerConfig(WORKER_CONFIG_KEY)
+  if (!_workerLoadAttempted) {
+    _workerLoadAttempted = true
+    _workerCache = await loadWorkerConfig(WORKER_CONFIG_KEY)
+  }
   return _workerCache
 }
 
 export async function setWorkerConfig(config: WorkerConfig): Promise<void> {
   _workerCache = config
+  _workerLoadAttempted = true
   await saveWorkerConfig(WORKER_CONFIG_KEY, config)
 }
 
@@ -70,7 +75,9 @@ function buildBody(modelId: string, messages: AIMessage[], _customBaseUrl: strin
 
 async function proxyFetch(targetUrl: string, init: RequestInit): Promise<Response> {
   const worker = await getWorkerConfig()
-  if (!worker) return fetch(targetUrl, init)
+  if (!worker || !worker.url) {
+    throw new Error('⚠️ Worker Proxy غير مُعد — افتح الإعدادات وأضف رابط Worker')
+  }
 
   const proxyUrl = `${worker.url.replace(/\/+$/, '')}?target=${encodeURIComponent(targetUrl)}`
   const headers = new Headers(init.headers)

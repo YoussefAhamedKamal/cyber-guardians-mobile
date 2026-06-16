@@ -34,8 +34,12 @@ function b64DecodeToBytes(b64: string): Uint8Array {
 async function getAesKey(): Promise<CryptoKey> {
   const stored = localStorage.getItem(GITHUB_KEY_SESSION)
   if (stored) {
-    const raw = b64DecodeToBytes(stored)
-    return crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+    try {
+      const raw = b64DecodeToBytes(stored)
+      return await crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+    } catch {
+      localStorage.removeItem(GITHUB_KEY_SESSION)
+    }
   }
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
