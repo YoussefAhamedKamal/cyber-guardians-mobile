@@ -20,6 +20,9 @@ interface AIStore extends AIState {
   getApiKey: (providerId: string) => string
   setCustomBaseUrl: (url: string) => void
   setUseDirectApi: (v: boolean) => void
+  setSearchEnabled: (v: boolean) => void
+  setDeepthinkEnabled: (v: boolean) => void
+  setDeepthinkStep: (v: string) => void
   setFacultyPin: (pin: string) => Promise<void>
   unlockFaculty: (pin: string) => Promise<boolean>
   lockFaculty: () => void
@@ -75,6 +78,9 @@ export const useAIStore = create<AIStore>()(
       getApiKey: (providerId) => get().apiKeys[providerId] || '',
       setCustomBaseUrl: (url) => set({ customBaseUrl: url }),
       setUseDirectApi: (v) => set({ useDirectApi: v }),
+      setSearchEnabled: (v) => set({ searchEnabled: v }),
+      setDeepthinkEnabled: (v) => set({ deepthinkEnabled: v }),
+      setDeepthinkStep: (v) => set({ deepthinkStep: v }),
       setFacultyPin: async (pin) => {
         const hashed = await hashPin(pin)
         set({ facultyPinHash: hashed })

@@ -4,7 +4,9 @@ import remarkGfm from 'remark-gfm'
 import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
-import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
+import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
+import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
+import { deepthink } from './deepthink'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -1059,18 +1061,39 @@ function StudentChat() {
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); ai.setStudentStreaming('')
     try {
-      const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
-      let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...msgs], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
-      for await (const chunk of gen) {
-        full += chunk
-        const now = Date.now()
-        if (now - lastUpdate >= THROTTLE_MS) { ai.setStudentStreaming(full); lastUpdate = now }
+      let finalMessages = [...msgs]
+
+      if (ai.searchEnabled) {
+        ai.setStudentStreaming('🔍 جارٍ البحث...')
+        const userMsg = msgs[msgs.length - 1]
+        if (userMsg?.role === 'user') {
+          const searchResponse = await advancedSearch(userMsg.content)
+          finalMessages = buildSearchAugmentedMessages(finalMessages, searchResponse.results)
+        }
       }
-      ai.setStudentStreaming(full)
-      ai.addStudentMessage({ role: 'assistant', content: full })
+
+      if (ai.deepthinkEnabled) {
+        const apiKey = ai.apiKeys[ai.providerId] || ''
+        const result = await deepthink(
+          ai.providerId, ai.modelId, finalMessages, apiKey, ai.customBaseUrl, ai.useDirectApi,
+          (step, content) => { ai.setDeepthinkStep(step); ai.setStudentStreaming(content) }
+        )
+        ai.setStudentStreaming(result.fullText)
+        ai.addStudentMessage({ role: 'assistant', content: result.fullText })
+      } else {
+        const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
+        let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
+        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...finalMessages], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
+        for await (const chunk of gen) {
+          full += chunk
+          const now = Date.now()
+          if (now - lastUpdate >= THROTTLE_MS) { ai.setStudentStreaming(full); lastUpdate = now }
+        }
+        ai.setStudentStreaming(full)
+        ai.addStudentMessage({ role: 'assistant', content: full })
+      }
     } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
-    ai.setLoading(false); ai.setStudentStreaming('')
+    ai.setLoading(false); ai.setStudentStreaming(''); ai.setDeepthinkStep('')
   }
 
   const handleSend = async () => {
@@ -1148,8 +1171,20 @@ function StudentChat() {
       )}
       <div style={{ display: 'flex', gap: '4px', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <FileUploadButton onFiles={handleFiles} />
+        <button onClick={() => ai.setSearchEnabled(!ai.searchEnabled)} title="بحث في الويب ومحتوى اللعبة" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer',
+          background: ai.searchEnabled ? 'rgba(79,195,247,0.3)' : 'rgba(255,255,255,0.05)',
+          color: ai.searchEnabled ? '#4FC3F7' : '#888',
+          border: `1px solid ${ai.searchEnabled ? 'rgba(79,195,247,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🔍</button>
+        <button onClick={() => ai.setDeepthinkEnabled(!ai.deepthinkEnabled)} title="تفكير عميق (Multi-Step)" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer',
+          background: ai.deepthinkEnabled ? 'rgba(206,147,216,0.3)' : 'rgba(255,255,255,0.05)',
+          color: ai.deepthinkEnabled ? '#CE93D8' : '#888',
+          border: `1px solid ${ai.deepthinkEnabled ? 'rgba(206,147,216,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🧠</button>
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={ai.loading ? '...' : 'اكتب سؤالك أو ارفع ملف...'} disabled={ai.loading}
+          placeholder={ai.loading ? (ai.deepthinkStep === 'thinking' ? '🧠 جارٍ التفكير...' : ai.deepthinkStep === 'review' ? '🔍 جارٍ المراجعة...' : ai.searchEnabled ? '🔍 جارٍ البحث...' : '...') : 'اكتب سؤالك أو ارفع ملف...'} disabled={ai.loading}
           style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px', outline: 'none' }} />
         <button onClick={handleSend} disabled={ai.loading || (!input.trim() && pendingAttachments.length === 0)} style={{
           padding: '8px 14px', borderRadius: '8px', border: 'none',
@@ -1222,21 +1257,43 @@ function FacultyAIChat() {
     const attachmentInfo = lastUser?.attachments?.map((a) => `[مرفق: ${a.name} (${a.type}) — ${a.content.slice(0, 200)}]`).join('\n') || ''
     const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nإعدادات اللعبة:\n${metaJson}\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${attachmentInfo ? 'المرفقات:\n' + attachmentInfo + '\n\n' : ''}${lastUser?.content || ''}` }
     try {
-      const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
-      const chatMsgs = msgs.filter((m) => m !== contextMsg)
-      let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-      const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
-      for await (const chunk of gen) {
-        full += chunk
-        const now = Date.now()
-        if (now - lastUpdate >= THROTTLE_MS) { ai.setFacultyStreaming(full); lastUpdate = now }
+      let finalMessages = [...msgs.filter((m) => m !== contextMsg), contextMsg]
+
+      if (ai.searchEnabled) {
+        ai.setFacultyStreaming('🔍 جارٍ البحث...')
+        if (lastUser?.content) {
+          const searchResponse = await advancedSearch(lastUser.content)
+          finalMessages = buildSearchAugmentedMessages(finalMessages, searchResponse.results)
+        }
       }
-      ai.setFacultyStreaming(full)
-      const { updates, cleanText } = parseAIUpdates(full)
-      ai.addFacultyMessage({ role: 'assistant', content: cleanText || full })
-      if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
+
+      if (ai.deepthinkEnabled) {
+        const apiKey = ai.apiKeys[ai.providerId] || ''
+        const result = await deepthink(
+          ai.providerId, ai.modelId, finalMessages, apiKey, ai.customBaseUrl, ai.useDirectApi,
+          (step, content) => { ai.setDeepthinkStep(step); ai.setFacultyStreaming(content) }
+        )
+        ai.setFacultyStreaming(result.fullText)
+        const { updates, cleanText } = parseAIUpdates(result.fullText)
+        ai.addFacultyMessage({ role: 'assistant', content: cleanText || result.fullText })
+        if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
+      } else {
+        const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
+        const chatMsgs = msgs.filter((m) => m !== contextMsg)
+        let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
+        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
+        for await (const chunk of gen) {
+          full += chunk
+          const now = Date.now()
+          if (now - lastUpdate >= THROTTLE_MS) { ai.setFacultyStreaming(full); lastUpdate = now }
+        }
+        ai.setFacultyStreaming(full)
+        const { updates, cleanText } = parseAIUpdates(full)
+        ai.addFacultyMessage({ role: 'assistant', content: cleanText || full })
+        if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
+      }
     } catch (err: any) { ai.addFacultyMessage({ role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }) }
-    ai.setLoading(false); ai.setFacultyStreaming('')
+    ai.setLoading(false); ai.setFacultyStreaming(''); ai.setDeepthinkStep('')
   }
 
   const handleSend = async () => {
@@ -1320,9 +1377,21 @@ function FacultyAIChat() {
       )}
       <div style={{ display: 'flex', gap: '4px', padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <FileUploadButton onFiles={handleFiles} />
+        <button onClick={() => ai.setSearchEnabled(!ai.searchEnabled)} title="بحث في الويب ومحتوى اللعبة" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', alignSelf: 'flex-end',
+          background: ai.searchEnabled ? 'rgba(79,195,247,0.3)' : 'rgba(255,255,255,0.05)',
+          color: ai.searchEnabled ? '#4FC3F7' : '#888',
+          border: `1px solid ${ai.searchEnabled ? 'rgba(79,195,247,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🔍</button>
+        <button onClick={() => ai.setDeepthinkEnabled(!ai.deepthinkEnabled)} title="تفكير عميق (Multi-Step)" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', alignSelf: 'flex-end',
+          background: ai.deepthinkEnabled ? 'rgba(206,147,216,0.3)' : 'rgba(255,255,255,0.05)',
+          color: ai.deepthinkEnabled ? '#CE93D8' : '#888',
+          border: `1px solid ${ai.deepthinkEnabled ? 'rgba(206,147,216,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🧠</button>
         <textarea value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-          placeholder={ai.loading ? '...' : 'اكتب طلبك أو ارفع ملف...'} disabled={ai.loading} rows={2}
+          placeholder={ai.loading ? (ai.deepthinkStep === 'thinking' ? '🧠 جارٍ التفكير...' : ai.deepthinkStep === 'review' ? '🔍 جارٍ المراجعة...' : ai.searchEnabled ? '🔍 جارٍ البحث...' : '...') : 'اكتب طلبك أو ارفع ملف...'} disabled={ai.loading} rows={2}
           style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '13px', outline: 'none', resize: 'none', fontFamily: 'inherit' }} />
         <button onClick={handleSend} disabled={ai.loading || (!input.trim() && pendingAttachments.length === 0)} style={{
           padding: '8px 14px', borderRadius: '8px', border: 'none', alignSelf: 'flex-end',
