@@ -1,6 +1,6 @@
 name = "cyber-guardians-search-proxy"
 main = "index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-06-01"
 
 [vars]
 AUTH_TOKEN = "cg-search-d22d5c498eed618ae30291d541e3b301"
