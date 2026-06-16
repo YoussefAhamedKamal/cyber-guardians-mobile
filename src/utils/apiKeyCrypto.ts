@@ -57,10 +57,14 @@ const hasCryptoSubtle = typeof crypto !== 'undefined' && !!crypto.subtle
 
 async function generateAndStoreKey(): Promise<CryptoKey | null> {
   if (!hasCryptoSubtle) return null
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
-  const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
-  localStorage.setItem(KEY_SESSION_KEY, b64Encode(exported))
-  return key
+  try {
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
+    const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
+    localStorage.setItem(KEY_SESSION_KEY, b64Encode(exported))
+    return key
+  } catch {
+    return null
+  }
 }
 
 async function getAesKey(): Promise<CryptoKey | null> {
