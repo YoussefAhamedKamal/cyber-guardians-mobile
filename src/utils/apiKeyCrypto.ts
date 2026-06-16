@@ -1,6 +1,8 @@
 const KEY_SESSION_KEY = 'cg-crypto-key'
 const KEYS_LOCAL_KEY = 'cg-ai-keys-enc'
 
+const FALLBACK_KEY = 'cg-fallback-xor-key'
+
 function b64Encode(bytes: Uint8Array): string {
   let b64 = ''
   for (let i = 0; i < bytes.length; i++) {
@@ -18,14 +20,51 @@ function b64DecodeToBytes(b64: string): Uint8Array {
   return bytes
 }
 
-async function generateAndStoreKey(): Promise<CryptoKey> {
+function xorEncode(str: string, key: number[]): string {
+  let result = ''
+  for (let i = 0; i < str.length; i++) {
+    result += String.fromCharCode(str.charCodeAt(i) ^ key[i % key.length]!)
+  }
+  return btoa(result)
+}
+
+function xorDecode(b64Str: string, key: number[]): string {
+  const bytes = b64DecodeToBytes(b64Str)
+  let result = ''
+  for (let i = 0; i < bytes.length; i++) {
+    result += String.fromCharCode(bytes[i]! ^ key[i % key.length]!)
+  }
+  return result
+}
+
+function getFallbackKey(): number[] {
+  const stored = localStorage.getItem(FALLBACK_KEY)
+  if (stored) {
+    try {
+      const arr = JSON.parse(stored)
+      if (Array.isArray(arr) && arr.length === 32) return arr
+    } catch {}
+  }
+  const key: number[] = []
+  for (let i = 0; i < 32; i++) {
+    key.push(Math.floor(Math.random() * 256))
+  }
+  localStorage.setItem(FALLBACK_KEY, JSON.stringify(key))
+  return key
+}
+
+const hasCryptoSubtle = typeof crypto !== 'undefined' && !!crypto.subtle
+
+async function generateAndStoreKey(): Promise<CryptoKey | null> {
+  if (!hasCryptoSubtle) return null
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
   localStorage.setItem(KEY_SESSION_KEY, b64Encode(exported))
   return key
 }
 
-async function getAesKey(): Promise<CryptoKey> {
+async function getAesKey(): Promise<CryptoKey | null> {
+  if (!hasCryptoSubtle) return null
   const stored = localStorage.getItem(KEY_SESSION_KEY)
   if (stored) {
     try {
@@ -37,15 +76,6 @@ async function getAesKey(): Promise<CryptoKey> {
     }
   }
   return generateAndStoreKey()
-}
-
-function xorDecode(b64Str: string, key: number[]): string {
-  const bytes = b64DecodeToBytes(b64Str)
-  let result = ''
-  for (let i = 0; i < bytes.length; i++) {
-    result += String.fromCharCode(bytes[i]! ^ key[i % key.length]!)
-  }
-  return result
 }
 
 async function migrateXorIfNeeded(): Promise<void> {
@@ -68,12 +98,17 @@ export async function loadEncryptedKeys(): Promise<Record<string, string>> {
   const raw = localStorage.getItem(KEYS_LOCAL_KEY)
   if (!raw) return {}
   try {
-    const key = await getAesKey()
-    const combined = b64DecodeToBytes(raw)
-    const iv = combined.slice(0, 12)
-    const data = combined.slice(12)
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
-    return JSON.parse(new TextDecoder().decode(decrypted))
+    const aesKey = await getAesKey()
+    if (aesKey) {
+      const combined = b64DecodeToBytes(raw)
+      const iv = combined.slice(0, 12)
+      const data = combined.slice(12)
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, data)
+      return JSON.parse(new TextDecoder().decode(decrypted))
+    }
+    const xorKey = getFallbackKey()
+    const json = xorDecode(raw, xorKey)
+    return JSON.parse(json)
   } catch {
     localStorage.removeItem(KEYS_LOCAL_KEY)
     return {}
@@ -85,12 +120,18 @@ export async function saveEncryptedKeys(keys: Record<string, string>): Promise<v
     localStorage.removeItem(KEYS_LOCAL_KEY)
     return
   }
-  const key = await getAesKey()
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const encoded = new TextEncoder().encode(JSON.stringify(keys))
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded)
-  const combined = new Uint8Array(iv.length + encrypted.byteLength)
-  combined.set(iv)
-  combined.set(new Uint8Array(encrypted), iv.length)
-  localStorage.setItem(KEYS_LOCAL_KEY, b64Encode(combined))
+  const json = JSON.stringify(keys)
+  const aesKey = await getAesKey()
+  if (aesKey) {
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encoded = new TextEncoder().encode(json)
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, encoded)
+    const combined = new Uint8Array(iv.length + encrypted.byteLength)
+    combined.set(iv)
+    combined.set(new Uint8Array(encrypted), iv.length)
+    localStorage.setItem(KEYS_LOCAL_KEY, b64Encode(combined))
+  } else {
+    const xorKey = getFallbackKey()
+    localStorage.setItem(KEYS_LOCAL_KEY, xorEncode(json, xorKey))
+  }
 }

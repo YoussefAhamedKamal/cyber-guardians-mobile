@@ -1,5 +1,6 @@
 const GITHUB_CONFIG_KEY = 'cg-github-config-enc'
 const GITHUB_KEY_SESSION = 'cg-gh-crypto-key'
+const GH_FALLBACK_KEY = 'cg-gh-xor-fallback-key'
 
 export const MAIN_REPO = { owner: 'YoussefAhamedKamal', repo: 'cyber-guardians-mobile' }
 
@@ -31,14 +32,51 @@ function b64DecodeToBytes(b64: string): Uint8Array {
   return bytes
 }
 
-async function generateAndStoreKey(): Promise<CryptoKey> {
+function xorEncode(str: string, key: number[]): string {
+  let result = ''
+  for (let i = 0; i < str.length; i++) {
+    result += String.fromCharCode(str.charCodeAt(i) ^ key[i % key.length]!)
+  }
+  return btoa(result)
+}
+
+function xorDecode(b64Str: string, key: number[]): string {
+  const bytes = b64DecodeToBytes(b64Str)
+  let result = ''
+  for (let i = 0; i < bytes.length; i++) {
+    result += String.fromCharCode(bytes[i]! ^ key[i % key.length]!)
+  }
+  return result
+}
+
+function getFallbackKey(): number[] {
+  const stored = localStorage.getItem(GH_FALLBACK_KEY)
+  if (stored) {
+    try {
+      const arr = JSON.parse(stored)
+      if (Array.isArray(arr) && arr.length === 32) return arr
+    } catch {}
+  }
+  const key: number[] = []
+  for (let i = 0; i < 32; i++) {
+    key.push(Math.floor(Math.random() * 256))
+  }
+  localStorage.setItem(GH_FALLBACK_KEY, JSON.stringify(key))
+  return key
+}
+
+const hasCryptoSubtle = typeof crypto !== 'undefined' && !!crypto.subtle
+
+async function generateAndStoreKey(): Promise<CryptoKey | null> {
+  if (!hasCryptoSubtle) return null
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
   localStorage.setItem(GITHUB_KEY_SESSION, b64Encode(exported))
   return key
 }
 
-async function getAesKey(): Promise<CryptoKey> {
+async function getAesKey(): Promise<CryptoKey | null> {
+  if (!hasCryptoSubtle) return null
   const stored = localStorage.getItem(GITHUB_KEY_SESSION)
   if (stored) {
     try {
@@ -50,15 +88,6 @@ async function getAesKey(): Promise<CryptoKey> {
     }
   }
   return generateAndStoreKey()
-}
-
-function xorDecode(b64Str: string, key: number[]): string {
-  const bytes = b64DecodeToBytes(b64Str)
-  let result = ''
-  for (let i = 0; i < bytes.length; i++) {
-    result += String.fromCharCode(bytes[i]! ^ key[i % key.length]!)
-  }
-  return result
 }
 
 async function migrateXorIfNeeded(): Promise<void> {
@@ -73,14 +102,7 @@ async function migrateXorIfNeeded(): Promise<void> {
     const config = JSON.parse(json) as GitHubConfig
     if (!config.token && !config.owner) return
     localStorage.removeItem('cg-gh-xor-key')
-    const aesKey = await getAesKey()
-    const iv = crypto.getRandomValues(new Uint8Array(12))
-    const encoded = new TextEncoder().encode(JSON.stringify(config))
-    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, encoded)
-    const combined = new Uint8Array(12 + encrypted.byteLength)
-    combined.set(iv)
-    combined.set(new Uint8Array(encrypted), 12)
-    localStorage.setItem(GITHUB_CONFIG_KEY, b64Encode(combined))
+    await saveConfig(config)
   } catch {}
 }
 
@@ -98,12 +120,17 @@ async function loadConfig(): Promise<GitHubConfig> {
   const raw = localStorage.getItem(GITHUB_CONFIG_KEY)
   if (!raw) return { ...EMPTY_CONFIG }
   try {
-    const key = await getAesKey()
-    const combined = b64DecodeToBytes(raw)
-    const iv = combined.slice(0, 12)
-    const data = combined.slice(12)
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data)
-    return JSON.parse(new TextDecoder().decode(decrypted))
+    const aesKey = await getAesKey()
+    if (aesKey) {
+      const combined = b64DecodeToBytes(raw)
+      const iv = combined.slice(0, 12)
+      const data = combined.slice(12)
+      const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, data)
+      return JSON.parse(new TextDecoder().decode(decrypted))
+    }
+    const xorKey = getFallbackKey()
+    const json = xorDecode(raw, xorKey)
+    return JSON.parse(json)
   } catch {
     localStorage.removeItem(GITHUB_CONFIG_KEY)
     return { ...EMPTY_CONFIG }
@@ -111,14 +138,20 @@ async function loadConfig(): Promise<GitHubConfig> {
 }
 
 async function saveConfig(config: GitHubConfig): Promise<void> {
-  const key = await getAesKey()
-  const iv = crypto.getRandomValues(new Uint8Array(12))
-  const encoded = new TextEncoder().encode(JSON.stringify(config))
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded)
-  const combined = new Uint8Array(12 + encrypted.byteLength)
-  combined.set(iv)
-  combined.set(new Uint8Array(encrypted), 12)
-  localStorage.setItem(GITHUB_CONFIG_KEY, b64Encode(combined))
+  const json = JSON.stringify(config)
+  const aesKey = await getAesKey()
+  if (aesKey) {
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encoded = new TextEncoder().encode(json)
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, encoded)
+    const combined = new Uint8Array(12 + encrypted.byteLength)
+    combined.set(iv)
+    combined.set(new Uint8Array(encrypted), 12)
+    localStorage.setItem(GITHUB_CONFIG_KEY, b64Encode(combined))
+  } else {
+    const xorKey = getFallbackKey()
+    localStorage.setItem(GITHUB_CONFIG_KEY, xorEncode(json, xorKey))
+  }
 }
 
 loadConfig().then(c => { _cache = c })
