@@ -32,14 +32,14 @@ function b64DecodeToBytes(b64: string): Uint8Array {
 }
 
 async function getAesKey(): Promise<CryptoKey> {
-  const stored = sessionStorage.getItem(GITHUB_KEY_SESSION)
+  const stored = localStorage.getItem(GITHUB_KEY_SESSION)
   if (stored) {
     const raw = b64DecodeToBytes(stored)
     return crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
   }
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
-  sessionStorage.setItem(GITHUB_KEY_SESSION, b64Encode(exported))
+  localStorage.setItem(GITHUB_KEY_SESSION, b64Encode(exported))
   return key
 }
 
@@ -58,12 +58,12 @@ async function migrateXorIfNeeded(): Promise<void> {
   try {
     const bytes = b64DecodeToBytes(raw)
     if (bytes.length < 13) return
-    const testKey = JSON.parse(sessionStorage.getItem('cg-gh-xor-key') || '[]')
+    const testKey = JSON.parse(localStorage.getItem('cg-gh-xor-key') || '[]')
     if (!Array.isArray(testKey) || testKey.length !== 32) return
     const json = xorDecode(raw, testKey)
     const config = JSON.parse(json) as GitHubConfig
     if (!config.token && !config.owner) return
-    sessionStorage.removeItem('cg-gh-xor-key')
+    localStorage.removeItem('cg-gh-xor-key')
     const aesKey = await getAesKey()
     const iv = crypto.getRandomValues(new Uint8Array(12))
     const encoded = new TextEncoder().encode(JSON.stringify(config))
@@ -97,7 +97,6 @@ async function loadConfig(): Promise<GitHubConfig> {
     return JSON.parse(new TextDecoder().decode(decrypted))
   } catch {
     localStorage.removeItem(GITHUB_CONFIG_KEY)
-    sessionStorage.removeItem(GITHUB_KEY_SESSION)
     return { ...EMPTY_CONFIG }
   }
 }

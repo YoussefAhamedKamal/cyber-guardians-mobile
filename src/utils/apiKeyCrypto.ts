@@ -19,14 +19,14 @@ function b64DecodeToBytes(b64: string): Uint8Array {
 }
 
 async function getAesKey(): Promise<CryptoKey> {
-  const stored = sessionStorage.getItem(KEY_SESSION_KEY)
+  const stored = localStorage.getItem(KEY_SESSION_KEY)
   if (stored) {
     const raw = b64DecodeToBytes(stored)
     return crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
   }
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
-  sessionStorage.setItem(KEY_SESSION_KEY, b64Encode(exported))
+  localStorage.setItem(KEY_SESSION_KEY, b64Encode(exported))
   return key
 }
 
@@ -43,12 +43,12 @@ async function migrateXorIfNeeded(): Promise<void> {
   const raw = localStorage.getItem(KEYS_LOCAL_KEY)
   if (!raw) return
   try {
-    const testKey = JSON.parse(sessionStorage.getItem('cg-xor-key') || '[]')
+    const testKey = JSON.parse(localStorage.getItem('cg-xor-key') || '[]')
     if (!Array.isArray(testKey) || testKey.length !== 32) return
     const json = xorDecode(raw, testKey)
     const keys = JSON.parse(json) as Record<string, string>
     if (Object.keys(keys).length === 0) return
-    sessionStorage.removeItem('cg-xor-key')
+    localStorage.removeItem('cg-xor-key')
     await saveEncryptedKeys(keys)
   } catch {}
 }
@@ -67,7 +67,6 @@ export async function loadEncryptedKeys(): Promise<Record<string, string>> {
     return JSON.parse(new TextDecoder().decode(decrypted))
   } catch {
     localStorage.removeItem(KEYS_LOCAL_KEY)
-    sessionStorage.removeItem(KEY_SESSION_KEY)
     return {}
   }
 }

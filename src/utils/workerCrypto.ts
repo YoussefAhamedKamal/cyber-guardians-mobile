@@ -20,14 +20,14 @@ function b64DecodeToBytes(b64: string): Uint8Array {
 }
 
 async function getAesKey(): Promise<CryptoKey> {
-  const stored = sessionStorage.getItem(WORKER_CRYPTO_KEY)
+  const stored = localStorage.getItem(WORKER_CRYPTO_KEY)
   if (stored) {
     const raw = b64DecodeToBytes(stored)
     return crypto.subtle.importKey('raw', raw.buffer as ArrayBuffer, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
   }
   const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
   const exported = new Uint8Array(await crypto.subtle.exportKey('raw', key))
-  sessionStorage.setItem(WORKER_CRYPTO_KEY, b64Encode(exported))
+  localStorage.setItem(WORKER_CRYPTO_KEY, b64Encode(exported))
   return key
 }
 
@@ -48,7 +48,6 @@ export async function loadWorkerConfig(storageKey: string): Promise<EncryptedCon
     return JSON.parse(new TextDecoder().decode(decrypted))
   } catch {
     localStorage.removeItem(storageKey)
-    sessionStorage.removeItem(WORKER_CRYPTO_KEY)
     return null
   }
 }
