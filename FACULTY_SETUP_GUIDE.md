@@ -4,6 +4,19 @@
 
 ---
 
+## ⚠️ تنبيه مهم قبل البدء
+
+> **أنت ستنشئ حسابات وخدمات خاصة بك — لاستخدام حسابات المطور الأصلي!**
+
+- ✅ أنت تنشئ **Worker Proxy خاص بك** على Cloudflare
+- ✅ أنت تحصل على **API Key خاص بك** من OpenAI/Google
+- ✅ أنت تحصل على **GitHub Token خاص بك**
+- ✅ أنت تنشئ **مستودع GitHub خاص بك**
+- ❌ لا تعدّل أي ملفات في المستودع الأصلي
+- ❌ لا تستخدم حسابات أو مفاتيح المطور الأصلي
+
+---
+
 ## 📋 جدول المحتويات
 
 1. [نظرة عامة — ماذا ستفعل؟](#overview)
@@ -67,7 +80,9 @@ AI Assistant هو مساعد ذكي مدمج في اللعبة يساعدك عل
 3. فعّل حسابك من الإيميل
 4. ستدخل لوحة التحكم الرئيسية
 
-### الخطوة 2: إنشاء Worker Proxy
+### الخطوة 2: إنشاء Worker Proxy خاص بك
+
+> ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
 
 1. من لوحة التحكم، اضغط على **"Workers & Pages"** في القائمة左侧
 2. اضغط **"Create"** ثم **"Create Worker"**
@@ -164,6 +179,9 @@ export default {
 ```
 
 7. اضغط **"Deploy"** لحفظ التغييرات
+
+> ✅ **الآن لديك Worker خاص بك!** رابطه سيكون مثل:
+> `https://my-ai-proxy.YOUR-USERNAME.workers.dev`
 
 ### الخطوة 3: إعداد المتغيرات (Environment Variables)
 
@@ -299,9 +317,13 @@ GitHub هو موقع لتخزين ومشاركة الملفات البرمجية
 
 ### الخطوة 3: إنشاء Worker Proxy لـ GitHub
 
-1. كرر الخطوات من 1 إلى 5 في "الخطوة 2: إنشاء Worker Proxy" (القسم الأول)
-   - لكن أنشئ Worker جديد باسم آخر (مثل: `my-github-proxy`)
-2. استبدل الكود بهذا الكود:
+> ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
+
+1. اذهب إلى لوحة تحكم Cloudflare: **https://dash.cloudflare.com**
+2. اضغط على **"Workers & Pages"** → **"Create"** → **"Create Worker"**
+3. اختر اسم مختلف (مثل: `my-github-proxy`)
+4. اضغط **"Deploy"**
+5. امسح الكود واستبدل به هذا الكود:
 
 ```javascript
 export default {
@@ -400,7 +422,10 @@ export default {
 }
 ```
 
-3. اضغط **"Deploy"**
+6. اضغط **"Deploy"**
+
+> ✅ **الآن لديك GitHub Worker خاص بك!** رابطه سيكون مثل:
+> `https://my-github-proxy.YOUR-USERNAME.workers.dev`
 
 ### الخطوة 4: إعداد متغيرات GitHub Worker
 
@@ -626,6 +651,44 @@ export default {
 - [ ] AI Assistant يعمل ويعدّل المحتوى
 - [ ] التعديلات تُرفع إلى GitHub بنجاح
 - [ ] التغييرات تظهر على اللعبة ✅
+
+---
+
+## 📁 ملاحظة عن ملفات wrangler.toml
+
+> ⚠️ **مهم جداً:** ملفات `wrangler.toml` في المشروع مُعدّة للمطور الأصلي فقط!
+
+### ما هي wrangler.toml؟
+هي ملف إعدادات لـ Cloudflare Workers. تحتوي على:
+- `account_id` — رقم حسابك على Cloudflare
+- `ALLOWED_ORIGINS` — المواقع المسموح لها بالاتصال بالـ Worker
+
+### لماذا لا تستخدمها؟
+لأنها تحتوي على معلومات حساب المطور الأصلي:
+```toml
+# ❌ هذا خاص بالمطور الأصلي — لا تستخدمه!
+account_id = "43dcf5575f6f6f59439c0e28a17d3e1a"
+ALLOWED_ORIGINS = "...,https://youssefahamedkamal.github.io,..."
+```
+
+### ماذا تفعل بدلاً من ذلك؟
+1. **أنشئ Worker من واجهة Cloudflare** (كما في الدليل أعلاه)
+2. **استخدم Environment Variables** من واجهة Cloudflare
+3. **لا تعدّل ملفات wrangler.toml** في المشروع
+
+### إذا أردت استخدام Wrangler CLI (اختياري — للمتقدمين فقط)
+1. سجّل الدخول: `npx wrangler login`
+2. أنشئ ملف `wrangler.toml` جديد في مجلد منفصل:
+   ```toml
+   name = "my-worker"
+   main = "index.js"
+   compatibility_date = "2024-01-01"
+   # account_id يُملأ تلقائياً
+
+   [vars]
+   ALLOWED_ORIGINS = "http://localhost:3001,https://YOUR-USERNAME.github.io"
+   ```
+3. ارفع: `npx wrangler deploy`
 
 ---
 
