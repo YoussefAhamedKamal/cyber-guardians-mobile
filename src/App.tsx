@@ -351,7 +351,7 @@ export function App() {
 
       {/* BGM toggle button */}
       <div
-        style={{ position: 'fixed', top: '16px', right: '16px', zIndex: 9999 }}
+        style={{ position: 'fixed', top: '16px', right: '67px', zIndex: 9999 }}
         onPointerEnter={() => setBgmHovered(true)}
         onPointerLeave={() => setBgmHovered(false)}
       >
