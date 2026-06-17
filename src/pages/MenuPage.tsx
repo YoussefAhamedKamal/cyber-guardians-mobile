@@ -152,7 +152,7 @@ export default function MenuPage({ onStart, onSettings }: Props) {
 
       {/* ===== WEEKLY CHALLENGE PANEL ===== */}
       <div style={{
-        position: 'absolute', top: '80px', right: '24px',
+        position: 'absolute', top: '72px', right: '24px',
         zIndex: 30, width: '260px',
       }}>
         <WeeklyChallengeBanner onStartChallenge={onStart} />
