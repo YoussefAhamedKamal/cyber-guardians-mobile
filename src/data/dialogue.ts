@@ -639,7 +639,7 @@ export const levels: LevelData[] = [
     title: 'الهجوم الأخير',
     subtitle: 'الاستجابة للاختراق',
     threat: 'incident',
-    challengeType: 'dragdrop',
+    challengeType: 'response',
     focusCharacterId: 'tariq',
     difficulty: 'hard' as const,
     points: 300,

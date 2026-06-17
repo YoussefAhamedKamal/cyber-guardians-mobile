@@ -49,7 +49,7 @@ export function DragDropChallenge({ ports, onComplete, onRequestHint }: Props) {
     const openCritical = portList.filter((p) => p.isCritical && p.status === 'open').length
     const closedNonCritical = portList.filter((p) => !p.isCritical && p.status === 'closed').length
     const total = portList.length
-    const score = Math.round(((openCritical + closedNonCritical) / total) * 100)
+    const score = total > 0 ? Math.round(((openCritical + closedNonCritical) / total) * 100) : 0
 
     if (score >= 80) {
       audio.playLevelUp()
@@ -67,7 +67,7 @@ export function DragDropChallenge({ ports, onComplete, onRequestHint }: Props) {
     const openCritical = portList.filter((p) => p.isCritical && p.status === 'open').length
     const closedNonCritical = portList.filter((p) => !p.isCritical && p.status === 'closed').length
     const total = portList.length
-    const score = Math.round(((openCritical + closedNonCritical) / total) * 100)
+    const score = total > 0 ? Math.round(((openCritical + closedNonCritical) / total) * 100) : 0
     return (
       <div style={{ textAlign: 'center', padding: '32px', direction: 'rtl' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px', color: '#4FC3F7' }}>◈</div>
