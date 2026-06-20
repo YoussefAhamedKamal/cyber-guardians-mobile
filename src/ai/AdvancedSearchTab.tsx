@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAdvancedSearchStore } from '@/store/advancedSearchStore'
+import { VoiceButton } from '@/components/ui/VoiceButton'
 import type { SearchResult, SearchableItemType, SearchQuery } from '@/types/search'
 
 type SearchView = 'search' | 'saved' | 'history'
@@ -110,33 +111,35 @@ export function AdvancedSearchTab() {
         </div>
 
         {/* Search Input */}
-        <div style={{ position: 'relative', marginBottom: '12px' }}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="ابحث عن أي شيء..."
-            style={{
-              width: '100%',
-              padding: '12px 40px 12px 16px',
-              background: '#0d1117',
-              border: '1px solid #333',
-              borderRadius: '8px',
-              color: '#fff',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          />
-          <button
-            onClick={handleSearch}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              padding: '8px',
-              background: '#4CAF50',
+        <div style={{ position: 'relative', marginBottom: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="ابحث عن أي شيء..."
+              style={{
+                width: '100%',
+                padding: '12px 40px 12px 16px',
+                background: '#0d1117',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={handleSearch}
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                padding: '8px',
+                background: '#4CAF50',
               border: 'none',
               borderRadius: '4px',
               color: '#fff',
@@ -146,6 +149,8 @@ export function AdvancedSearchTab() {
           >
             🔍
           </button>
+          </div>
+          <VoiceButton onResult={(text) => { setQuery(text); search(text, { types: selectedTypes }) }} size={40} />
 
           {/* Suggestions */}
           {suggestions.length > 0 && (
