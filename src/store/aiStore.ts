@@ -56,7 +56,7 @@ interface AIStore extends AIState {
   clearFacultyMessages: () => void
   getActiveFacultySession: () => ChatSession | undefined
 
-  setToolsActiveSubTab: (tab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security') => void
+  setToolsActiveSubTab: (tab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security' | 'calendar') => void
   setProjectActiveSubTab: (tab: 'knowledge' | 'instructions' | 'chats' | 'history') => void
 }
 

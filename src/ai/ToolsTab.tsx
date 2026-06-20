@@ -9,6 +9,7 @@ import { AdvancedSearchTab } from './AdvancedSearchTab'
 import { AIAssistantTab } from './AIAssistantTab'
 import { CollaborationTab } from './CollaborationTab'
 import { SecurityTab } from './SecurityTab'
+import { CalendarTab } from './CalendarTab'
 
 const SUB_TABS = [
   { id: 'skills' as const, label: '📋 القدرات' },
@@ -20,7 +21,8 @@ const SUB_TABS = [
   { id: 'search' as const, label: '🔍 بحث' },
   { id: 'ai-assistant' as const, label: '🤖 مساعد' },
   { id: 'collaboration' as const, label: '🤝 تعاون' },
-  { id: 'security' as const, label: '🔒 أمان' }
+  { id: 'security' as const, label: '🔒 أمان' },
+  { id: 'calendar' as const, label: '📅 تقويم' }
 ]
 
 export function ToolsTab() {
@@ -48,7 +50,7 @@ export function ToolsTab() {
               borderBottom: `2px solid ${activeSubTab === tab.id ? '#4CAF50' : 'transparent'}`,
               color: activeSubTab === tab.id ? '#4CAF50' : '#888',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: activeSubTab === tab.id ? 'bold' : 'normal',
               transition: 'all 0.2s',
               whiteSpace: 'nowrap'
@@ -71,6 +73,7 @@ export function ToolsTab() {
         {activeSubTab === 'ai-assistant' && <AIAssistantTab />}
         {activeSubTab === 'collaboration' && <CollaborationTab />}
         {activeSubTab === 'security' && <SecurityTab />}
+        {activeSubTab === 'calendar' && <CalendarTab />}
       </div>
     </div>
   )
