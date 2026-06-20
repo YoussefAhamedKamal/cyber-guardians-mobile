@@ -1119,21 +1119,22 @@ function StudentChat() {
       // Build system prompt with active skills/plugins
       const systemPrompt = buildActiveSkillPrompt()
 
+      // Inject active skill prompt into deepthink system prompt
+      const deepthinkSystemPrompt = systemPrompt
+
       if (ai.deepthinkEnabled) {
         const apiKey = ai.apiKeys[ai.providerId] || ''
         const result = await deepthink(
           ai.providerId, ai.modelId, finalMessages, apiKey, ai.customBaseUrl, ai.useDirectApi,
-          (step, content) => { ai.setDeepthinkStep(step); ai.setStudentStreaming(content) }
+          (step, content) => { ai.setDeepthinkStep(step); ai.setStudentStreaming(content) },
+          deepthinkSystemPrompt
         )
         ai.setStudentStreaming(result.fullText)
         ai.addStudentMessage({ role: 'assistant', content: result.fullText })
         // Record skill usage for analytics (deepthink path)
         const activeSkillId2 = useSkillStore.getState().activeSkillId
         if (activeSkillId2) {
-          const skill2 = useSkillStore.getState().skills.find((s: { id: string }) => s.id === activeSkillId2)
-          if (skill2) {
-            useSkillStore.getState().recordUsage(activeSkillId2, userMsg?.content || '', result.fullText, Date.now() - startTime, true)
-          }
+          useSkillStore.getState().recordUsage(activeSkillId2, userMsg?.content || '', result.fullText, Date.now() - startTime, true)
         }
       } else {
         const systemMsg: AIMessage = { role: 'system', content: systemPrompt }
@@ -1149,10 +1150,7 @@ function StudentChat() {
         // Record skill usage for analytics
         const activeSkillId = useSkillStore.getState().activeSkillId
         if (activeSkillId) {
-          const skill = useSkillStore.getState().skills.find(s => s.id === activeSkillId)
-          if (skill) {
-            useSkillStore.getState().recordUsage(activeSkillId, userMsg?.content || '', full, Date.now() - startTime, true)
-          }
+          useSkillStore.getState().recordUsage(activeSkillId, userMsg?.content || '', full, Date.now() - startTime, true)
         }
       }
     } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
@@ -1338,7 +1336,8 @@ function FacultyAIChat() {
         const apiKey = ai.apiKeys[ai.providerId] || ''
         const result = await deepthink(
           ai.providerId, ai.modelId, finalMessages, apiKey, ai.customBaseUrl, ai.useDirectApi,
-          (step, content) => { ai.setDeepthinkStep(step); ai.setFacultyStreaming(content) }
+          (step, content) => { ai.setDeepthinkStep(step); ai.setFacultyStreaming(content) },
+          facultySystemPrompt
         )
         ai.setFacultyStreaming(result.fullText)
         const { updates, cleanText } = parseAIUpdates(result.fullText)

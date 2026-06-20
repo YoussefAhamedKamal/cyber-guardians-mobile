@@ -74,10 +74,16 @@ export async function deepthink(
   apiKey: string,
   customBaseUrl: string,
   useDirectApi: boolean,
-  onStep?: (step: string, content: string) => void
+  onStep?: (step: string, content: string) => void,
+  customSystemPrompt?: string
 ): Promise<DeepthinkResult> {
   const userMsg = [...messages].reverse().find((m) => m.role === 'user')
   const question = userMsg?.content || ''
+
+  // Merge custom system prompt with deepthink prompts
+  const baseContext = customSystemPrompt
+    ? `${customSystemPrompt}\n\n--- DEEPTHINK INSTRUCTIONS ---\n`
+    : ''
 
   onStep?.('thinking', '🧠 جارٍ التفكير العميق...')
 
@@ -86,7 +92,7 @@ export async function deepthink(
   ]
   const thinking = await callAI(
     providerId, modelId, thinkingMessages, apiKey, customBaseUrl,
-    THINK_PROMPT, useDirectApi
+    baseContext + THINK_PROMPT, useDirectApi
   )
 
   onStep?.('review', '🔍 جارٍ مراجعة التحليل...')
@@ -96,7 +102,7 @@ export async function deepthink(
   ]
   const review = await callAI(
     providerId, modelId, reviewMessages, apiKey, customBaseUrl,
-    REVIEW_PROMPT, useDirectApi
+    baseContext + REVIEW_PROMPT, useDirectApi
   )
 
   onStep?.('answer', '📝 جارٍ كتابة الإجابة النهائية...')
@@ -106,7 +112,7 @@ export async function deepthink(
   ]
   const answer = await callAI(
     providerId, modelId, finalMessages, apiKey, customBaseUrl,
-    FINAL_ANSWER_PROMPT, useDirectApi
+    baseContext + FINAL_ANSWER_PROMPT, useDirectApi
   )
 
   const fullText = `## 🧠 التفكير العميق
