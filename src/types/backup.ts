@@ -4,6 +4,10 @@ import type { Connector } from './connectors'
 import type { ProjectKnowledge, ProjectInstructions, ProjectChat } from './project'
 import type { Change } from './versionHistory'
 import type { UsageRecord } from './analytics'
+import type { CalendarTask } from './calendar'
+import type { ReportConfig, ReportResult } from './reports'
+import type { SecuritySettings, ActivityLog } from './security'
+import type { Language } from './ui'
 
 export interface BackupData {
   version: string
@@ -19,6 +23,34 @@ export interface BackupData {
   }
   history: Change[]
   analytics: UsageRecord[]
+  game: {
+    completedLevels: string[]
+    totalScore: number
+    xp: number
+    rankId: number
+    playerName: string
+    unlockedBadges: string[]
+    dailyStreakDays: number
+    quizBestScore: number
+    speedAnswers: number
+    maxCombo: number
+  }
+  calendar: {
+    tasks: CalendarTask[]
+  }
+  reports: {
+    configs: ReportConfig[]
+    results: ReportResult[]
+  }
+  security: {
+    settings: SecuritySettings
+    activityLogs: ActivityLog[]
+  }
+  ui: {
+    themeMode: 'dark' | 'light' | 'system'
+    language: Language
+    fontSize: number
+  }
   metadata: {
     deviceInfo: string
     appVersion: string
@@ -34,6 +66,8 @@ export interface SyncConfig {
   lastSync: number
   syncOnStart: boolean
   syncOnExit: boolean
+  githubToken?: string
+  githubRepo?: string
 }
 
 export interface BackupState {
@@ -56,12 +90,17 @@ export interface BackupState {
   setSyncConfig: (config: Partial<SyncConfig>) => void
   enableAutoSync: () => void
   disableAutoSync: () => void
+  syncToGitHub: (token: string, repo: string) => Promise<boolean>
+  syncFromGitHub: (token: string, repo: string) => Promise<boolean>
+  startAutoSync: () => void
+  stopAutoSync: () => void
 
   exportBackup: (backupId: string) => string
   importBackup: (json: string) => boolean
 
   clearBackups: () => void
   clearSyncConfig: () => void
+  _autoSyncTimer: ReturnType<typeof setInterval> | null
 }
 
 export const DEFAULT_SYNC_CONFIG: SyncConfig = {
@@ -74,21 +113,30 @@ export const DEFAULT_SYNC_CONFIG: SyncConfig = {
   syncOnExit: false
 }
 
-export const DEFAULT_BACKUP_STATE: Omit<BackupState, 'createBackup' | 'restoreBackup' | 'deleteBackup' | 'getBackupById' | 'getBackupsByDateRange' | 'getBackupsBySource' | 'setSyncConfig' | 'enableAutoSync' | 'disableAutoSync' | 'exportBackup' | 'importBackup' | 'clearBackups' | 'clearSyncConfig'> = {
+export const DEFAULT_BACKUP_STATE: Omit<BackupState, 'createBackup' | 'restoreBackup' | 'deleteBackup' | 'getBackupById' | 'getBackupsByDateRange' | 'getBackupsBySource' | 'setSyncConfig' | 'enableAutoSync' | 'disableAutoSync' | 'syncToGitHub' | 'syncFromGitHub' | 'startAutoSync' | 'stopAutoSync' | 'exportBackup' | 'importBackup' | 'clearBackups' | 'clearSyncConfig'> = {
   backups: [],
   syncConfig: DEFAULT_SYNC_CONFIG,
   maxBackups: 10,
   isBackingUp: false,
   isRestoring: false,
   lastBackupTime: null,
-  lastRestoreTime: null
+  lastRestoreTime: null,
+  _autoSyncTimer: null
 }
 
 export function generateBackupId(): string {
   return `backup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
-export function calculateChecksum(data: string): string {
+export async function calculateChecksum(data: string): Promise<string> {
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const encoder = new TextEncoder()
+    const dataBuffer = encoder.encode(data)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+  // Fallback for environments without crypto.subtle
   let hash = 0
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i)

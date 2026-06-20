@@ -2,11 +2,18 @@ import { useState, useMemo } from 'react'
 import { useAnalyticsStore } from '@/store/analyticsStore'
 import type { DailyStats, ItemType, ChangeType } from '@/types/analytics'
 
+function formatDateLocal(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 type AnalyticsView = 'overview' | 'daily' | 'weekly' | 'monthly' | 'items'
 
 export function AnalyticsTab() {
   const [view, setView] = useState<AnalyticsView>('overview')
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()))
+  const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()))
   const [selectedItemType, setSelectedItemType] = useState<ItemType | 'all'>('all')
 
   const {
@@ -24,7 +31,27 @@ export function AnalyticsTab() {
     exportAnalytics
   } = useAnalyticsStore()
 
-  const topItems = useMemo(() => getTopItems(10), [usageRecords])
+  const filteredTopItems = useMemo(() => {
+    const all = getTopItems(50)
+    if (selectedItemType === 'all') return all.slice(0, 10)
+    return all.filter(item => {
+      const key = item.name
+      return true // getTopItems returns all, we filter by checking usageRecords
+    }).slice(0, 10)
+  }, [usageRecords, selectedItemType])
+  const topItems = useMemo(() => {
+    if (selectedItemType === 'all') return getTopItems(10)
+    return usageRecords
+      .filter(r => r.itemType === selectedItemType)
+      .reduce<{ name: string; count: number }[]>((acc, r) => {
+        const existing = acc.find(a => a.name === r.itemName)
+        if (existing) existing.count++
+        else acc.push({ name: r.itemName, count: 1 })
+        return acc
+      }, [])
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [usageRecords, selectedItemType])
   const topTypes = useMemo(() => getTopTypes(10), [usageRecords])
   const successRate = useMemo(() => getSuccessRate(), [usageRecords])
   const avgDuration = useMemo(() => getAverageDuration(), [usageRecords])
@@ -39,7 +66,7 @@ export function AnalyticsTab() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `analytics-${formatDate(new Date())}.json`
+    a.download = `analytics-${formatDateLocal(new Date())}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -148,7 +175,7 @@ export function AnalyticsTab() {
               />
               <StatCard
                 label="اليوم"
-                value={dailyStats.find((d) => d.date === formatDate(new Date()))?.totalActions || 0}
+                value={dailyStats.find((d) => d.date === formatDateLocal(new Date()))?.totalActions || 0}
                 icon="📅"
                 color="#9C27B0"
               />
@@ -162,7 +189,7 @@ export function AnalyticsTab() {
               border: '1px solid #333'
             }}>
               <h4 style={{ margin: '0 0 12px', color: '#fff', fontSize: '14px' }}>
-                ⏰ التوزيع.H
+                ⏰ التوزيع بالساعة
               </h4>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
                 {hourlyDist.map(({ hour, count }) => {
@@ -198,7 +225,7 @@ export function AnalyticsTab() {
               border: '1px solid #333'
             }}>
               <h4 style={{ margin: '0 0 12px', color: '#fff', fontSize: '14px' }}>
-                📅 التوزيع.D
+                📅 التوزيع بالأيام
               </h4>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {dailyDist.map(({ day, count }) => {
@@ -371,7 +398,7 @@ export function AnalyticsTab() {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <span style={{ color: '#fff', fontWeight: 'bold' }}>
-                      {formatDate(new Date(week.weekStart))} - {formatDate(new Date(week.weekEnd))}
+                      {formatDateLocal(new Date(week.weekStart))} - {formatDateLocal(new Date(week.weekEnd))}
                     </span>
                     <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>
                       {week.totalActions} إجراء
@@ -571,9 +598,7 @@ function getItemLabel(type: string): string {
   return labels[type] || type
 }
 
-function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0] || ''
-}
+// formatDateLocal is defined at the top of the file
 
 function getMonthName(monthKey: string): string {
   const [year, month] = monthKey.split('-')

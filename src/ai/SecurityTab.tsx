@@ -193,7 +193,6 @@ export function SecurityTab() {
               >
                 <option value="AES-GCM">AES-GCM (موصى به)</option>
                 <option value="AES-CBC">AES-CBC</option>
-                <option value="RSA-OAEP">RSA-OAEP</option>
               </select>
             </SettingsSection>
 

@@ -237,6 +237,36 @@ export function PluginsTab() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {plugin.enabled && plugin.config.baseUrl && (
+                    <button
+                      onClick={async () => {
+                        const endpoint = plugin.endpoints[0]
+                        if (endpoint) {
+                          try {
+                            const params: Record<string, string> = {}
+                            for (const param of endpoint.parameters || []) {
+                              if (param.defaultValue) params[param.name] = String(param.defaultValue)
+                            }
+                            const result = await usePluginStore.getState().executePlugin(plugin.id, endpoint.id, params)
+                            alert(`✅ نتيجة ${plugin.name}:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2).slice(0, 500)}`)
+                          } catch (err: any) {
+                            alert(`❌ خطأ: ${err.message}`)
+                          }
+                        }
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        background: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                        border: 'none',
+                        borderRadius: '4px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '11px'
+                      }}
+                    >
+                      ▶ تنفيذ
+                    </button>
+                  )}
                   <button
                     onClick={() => togglePlugin(plugin.id)}
                     style={{

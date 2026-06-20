@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **3.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية
+> الإصدار: **6.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية + تنفيذ أدوات + إصلاحات شاملة + قدرات مخصصة + فحص وإصلاحات RSA-OAEP + Analytics + AI Search + Connector + Backup + timezone + reports + إصلاحات stats + drag-and-drop + GitHub sync + auto-sync + disk usage
 
 ---
 
@@ -35,7 +35,7 @@
 | AI Provider | Google Gemini (مجاني) | — | Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash |
 | Security | Web Crypto API | — | AES-GCM encryption + PBKDF2 key derivation + SHA hashing |
 | Voice | Web Speech API | — | بحث صوتي عربي/إنجليزي + تلخيص صوتي |
-| State | Zustand 5 + IndexedDB | — | 19 store مع persist + تأثيرات بصرية |
+| State | Zustand 5 + IndexedDB | — | 19 store مع persist + تأثيرات بصرية + skills/plugins/connectors + analytics + backup + version history |
 
 ### قيود تقنية
 - Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
@@ -116,9 +116,13 @@ UI Layout (top-right corner):
 - 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى) ← lazy
 - 🔊 BGM toggle button: y = 72px (أسفل زر AI)
 - AI Panel: centered on screen when opened ← lazy
-  - 6 تبويبات رئيسية: طالب, هيئة تدريس, 🛠️ أدوات, 📁 مشروع, ⚙, 🎨
-  - تبويب Tools: 12 تبويب فرعية (قدرات, أدوات, اتصالات, سوق, إحصائيات, نسخ, بحث, مساعد, تعاون, أمان, تقويم, تقارير)
-  - تبويب Project: 4 تبويبات فرعية (معرفة, تعليمات, محادثات, تاريخ)
+   - 6 تبويبات رئيسية: طالب, هيئة تدريس, 🛠️ أدوات, 📁 مشروع, ⚙, 🎨
+   - تبويب Tools يدعم تنفيذ القدرات والأدوات المخصصة مع query string و records
+   - تبويب Tools: 12 تبويب فرعية (قدرات, أدوات, اتصالات, سوق, إحصائيات, نسخ, بحث, مساعد, تعاون, أمان, تقويم, تقارير)
+   - تبويب Project: 4 تبويبات فرعية (معرفة, تعليمات, محادثات, تاريخ)
+   - Skills/Plugins integration مع AI chat — اكتشاف تلقائي لطلبات القدرات/الأدوات
+   - System prompt injection مع معرفة المشروع وسجل التغييرات
+   - تسجيل الاستخدام (recordUsage) بعد كل رد AI
 - Panel closes: زر ✕ / النافذة المعتمة / زر AI (toggle)
 
 Auto-save: كل 30 ثانية (localStorage)
@@ -552,24 +556,25 @@ src/
 ├── ai/
 │   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded) — 6 تبويبات رئيسية
 │   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
-│   ├── search.ts                    # ★ جديد — بحث في الويب (DuckDuckGo API + HTML + Worker)
+│   ├── search.ts                    # ★ جديد — بحث في الويب (DuckDuckGo API + HTML + Worker) + بحث حقيقي في Skills/Plugins/Knowledge
 │   ├── deepthink.ts                 # ★ جديد — تفكير عميق متعدد الخطوات
+│   ├── skillIntegration.ts          # ★ جديد — اكتشاف تلقائي لطلبات Skills/Plugins + system prompt injection
 │   ├── github.ts                    # GitHub API + token encryption + Vite proxy + sync to existing repo
 │   ├── googleDrive.ts               # Google Drive API + proxy support
 │   ├── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
 │   ├── SkillsTab.tsx                # ★ جديد — CRUD قدرات + سحب/إفلات + تأثيرات
 │   ├── PluginsTab.tsx               # ★ جديد — CRUD أدوات + تنفيذ
-│   ├── ConnectorsTab.tsx            # ★ جديد — CRUD اتصالات + اختبار
+│   ├── ConnectorsTab.tsx            # ★ جديد — CRUD اتصالات + اختبار + مسح بيانات عند قطع الاتصال
 │   ├── MarketplacePanel.tsx         # ★ جديد — سوق (35 قالب) + فلترة + بحث
-│   ├── AnalyticsTab.tsx             # ★ جديد — إحصائيات استخدام + رسوم بيانية
-│   ├── BackupTab.tsx                # ★ جديد — نسخ احتياطي + مزامنة
-│   ├── AdvancedSearchTab.tsx        # ★ جديد — بحث ذكي + حفظ + تاريخ
+│   ├── AnalyticsTab.tsx             # ★ جديد — إحصائيات استخدام + رسوم بيانية + timezone محلي
+│   ├── BackupTab.tsx                # ★ جديد — نسخ احتياطي + مزامنة + SHA-256 checksum
+│   ├── AdvancedSearchTab.tsx        # ★ جديد — بحث ذكي + حفظ + تاريخ + بحث تعليمات
 │   ├── AIAssistantTab.tsx           # ★ جديد — تلخيص + مشاعر + بحث
 │   ├── CollaborationTab.tsx         # ★ جديد — مشاركة + تصدير + روابط
-│   ├── SecurityTab.tsx              # ★ جديد — تشفير + تجزئة + نشاط
+│   ├── SecurityTab.tsx              # ★ جديد — تشفير + تجزئة + نشاط (بدون RSA-OAEP)
 │   ├── SettingsTab.tsx              # ★ جديد — سمات + إعدادات UI
 │   ├── CalendarTab.tsx              # ★ جديد — تقويم + مهام + تذكيرات
-│   ├── ReportsTab.tsx               # ★ جديد — تقارير مخصصة + تحليلات
+│   ├── ReportsTab.tsx               # ★ جديد — تقارير مخصصة + تحليلات + منع القسم على صفر
 │   ├── ToolsTab.tsx                 # ★ جديد — 12 تبويب فرعية
 │   └── ProjectTab.tsx               # ★ جديد — معرفة + تعليمات + محادثات
 │
@@ -643,11 +648,26 @@ src/
 │       ├── CharacterModel.tsx
 │       └── Environment.tsx
 │
-├── store/
+├── store/                          # ★ 19 store مع persist + تأثيرات بصرية
 │   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
 │   ├── settingsStore.ts            # موجود
 │   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
 │   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
+│   ├── skillStore.ts               # ★ جديد — CRUD قدرات + IndexedDB
+│   ├── pluginStore.ts              # ★ جديد — CRUD أدوات + تنفيذ + IndexedDB
+│   ├── connectorStore.ts           # ★ جديد — CRUD اتصالات + اختبار + IndexedDB
+│   ├── projectStore.ts             # ★ جديد — معرفة + تعليمات + محادثات مشتركة
+│   ├── versionHistoryStore.ts      # ★ جديد — سجل التغييرات + لقطات + استعادة
+│   ├── analyticsStore.ts           # ★ جديد — سجل الاستخدام + إحصائيات
+│   ├── backupStore.ts              # ★ جديد — نسخ احتياطي + مزامنة + IndexedDB
+│   ├── advancedSearchStore.ts      # ★ جديد — بحث ذكي + عمليات + حفظ
+│   ├── aiAssistantStore.ts         # ★ جديد — تلخيص + مشاعر + بحث ذكي
+│   ├── collaborationStore.ts       # ★ جديد — مشاركة + تصدير + روابط مشتركة
+│   ├── securityStore.ts            # ★ جديد — تشفير AES-GCM + تجزئة + سجل نشاط
+│   ├── uiStore.ts                  # ★ جديد — سمات + أوضاع + لغة + حجم خط
+│   ├── calendarStore.ts            # ★ جديد — تقويم + مهام + تذكيرات
+│   ├── reportsStore.ts             # ★ جديد — تقارير مخصصة + تحليلات
+│   ├── voiceStore.ts               # ★ جديد — بحث صوتي + Web Speech API
 │   └── index.ts                    # موجود — exports
 │
 ├── i18n/
@@ -901,6 +921,49 @@ src/
 - [x] **compatibility_date 2026-06-01** — Cloudflare API v4 + Workflows API
 - [x] **Expanded AI Knowledge** — AI يغطي جميع المواضيع (ليس فقط الأمن السيبراني)
 - [x] **Search Worker Setup Guide** — دليل إعداد Worker البحث للمعلمين
+
+### مكتمل — الإصلاحات الشاملة (v4.0.0)
+- [x] **Plugin executePlugin** — إضافة query string لطلبات GET مع URLSearchParams
+- [x] **Version History wiring** — ربط recordChange بـ skillStore, pluginStore, connectorStore
+- [x] **Project System Prompt** — ربط buildProjectSystemPrompt بمحادثة AI عبر skillIntegration.ts
+- [x] **Skill recordUsage** — استدعاء recordUsage بعد اكتمال رد AI
+- [x] **detectSkillRequest fix** — مطابقة بالاسم والوصف للقدرات المخصصة
+- [x] **detectPluginRequest fix** — مطابقة بالاسم والوصف + إضافة stats_analyzer و api_caller
+- [x] **Backup expansion** — إضافة gameStore, calendarStore, reportsStore, securityStore, uiStore للنسخ الاحتياطي
+- [x] **Security algorithm** — استخدام الخوارزمية المحددة (AES-GCM/AES-CBC) في encrypt/decrypt
+- [x] **Reports date filtering** — تطبيق فلترة التاريخ على جميع أنواع التقارير
+- [x] **Plugin execute button** — إضافة زر "▶ تنفيذ" في واجهة الأدوات
+- [x] **AnalyticsTab labels** — إصلاح النصوص المقطوعة "التوزيع.H" و "التوزيع.D"
+- [x] **Plugin template text** — إصلاح النص العربي المشوّه "م祈vy API" → "مُنادي API"
+- [x] **Security password hashing** — إضافة PBKDF2 hashing مع salt للتحقق من كلمة المرور
+- [x] **Analytics aggregation** — ربط gameStore, skillStore, pluginStore بـ recordUsage
+- [x] **BackupData expansion** — إضافة game, calendar, reports, security, ui للـ BackupData type
+- [x] **BackupType Language** — استخدام نوع Language من ui.ts بدلاً من string
+
+### مكتمل — الفحص والإصلاحات الشاملة (v5.0.0)
+- [x] **إزالة RSA-OAEP** — إزالته من واجهة الأمان (كان يسبب خطأ runtime)
+- [x] **إصلاح Analytics** — إضافة computeDailyStats/WeeklyStats/MonthlyStats لملء الإحصائيات تلقائياً
+- [x] **إصلاح AI Smart Search** — استبدال البيانات المحاكاة ببحث حقيقي في Skills/Plugins/Knowledge
+- [x] **إصلاح Advanced Search** — إضافة فرع بحث للتعليمات (instructions)
+- [x] **إصلاح Connector toggle** — مسح بيانات الاعتماد عند قطع الاتصال
+- [x] **إصلاح recordUsage** — إضافة التسجيل في Deepthink وFaculty chat
+- [x] **إصلاح downloadPdf** — تسمية صحيحة downloadHtml لعرض الواجهة الأمانة
+- [x] **إصلاح Backup checksum** — استخدام SHA-256 عبر crypto.subtle بدلاً من polynomial hash
+- [x] **إصلاح AnalyticsTab timezone** — استخدام التاريخ المحلي بدلاً من UTC
+- [x] **إصلاح reportsStore trend** — منع القسم على صفر
+
+### مكتمل — الإصلاحات الشاملة (v6.0.0)
+- [x] **إصلاح computeDailyStats** — إضافة حساب peakHour و avgDuration
+- [x] **إصلاح computeWeeklyStats** — ملء dailyBreakdown و topItems و topTypes
+- [x] **إصلاح computeMonthlyStats** — حساب growth و mostActiveDay و weeklyBreakdown
+- [x] **إصلاح AnalyticsTab** — تطبيق فلتر selectedItemType على العناصر
+- [x] **إصلاح recordChange** — إضافة التسجيل في updateSkill/updatePlugin/updateConnector
+- [x] **إصلاح connectorStore** — إضافة recordUsage في connect/disconnect/testConnection
+- [x] **إصلاح smartSearch** — استبدال Math.random بحساب deterministic
+- [x] **إصلاح SkillsTab drag-and-drop** — منطق إعادة ترتيب حقيقي
+- [x] **إصلاح Backup GitHub sync** — تنفيذ syncToGitHub/syncFromGitHub بـ GitHub API
+- [x] **إصلاح Auto-sync** — إضافة startAutoSync/stopAutoSync مع setInterval
+- [x] **إصلاح SettingsTab disk usage** — استخدام navigator.storage.estimate()
 
 ### مكتمل — الإضافات السابقة (v2.1.0)
 - [x] **XP System** — نظام النقاط

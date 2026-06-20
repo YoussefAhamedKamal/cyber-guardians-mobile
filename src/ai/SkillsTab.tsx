@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useSkillStore } from '@/store/skillStore'
-import { SKILL_TEMPLATES, type SkillCategory } from '@/types/skills'
+import { SKILL_TEMPLATES, type SkillCategory, type Skill } from '@/types/skills'
 
 const CATEGORY_LABELS: Record<SkillCategory | 'all', string> = {
   all: 'الكل',
@@ -37,8 +37,10 @@ export function SkillsTab() {
     removeSkill,
     addSkillFromTemplate,
     addSkill,
-    getEnabledSkills
+    getEnabledSkills,
+    setActiveSkill
   } = useSkillStore()
+  const activeSkillId = useSkillStore((s) => s.activeSkillId)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -86,8 +88,21 @@ export function SkillsTab() {
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault()
     if (draggedIndex === null || draggedIndex === index) return
-    // Reorder logic would go here
-  }, [draggedIndex])
+    const filteredSkills = skills
+      .filter(s => filterCategory === 'all' || s.category === filterCategory)
+      .filter(s => !searchQuery || s.name.includes(searchQuery) || s.description.includes(searchQuery))
+    const draggedSkill = filteredSkills[draggedIndex]
+    const targetSkill = filteredSkills[index]
+    if (!draggedSkill || !targetSkill) return
+    const allSkills = [...skills]
+    const draggedIdx = allSkills.findIndex(s => s.id === draggedSkill.id)
+    const targetIdx = allSkills.findIndex(s => s.id === targetSkill.id)
+    if (draggedIdx === -1 || targetIdx === -1) return
+    const [removed] = allSkills.splice(draggedIdx, 1)
+    if (removed) allSkills.splice(targetIdx, 0, removed)
+    useSkillStore.setState({ skills: allSkills })
+    setDraggedIndex(index)
+  }, [draggedIndex, skills, filterCategory, searchQuery])
 
   const handleDragEnd = useCallback(() => {
     setDraggedIndex(null)
@@ -295,6 +310,26 @@ export function SkillsTab() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {skill.enabled && (
+                    <button
+                      onClick={() => setActiveSkill(skill.id === activeSkillId ? null : skill.id)}
+                      style={{
+                        padding: '4px 10px',
+                        background: skill.id === activeSkillId
+                          ? 'linear-gradient(135deg, #4CAF50, #45a049)'
+                          : 'transparent',
+                        border: `1px solid ${skill.id === activeSkillId ? '#4CAF50' : '#666'}`,
+                        borderRadius: '4px',
+                        color: skill.id === activeSkillId ? 'white' : '#888',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {skill.id === activeSkillId ? '⚡ نشط' : 'تفعيل'}
+                    </button>
+                  )}
                   <button
                     onClick={() => toggleSkill(skill.id)}
                     style={{

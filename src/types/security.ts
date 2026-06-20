@@ -45,6 +45,8 @@ export interface SecurityState {
   lastActivity: number
   failedAttempts: number
   lockedUntil: number | null
+  passwordHash: string | null
+  passwordSalt: string | null
 
   updateSettings: (settings: Partial<SecuritySettings>) => void
   encrypt: (data: string, password: string) => Promise<EncryptedData>
@@ -58,6 +60,7 @@ export interface SecurityState {
 
   lock: () => void
   unlock: (password: string) => Promise<boolean>
+  setPassword: (password: string) => Promise<void>
   checkLock: () => boolean
   updateActivity: () => void
 
@@ -77,13 +80,15 @@ export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
   dataRetentionDays: 90
 }
 
-export const DEFAULT_SECURITY_STATE: Omit<SecurityState, 'updateSettings' | 'encrypt' | 'decrypt' | 'hash' | 'verify' | 'logActivity' | 'getActivityLogs' | 'clearActivityLogs' | 'lock' | 'unlock' | 'checkLock' | 'updateActivity' | 'exportSecurityData' | 'importSecurityData'> = {
+export const DEFAULT_SECURITY_STATE: Omit<SecurityState, 'updateSettings' | 'encrypt' | 'decrypt' | 'hash' | 'verify' | 'logActivity' | 'getActivityLogs' | 'clearActivityLogs' | 'lock' | 'unlock' | 'setPassword' | 'checkLock' | 'updateActivity' | 'exportSecurityData' | 'importSecurityData'> = {
   settings: DEFAULT_SECURITY_SETTINGS,
   activityLogs: [],
   isLocked: false,
   lastActivity: Date.now(),
   failedAttempts: 0,
-  lockedUntil: null
+  lockedUntil: null,
+  passwordHash: null,
+  passwordSalt: null
 }
 
 export function generateId(): string {

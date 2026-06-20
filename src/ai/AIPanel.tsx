@@ -798,7 +798,7 @@ function downloadDocx(content: string, filename: string) {
   downloadFile(html, `${filename}.doc`, 'application/msword')
 }
 
-function downloadPdf(content: string, filename: string) {
+function downloadHtml(content: string, filename: string) {
   const escaped = escapeHtml(content).replace(/\n/g, '<br>')
   const html = `<html><head><meta charset='utf-8'><style>body{font-family:Arial,sans-serif;direction:rtl;text-align:right;padding:20px;line-height:1.8;font-size:14px}pre{background:#f4f4f4;padding:10px;border-radius:4px;white-space:pre-wrap}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>${escaped}</body></html>`
   downloadFile(html, `${filename}.html`, 'text/html')
@@ -892,7 +892,7 @@ function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: 
                     <div style={{ position: 'absolute', bottom: '100%', left: 0, background: '#1a1f3a', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '4px', minWidth: '100px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
                       <button onClick={() => { downloadMd(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.md Markdown</button>
                       <button onClick={() => { downloadDocx(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.docx Word</button>
-                      <button onClick={() => { downloadPdf(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.pdf PDF</button>
+                       <button onClick={() => { downloadHtml(msg.content, `ai-response-${Date.now()}`); setShowMenu(false) }} style={{ display: 'block', width: '100%', padding: '6px 8px', border: 'none', background: 'transparent', color: '#ddd', fontSize: '11px', cursor: 'pointer', textAlign: 'right', borderRadius: '4px' }}>.html HTML</button>
                     </div>
                   )}
                 </div>
@@ -1067,6 +1067,7 @@ function StudentChat() {
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); ai.setStudentStreaming('')
+    const startTime = Date.now()
     try {
       let finalMessages = [...msgs]
 
@@ -1126,6 +1127,14 @@ function StudentChat() {
         )
         ai.setStudentStreaming(result.fullText)
         ai.addStudentMessage({ role: 'assistant', content: result.fullText })
+        // Record skill usage for analytics (deepthink path)
+        const activeSkillId2 = useSkillStore.getState().activeSkillId
+        if (activeSkillId2) {
+          const skill2 = useSkillStore.getState().skills.find((s: { id: string }) => s.id === activeSkillId2)
+          if (skill2) {
+            useSkillStore.getState().recordUsage(activeSkillId2, userMsg?.content || '', result.fullText, Date.now() - startTime, true)
+          }
+        }
       } else {
         const systemMsg: AIMessage = { role: 'system', content: systemPrompt }
         let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
@@ -1137,6 +1146,14 @@ function StudentChat() {
         }
         ai.setStudentStreaming(full)
         ai.addStudentMessage({ role: 'assistant', content: full })
+        // Record skill usage for analytics
+        const activeSkillId = useSkillStore.getState().activeSkillId
+        if (activeSkillId) {
+          const skill = useSkillStore.getState().skills.find(s => s.id === activeSkillId)
+          if (skill) {
+            useSkillStore.getState().recordUsage(activeSkillId, userMsg?.content || '', full, Date.now() - startTime, true)
+          }
+        }
       }
     } catch (err: any) { ai.addStudentMessage({ role: 'assistant', content: `⚠️ ${err.message || 'حدث خطأ'}` }) }
     ai.setLoading(false); ai.setStudentStreaming(''); ai.setDeepthinkStep('')
@@ -1295,6 +1312,7 @@ function FacultyAIChat() {
 
   const sendMessage = async (msgs: AIMessage[]) => {
     ai.setLoading(true); ai.setFacultyStreaming('')
+    const startTime = Date.now()
     const levels = getLevels(); const chars = getCharacters(); const meta = getGameMeta()
     const levelsJson = levels.map((l) => `المستوى ${l.id}: ${l.title} (${l.difficulty || 'medium'}, ${l.points || 0} نقطة)`).join('\n')
     const charsJson = JSON.stringify(Object.entries(chars).map(([id, c]) => ({ id, name: c.name, role: c.role, gender: c.gender })), null, 2)
@@ -1323,6 +1341,11 @@ function FacultyAIChat() {
         const { updates, cleanText } = parseAIUpdates(result.fullText)
         ai.addFacultyMessage({ role: 'assistant', content: cleanText || result.fullText })
         if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
+        // Record skill usage for analytics (faculty deepthink path)
+        const activeSkillId3 = useSkillStore.getState().activeSkillId
+        if (activeSkillId3) {
+          useSkillStore.getState().recordUsage(activeSkillId3, lastUser?.content || '', result.fullText, Date.now() - startTime, true)
+        }
       } else {
         const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
         const chatMsgs = msgs.filter((m) => m !== contextMsg)
@@ -1337,6 +1360,11 @@ function FacultyAIChat() {
         const { updates, cleanText } = parseAIUpdates(full)
         ai.addFacultyMessage({ role: 'assistant', content: cleanText || full })
         if (updates.length > 0) { setApplyStatus(applyUpdates(updates)) }
+        // Record skill usage for analytics (faculty normal path)
+        const activeSkillId4 = useSkillStore.getState().activeSkillId
+        if (activeSkillId4) {
+          useSkillStore.getState().recordUsage(activeSkillId4, lastUser?.content || '', full, Date.now() - startTime, true)
+        }
       }
     } catch (err: any) { ai.addFacultyMessage({ role: 'assistant', content: `⚠️ ${err.message || 'خطأ'}` }) }
     ai.setLoading(false); ai.setFacultyStreaming(''); ai.setDeepthinkStep('')

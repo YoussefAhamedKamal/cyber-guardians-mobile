@@ -87,7 +87,7 @@ export function ConnectorsTab() {
       provider: newConnector.provider,
       authType: newConnector.apiKey ? 'api_key' : 'none',
       connected: false,
-      credentials: {},
+      credentials: newConnector.apiKey ? { apiKey: newConnector.apiKey } : {},
       config: {
         baseUrl: newConnector.baseUrl,
         models: newConnector.models.split(',').map((m) => m.trim()).filter(Boolean)

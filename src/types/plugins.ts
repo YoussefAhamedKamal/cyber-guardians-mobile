@@ -97,16 +97,18 @@ export const PLUGIN_TEMPLATES: PluginTemplate[] = [
     description: 'إجراء عمليات حسابية معقدة بدقة',
     icon: '🧮',
     category: 'calculator',
-    config: {},
+    config: {
+      baseUrl: 'https://api.mathjs.org/v4',
+    },
     endpoints: [
       {
         id: 'calculate',
         name: 'حساب',
-        method: 'POST',
-        path: '/calculate',
+        method: 'GET',
+        path: '/eval',
         description: 'إجراء عملية حسابية',
         parameters: [
-          { name: 'expression', type: 'string', required: true, description: 'التعبير الرياضي' }
+          { name: 'expr', type: 'string', required: true, description: 'التعبير الرياضي' }
         ]
       }
     ],
@@ -204,26 +206,36 @@ export const PLUGIN_TEMPLATES: PluginTemplate[] = [
   },
   {
     id: 'api_caller',
-    name: 'م вызыв API',
+    name: 'مُنادي API',
     description: 'استدعاء APIs خارجية',
     icon: '🔌',
     category: 'api',
-    config: {},
+    config: {
+      baseUrl: 'https://httpbin.org',
+    },
     endpoints: [
       {
         id: 'call_api',
         name: 'استدعاء API',
-        method: 'POST',
-        path: '/call',
+        method: 'GET',
+        path: '/get',
         description: 'استدعاء API خارجي',
         parameters: [
-          { name: 'url', type: 'string', required: true, description: 'رابط API' },
-          { name: 'method', type: 'string', required: true, description: 'طريقة الاستدعاء' },
-          { name: 'body', type: 'object', required: false, description: 'البيانات' }
+          { name: 'url', type: 'string', required: true, description: 'رابط API' }
+        ]
+      },
+      {
+        id: 'post_api',
+        name: 'إرسال بيانات',
+        method: 'POST',
+        path: '/post',
+        description: 'إرسال بيانات إلى API',
+        parameters: [
+          { name: 'data', type: 'object', required: false, description: 'البيانات' }
         ]
       }
     ],
-    auth: { type: 'api_key' }
+    auth: { type: 'none' }
   },
   {
     id: 'stats_analyzer',
@@ -231,17 +243,18 @@ export const PLUGIN_TEMPLATES: PluginTemplate[] = [
     description: 'تحليل البيانات الإحصائية',
     icon: '📈',
     category: 'visualization',
-    config: {},
+    config: {
+      baseUrl: 'https://api.mathjs.org/v4',
+    },
     endpoints: [
       {
         id: 'analyze',
         name: 'تحليل إحصائي',
-        method: 'POST',
-        path: '/analyze',
+        method: 'GET',
+        path: '/eval',
         description: 'إجراء تحليل إحصائي',
         parameters: [
-          { name: 'data', type: 'array', required: true, description: 'البيانات' },
-          { name: 'metrics', type: 'array', required: true, description: 'المؤشرات' }
+          { name: 'expr', type: 'string', required: true, description: 'التعبير الإحصائي (mean, median, std)' }
         ]
       }
     ],
@@ -297,20 +310,22 @@ export const PLUGIN_TEMPLATES: PluginTemplate[] = [
     description: 'البحث في الإنترنت واستخراج النتائج',
     icon: '🔍',
     category: 'api',
-    config: {},
+    config: {
+      baseUrl: 'https://duckduckgo.com',
+    },
     endpoints: [
       {
         id: 'search',
         name: 'بحث',
         method: 'GET',
-        path: '/search',
+        path: '/',
         description: 'بحث في الإنترنت',
         parameters: [
-          { name: 'query', type: 'string', required: true, description: 'عبارة البحث' },
-          { name: 'limit', type: 'number', required: false, description: 'عدد النتائج' }
+          { name: 'q', type: 'string', required: true, description: 'عبارة البحث' },
+          { name: 'format', type: 'string', required: false, description: 'صيغة النتيجة (json)' }
         ]
       }
     ],
-    auth: { type: 'api_key' }
+    auth: { type: 'none' }
   }
 ]

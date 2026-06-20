@@ -316,7 +316,7 @@ export function CalendarTab() {
         </h3>
         {selectedTasks.length === 0 ? (
           <div style={{ color: '#666', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-            لا توجد مهمات在这个 التاريخ
+            لا توجد مهمات في هذا التاريخ
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

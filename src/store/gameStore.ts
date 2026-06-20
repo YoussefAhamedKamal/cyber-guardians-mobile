@@ -6,6 +6,7 @@ import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import { getRankByXp, type Rank } from '@/data/ranks'
 import { checkBadges, type BadgeCheckState } from '@/data/badges'
 import { logger } from '@/utils/logger'
+import { useAnalyticsStore } from './analyticsStore'
 
 interface MissionProgress {
   lessons: number
@@ -166,6 +167,15 @@ export const useGameStore = create<GameStore>()(
           rank: newRank,
           unlockedBadges: [...prev.unlockedBadges, ...newBadges],
         })
+        useAnalyticsStore.getState().recordUsage(
+          'complete',
+          'level',
+          String(level),
+          `المستوى ${level}`,
+          true,
+          undefined,
+          undefined
+        )
       },
 
       togglePause: () => set((s) => ({ isPaused: !s.isPaused })),

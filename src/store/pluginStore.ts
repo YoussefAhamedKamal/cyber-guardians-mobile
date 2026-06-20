@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import type { Plugin, PluginCategory } from '@/types/plugins'
 import { PLUGIN_TEMPLATES } from '@/types/plugins'
+import { useAnalyticsStore } from './analyticsStore'
+import { useVersionHistoryStore } from './versionHistoryStore'
 
 interface PluginState {
   plugins: Plugin[]
@@ -50,30 +52,43 @@ export const usePluginStore = create<PluginState>()(
           updatedAt: now
         }
         set((state) => ({ plugins: [...state.plugins, plugin] }))
+        useVersionHistoryStore.getState().recordChange('create', 'plugin', id, plugin.name, JSON.stringify(plugin))
         return id
       },
 
       removePlugin: (id) => {
+        const plugin = get().plugins.find(p => p.id === id)
         set((state) => ({
           plugins: state.plugins.filter((p) => p.id !== id),
           activePluginId: state.activePluginId === id ? null : state.activePluginId
         }))
+        if (plugin) {
+          useVersionHistoryStore.getState().recordChange('delete', 'plugin', id, plugin.name, null)
+        }
       },
 
       togglePlugin: (id) => {
+        const plugin = get().plugins.find(p => p.id === id)
         set((state) => ({
           plugins: state.plugins.map((p) =>
             p.id === id ? { ...p, enabled: !p.enabled, updatedAt: Date.now() } : p
           )
         }))
+        if (plugin) {
+          useVersionHistoryStore.getState().recordChange('toggle', 'plugin', id, plugin.name, JSON.stringify({ enabled: !plugin.enabled }))
+        }
       },
 
       updatePlugin: (id, updates) => {
+        const plugin = get().plugins.find(p => p.id === id)
         set((state) => ({
           plugins: state.plugins.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p
           )
         }))
+        if (plugin) {
+          useVersionHistoryStore.getState().recordChange('update', 'plugin', id, plugin.name, JSON.stringify({ ...plugin, ...updates }))
+        }
       },
 
       setActivePlugin: (id) => {
@@ -146,6 +161,16 @@ export const usePluginStore = create<PluginState>()(
               : p
           )
         }))
+        const plugin = get().plugins.find(p => p.id === pluginId)
+        useAnalyticsStore.getState().recordUsage(
+          'use',
+          'plugin',
+          pluginId,
+          `${plugin?.name || pluginId}/${endpoint}`,
+          success,
+          duration,
+          success ? undefined : (error || output.slice(0, 200))
+        )
       },
 
       executePlugin: async (pluginId, endpointId, params) => {
@@ -163,6 +188,20 @@ export const usePluginStore = create<PluginState>()(
           // Replace path parameters
           for (const [key, value] of Object.entries(params)) {
             url = url.replace(`:${key}`, String(value))
+          }
+
+          // Add query string for GET requests
+          if (endpoint.method === 'GET' && Object.keys(params).length > 0) {
+            const searchParams = new URLSearchParams()
+            for (const [key, value] of Object.entries(params)) {
+              if (value !== null && value !== undefined) {
+                searchParams.set(key, String(value))
+              }
+            }
+            const queryString = searchParams.toString()
+            if (queryString) {
+              url += (url.includes('?') ? '&' : '?') + queryString
+            }
           }
 
           const headers: Record<string, string> = {

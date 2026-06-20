@@ -1,12 +1,14 @@
 import { useSkillStore } from '@/store/skillStore'
 import { usePluginStore } from '@/store/pluginStore'
 import { useConnectorStore } from '@/store/connectorStore'
+import { useProjectStore } from '@/store/projectStore'
 import { STUDENT_SYSTEM_PROMPT } from './prompts'
 
 export function buildActiveSkillPrompt(): string {
   const skillStore = useSkillStore.getState()
   const pluginStore = usePluginStore.getState()
   const connectorStore = useConnectorStore.getState()
+  const projectStore = useProjectStore.getState()
 
   const activeSkill = skillStore.activeSkillId
     ? skillStore.skills.find(s => s.id === skillStore.activeSkillId && s.enabled)
@@ -16,6 +18,12 @@ export function buildActiveSkillPrompt(): string {
   const activeConnectors = connectorStore.connectors.filter(c => c.connected)
 
   let prompt = STUDENT_SYSTEM_PROMPT
+
+  // Add project-specific instructions and knowledge
+  const projectPrompt = projectStore.buildProjectSystemPrompt(prompt)
+  if (projectPrompt !== prompt) {
+    prompt = projectPrompt
+  }
 
   if (activeSkill) {
     prompt += '\n\n--- ACTIVE SKILL ---\n'
@@ -53,25 +61,36 @@ export function detectSkillRequest(message: string): string | null {
   const lowerMsg = message.toLowerCase()
 
   const skillKeywords: Record<string, string[]> = {
-    'translator': ['translate', 'translation'],
-    'code_analyzer': ['analyze code', 'code analysis', 'review code'],
-    'summarizer': ['summarize', 'summary', 'tldr'],
-    'math_solver': ['calculate', 'math', 'solve', 'equation'],
-    'email_writer': ['write email', 'compose email', 'draft email'],
-    'researcher': ['research', 'investigate', 'study'],
-    'creative_writer': ['write story', 'creative writing', 'poem', 'fiction'],
-    'data_analyst': ['data analysis', 'analyze data', 'statistics'],
-    'cybersecurity_expert': ['vulnerability', 'security audit', 'penetration', 'hack', 'exploit'],
-    'teacher': ['explain', 'teach', 'learn', 'understand', 'tutorial'],
-    'content_writer': ['write article', 'blog post', 'content writing'],
-    'software_engineer': ['develop', 'build app', 'create software', 'programming', 'code'],
-    'image_generator': ['generate image', 'create image', 'draw', 'picture', 'image'],
+    'translator': ['translate', 'translation', 'ترجم'],
+    'code_analyzer': ['analyze code', 'code analysis', 'review code', 'تحليل كود'],
+    'summarizer': ['summarize', 'summary', 'tldr', 'لخص', 'ملخص'],
+    'math_solver': ['calculate', 'math', 'solve', 'equation', 'احسب', 'رياضيات'],
+    'email_writer': ['write email', 'compose email', 'draft email', 'اكتب بريد'],
+    'researcher': ['research', 'investigate', 'study', 'ابحث', 'دراسة'],
+    'creative_writer': ['write story', 'creative writing', 'poem', 'fiction', 'اكتب قصة', 'شعر'],
+    'data_analyst': ['data analysis', 'analyze data', 'statistics', 'تحليل بيانات'],
+    'cybersecurity_expert': ['vulnerability', 'security audit', 'penetration', 'hack', 'exploit', 'ثغرة', 'اختراق'],
+    'teacher': ['explain', 'teach', 'learn', 'understand', 'tutorial', 'اشرح', 'تعلم'],
+    'content_writer': ['write article', 'blog post', 'content writing', 'اكتب مقال'],
+    'software_engineer': ['develop', 'build app', 'create software', 'programming', 'code', 'برمج', 'طور'],
+    'image_generator': ['generate image', 'create image', 'draw', 'picture', 'image', 'صور'],
   }
 
   for (const skill of skillStore.skills) {
     if (!skill.enabled) continue
+
+    // Try template ID first
     const keywords = skillKeywords[skill.id] || []
-    if (keywords.some(kw => lowerMsg.includes(kw))) {
+
+    // Also try matching by skill name for custom skills
+    const nameLower = skill.name.toLowerCase()
+    const descLower = skill.description.toLowerCase()
+
+    const hasKeyword = keywords.some(kw => lowerMsg.includes(kw)) ||
+      lowerMsg.includes(nameLower) ||
+      lowerMsg.includes(descLower)
+
+    if (hasKeyword) {
       return skill.id
     }
   }
@@ -87,7 +106,7 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
     'calculator': {
       endpoint: 'calculate',
       paramExtractors: {
-        expression: (msg): string | null => {
+        expr: (msg): string | null => {
           const mathMatch = msg.match(/(\d+[\s]*[\+\-\*\/\^][\s]*\d+(?:[\s]*[\+\-\*\/\^][\s]*\d+)*)/)
           return mathMatch?.[1] ?? null
         }
@@ -121,7 +140,25 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
     'search_engine': {
       endpoint: 'search',
       paramExtractors: {
-        query: (msg): string => msg.replace(/^(search|find|look)\s*/i, '') || msg
+        q: (msg): string => msg.replace(/^(search|find|look)\s*/i, '') || msg
+      }
+    },
+    'stats_analyzer': {
+      endpoint: 'analyze',
+      paramExtractors: {
+        expr: (msg): string | null => {
+          const numMatch = msg.match(/(\d+(?:\s*,\s*\d+)*)/)
+          return numMatch?.[1] ? `mean([${numMatch[1]}])` : null
+        }
+      }
+    },
+    'api_caller': {
+      endpoint: 'call_api',
+      paramExtractors: {
+        url: (msg): string | null => {
+          const urlMatch = msg.match(/(https?:\/\/[^\s]+)/)
+          return urlMatch?.[1] ?? null
+        }
       }
     }
   }

@@ -8,9 +8,28 @@ type SettingsView = 'appearance' | 'accessibility' | 'language' | 'advanced'
 export function SettingsTab() {
   const [view, setView] = useState<SettingsView>('appearance')
   const ui = useUIStore()
+  const [diskUsage, setDiskUsage] = useState<string>('جاري الحساب...')
 
   const [breakpoint, setBreakpoint] = useState(getResponsiveBreakpoint())
   const [isTouch, setIsTouch] = useState(isTouchDevice())
+
+  useEffect(() => {
+    const estimateDiskUsage = async () => {
+      try {
+        if (navigator.storage && navigator.storage.estimate) {
+          const estimate = await navigator.storage.estimate()
+          const usedBytes = estimate.usage || 0
+          const usedMB = (usedBytes / (1024 * 1024)).toFixed(2)
+          setDiskUsage(`${usedMB} MB`)
+        } else {
+          setDiskUsage('غير متاح')
+        }
+      } catch {
+        setDiskUsage('غير متاح')
+      }
+    }
+    estimateDiskUsage()
+  }, [])
 
   useEffect(() => {
     const handleResize = () => setBreakpoint(getResponsiveBreakpoint())
@@ -228,7 +247,7 @@ export function SettingsTab() {
               <div style={{ display: 'grid', gap: '8px' }}>
                 <InfoItem label="الإصدار" value="2.0.0" />
                 <InfoItem label="آخر تحديث" value={new Date().toLocaleDateString('ar-SA')} />
-                <InfoItem label="المساحة المستخدمة" value="calculating..." />
+                <InfoItem label="المساحة المستخدمة" value={diskUsage} />
               </div>
             </SettingsSection>
           </div>

@@ -13,6 +13,9 @@ import {
   createSummary,
   extractKeywords
 } from '@/types/aiAssistant'
+import { useSkillStore } from './skillStore'
+import { usePluginStore } from './pluginStore'
+import { useProjectStore } from './projectStore'
 
 type AIAssistantStore = AIAssistantState
 
@@ -45,20 +48,83 @@ export const useAIAssistantStore = create<AIAssistantStore>()(
         const keywords = extractKeywords(query, 3)
         const suggestions = get().getSuggestions(query)
 
-        const mockResults: SmartSearchResult['results'] = [
-          {
+        // Search across all stores for real results
+        const results: SmartSearchResult['results'] = []
+
+        // Search skills
+        try {
+          const skills = useSkillStore.getState().skills || []
+          skills.forEach((skill: { id: string; name: string; description: string }) => {
+            const text = `${skill.name} ${skill.description}`.toLowerCase()
+            if (keywords.some(k => text.includes(k.toLowerCase())) || text.includes(query.toLowerCase())) {
+              const matchCount = keywords.filter(k => text.includes(k.toLowerCase())).length
+              const relevance = 0.7 + (matchCount / Math.max(keywords.length, 1)) * 0.3
+              results.push({
+                id: skill.id,
+                title: skill.name,
+                snippet: skill.description.substring(0, 150),
+                relevance,
+                source: 'القدرات'
+              })
+            }
+          })
+        } catch {}
+
+        // Search plugins
+        try {
+          const plugins = usePluginStore.getState().plugins || []
+          plugins.forEach((plugin: { id: string; name: string; description: string }) => {
+            const text = `${plugin.name} ${plugin.description}`.toLowerCase()
+            if (keywords.some(k => text.includes(k.toLowerCase())) || text.includes(query.toLowerCase())) {
+              const matchCount = keywords.filter(k => text.includes(k.toLowerCase())).length
+              const relevance = 0.6 + (matchCount / Math.max(keywords.length, 1)) * 0.3
+              results.push({
+                id: plugin.id,
+                title: plugin.name,
+                snippet: plugin.description.substring(0, 150),
+                relevance,
+                source: 'الأدوات'
+              })
+            }
+          })
+        } catch {}
+
+        // Search knowledge
+        try {
+          const knowledge = useProjectStore.getState().knowledge || []
+          knowledge.forEach((k: { id: string; name: string; content: string }) => {
+            const text = `${k.name} ${k.content}`.toLowerCase()
+            if (keywords.some(kw => text.includes(kw.toLowerCase())) || text.includes(query.toLowerCase())) {
+              const matchCount = keywords.filter(kw => text.includes(kw.toLowerCase())).length
+              const relevance = 0.5 + (matchCount / Math.max(keywords.length, 1)) * 0.3
+              results.push({
+                id: k.id,
+                title: k.name,
+                snippet: k.content.substring(0, 150),
+                relevance,
+                source: 'المعرفة'
+              })
+            }
+          })
+        } catch {}
+
+        // If no results found, generate suggestion-based results
+        if (results.length === 0) {
+          results.push({
             id: generateId(),
-            title: `نتيجة لـ "${query}"`,
-            snippet: `معلومات حول ${query}...`,
-            relevance: 0.95,
+            title: `نتائج لـ "${query}"`,
+            snippet: `لم يتم العثور على نتائج مباشرة. جرب كلمات مفتاحية مختلفة.`,
+            relevance: 0.5,
             source: 'AI Assistant'
-          }
-        ]
+          })
+        }
+
+        results.sort((a, b) => b.relevance - a.relevance)
 
         const result: SmartSearchResult = {
           id: generateId(),
           query,
-          results: mockResults,
+          results: results.slice(0, 10),
           suggestions,
           relatedTopics: keywords,
           timestamp: Date.now()

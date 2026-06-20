@@ -26,16 +26,46 @@ export function BackupTab() {
     exportBackup,
     importBackup,
     setSyncConfig,
+    syncToGitHub,
+    syncFromGitHub,
     clearBackups
   } = useBackupStore()
 
+  const [githubToken, setGithubToken] = useState(syncConfig.githubToken || '')
+  const [githubRepo, setGithubRepo] = useState(syncConfig.githubRepo || '')
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle')
+
   const handleCreateBackup = async (source: 'local' | 'github' | 'google-drive' = 'local') => {
     try {
-      await createBackup(source)
-      setView('list')
+      if (source === 'github') {
+        if (!githubToken || !githubRepo) {
+          alert('يرجى إدخال GitHub Token واسم المستخدم/المستودع')
+          return
+        }
+        setSyncStatus('syncing')
+        setSyncConfig({ githubToken, githubRepo, provider: 'github' })
+        const success = await syncToGitHub(githubToken, githubRepo)
+        setSyncStatus(success ? 'success' : 'error')
+        if (success) setView('list')
+      } else {
+        await createBackup(source)
+        setView('list')
+      }
     } catch (error) {
       console.error('Backup failed:', error)
+      setSyncStatus('error')
     }
+  }
+
+  const handleSyncFromGitHub = async () => {
+    if (!githubToken || !githubRepo) {
+      alert('يرجى إدخال GitHub Token واسم المستخدم/المستودع')
+      return
+    }
+    setSyncStatus('syncing')
+    setSyncConfig({ githubToken, githubRepo, provider: 'github' })
+    const success = await syncFromGitHub(githubToken, githubRepo)
+    setSyncStatus(success ? 'success' : 'error')
   }
 
   const handleRestore = (backupId: string) => {
@@ -248,39 +278,63 @@ export function BackupTab() {
                   {isBackingUp ? '⏳ جاري النسخ...' : '💾 نسخ محلي'}
                 </button>
 
-                <button
-                  onClick={() => handleCreateBackup('github')}
-                  disabled={isBackingUp}
-                  style={{
-                    padding: '16px',
-                    background: isBackingUp ? '#333' : '#333',
-                    border: '1px solid #444',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    cursor: isBackingUp ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  🐙 GitHub
-                </button>
+                {/* GitHub Config */}
+                <div style={{ padding: '12px', background: '#0d1117', borderRadius: '8px', border: '1px solid #333', textAlign: 'right' }}>
+                  <p style={{ margin: '0 0 8px', color: '#888', fontSize: '12px' }}>إعدادات GitHub:</p>
+                  <input
+                    type="text"
+                    placeholder="GitHub Token (ghp_...)"
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                    style={{ width: '100%', padding: '10px', background: '#1a1a2e', border: '1px solid #333', borderRadius: '6px', color: '#fff', fontSize: '13px', marginBottom: '8px', direction: 'ltr', textAlign: 'left' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="username/repo (e.g. user/cyber-guardians-backup)"
+                    value={githubRepo}
+                    onChange={(e) => setGithubRepo(e.target.value)}
+                    style={{ width: '100%', padding: '10px', background: '#1a1a2e', border: '1px solid #333', borderRadius: '6px', color: '#fff', fontSize: '13px', direction: 'ltr', textAlign: 'left' }}
+                  />
+                </div>
 
-                <button
-                  onClick={() => handleCreateBackup('google-drive')}
-                  disabled={isBackingUp}
-                  style={{
-                    padding: '16px',
-                    background: isBackingUp ? '#333' : '#333',
-                    border: '1px solid #444',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    cursor: isBackingUp ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  📁 Google Drive
-                </button>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    onClick={() => handleCreateBackup('github')}
+                    disabled={isBackingUp || syncStatus === 'syncing'}
+                    style={{
+                      padding: '16px',
+                      background: isBackingUp ? '#333' : '#333',
+                      border: '1px solid #444',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      cursor: isBackingUp ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {syncStatus === 'syncing' ? '⏳ جاري...' : '⬆️ رفع للـ GitHub'}
+                  </button>
+
+                  <button
+                    onClick={handleSyncFromGitHub}
+                    disabled={isBackingUp || syncStatus === 'syncing'}
+                    style={{
+                      padding: '16px',
+                      background: isBackingUp ? '#333' : '#2196F3',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      cursor: isBackingUp ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {syncStatus === 'syncing' ? '⏳ جاري...' : '⬇️ استيراد من GitHub'}
+                  </button>
+                </div>
+
+                {syncStatus === 'success' && <p style={{ color: '#4CAF50', fontSize: '13px', margin: 0 }}>✅ تمت المزامنة بنجاح</p>}
+                {syncStatus === 'error' && <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>❌ فشلت المزامنة</p>}
               </div>
             </div>
 

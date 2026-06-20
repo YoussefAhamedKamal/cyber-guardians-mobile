@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import type { Connector, ConnectorProvider } from '@/types/connectors'
 import { CONNECTOR_TEMPLATES } from '@/types/connectors'
+import { useVersionHistoryStore } from './versionHistoryStore'
+import { useAnalyticsStore } from './analyticsStore'
 
 interface ConnectorState {
   connectors: Connector[]
@@ -53,30 +55,45 @@ export const useConnectorStore = create<ConnectorState>()(
           updatedAt: now
         }
         set((state) => ({ connectors: [...state.connectors, connector] }))
+        useVersionHistoryStore.getState().recordChange('create', 'connector', id, connector.name, JSON.stringify(connector))
         return id
       },
 
       removeConnector: (id) => {
+        const connector = get().connectors.find(c => c.id === id)
         set((state) => ({
           connectors: state.connectors.filter((c) => c.id !== id),
           activeConnectorId: state.activeConnectorId === id ? null : state.activeConnectorId
         }))
+        if (connector) {
+          useVersionHistoryStore.getState().recordChange('delete', 'connector', id, connector.name, null)
+        }
       },
 
       toggleConnector: (id) => {
+        const connector = get().connectors.find(c => c.id === id)
+        if (!connector) return
+        const newConnected = !connector.connected
         set((state) => ({
           connectors: state.connectors.map((c) =>
-            c.id === id ? { ...c, connected: !c.connected, updatedAt: Date.now() } : c
+            c.id === id
+              ? { ...c, connected: newConnected, credentials: newConnected ? c.credentials : {}, updatedAt: Date.now() }
+              : c
           )
         }))
+        useVersionHistoryStore.getState().recordChange('toggle', 'connector', id, connector.name, JSON.stringify({ connected: newConnected }))
       },
 
       updateConnector: (id, updates) => {
+        const connector = get().connectors.find(c => c.id === id)
         set((state) => ({
           connectors: state.connectors.map((c) =>
             c.id === id ? { ...c, ...updates, updatedAt: Date.now() } : c
           )
         }))
+        if (connector) {
+          useVersionHistoryStore.getState().recordChange('update', 'connector', id, connector.name, JSON.stringify({ ...connector, ...updates }))
+        }
       },
 
       setActiveConnector: (id) => {
@@ -92,6 +109,7 @@ export const useConnectorStore = create<ConnectorState>()(
       },
 
       connectConnector: (id, credentials) => {
+        const connector = get().connectors.find(c => c.id === id)
         set((state) => ({
           connectors: state.connectors.map((c) =>
             c.id === id
@@ -99,9 +117,11 @@ export const useConnectorStore = create<ConnectorState>()(
               : c
           )
         }))
+        useAnalyticsStore.getState().recordUsage('connect', 'connector', id, connector?.name || id, true)
       },
 
       disconnectConnector: (id) => {
+        const connector = get().connectors.find(c => c.id === id)
         set((state) => ({
           connectors: state.connectors.map((c) =>
             c.id === id
@@ -109,11 +129,13 @@ export const useConnectorStore = create<ConnectorState>()(
               : c
           )
         }))
+        useAnalyticsStore.getState().recordUsage('disconnect', 'connector', id, connector?.name || id, true)
       },
 
       testConnection: async (id) => {
         const connector = get().getConnectorById(id)
         if (!connector) return false
+        const startTime = Date.now()
 
         try {
           const response = await fetch(`${connector.config.baseUrl}/models`, {
@@ -124,6 +146,7 @@ export const useConnectorStore = create<ConnectorState>()(
           })
 
           const success = response.ok
+          const duration = Date.now() - startTime
           set((state) => ({
             connectors: state.connectors.map((c) =>
               c.id === id
@@ -131,8 +154,10 @@ export const useConnectorStore = create<ConnectorState>()(
                 : c
             )
           }))
+          useAnalyticsStore.getState().recordUsage('test', 'connector', id, connector.name, success, duration, success ? undefined : `HTTP ${response.status}`)
           return success
         } catch (error) {
+          const duration = Date.now() - startTime
           const errorMsg = error instanceof Error ? error.message : 'Connection failed'
           set((state) => ({
             connectors: state.connectors.map((c) =>
@@ -141,6 +166,7 @@ export const useConnectorStore = create<ConnectorState>()(
                 : c
             )
           }))
+          useAnalyticsStore.getState().recordUsage('test', 'connector', id, connector.name, false, duration, errorMsg)
           return false
         }
       },

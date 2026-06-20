@@ -9,6 +9,7 @@ import { usePluginStore } from './pluginStore'
 import { useConnectorStore } from './connectorStore'
 import { useSecurityStore } from './securityStore'
 import { useCalendarStore } from './calendarStore'
+import { useAnalyticsStore } from './analyticsStore'
 
 function collectMetrics(config: ReportConfig): ReportDataPoint[] {
   const game = useGameStore.getState()
@@ -17,18 +18,31 @@ function collectMetrics(config: ReportConfig): ReportDataPoint[] {
   const connectors = useConnectorStore.getState()
   const security = useSecurityStore.getState()
   const calendar = useCalendarStore.getState()
+  const analytics = useAnalyticsStore.getState()
 
   const data: ReportDataPoint[] = []
   const now = new Date()
   const startDate = new Date(config.startDate)
   const endDate = new Date(config.endDate)
+  endDate.setHours(23, 59, 59, 999)
 
   switch (config.type) {
     case 'usage': {
-      data.push({ label: 'إجمالي الجلسات', value: 45, category: 'استخدام' })
-      data.push({ label: 'إجمالي الوقت (دقائق)', value: 320, category: 'استخدام' })
-      data.push({ label: 'متوسط وقت الجلسة', value: 7, category: 'استخدام' })
-      data.push({ label: 'أيام النشاط', value: 12, category: 'استخدام' })
+      const records = analytics.usageRecords.filter(r => {
+        const recordDate = new Date(r.timestamp)
+        return recordDate >= startDate && recordDate <= endDate
+      })
+      const totalRecords = records.length
+      const totalDuration = records.reduce((sum, r) => sum + (r.duration || 0), 0)
+      const avgDuration = totalRecords > 0 ? Math.round(totalDuration / totalRecords / 60) : 0
+      const uniqueDays = new Set(records.map(r => new Date(r.timestamp).toISOString().split('T')[0])).size
+      const successfulOps = records.filter(r => r.success).length
+      data.push({ label: 'إجمالي العمليات', value: totalRecords, category: 'استخدام' })
+      data.push({ label: 'الوقت الكلي (ثانية)', value: totalDuration, category: 'استخدام' })
+      data.push({ label: 'متوسط مدة العملية', value: avgDuration, category: 'استخدام' })
+      data.push({ label: 'أيام النشاط', value: uniqueDays || 1, category: 'استخدام' })
+      data.push({ label: 'عمليات ناجحة', value: successfulOps, category: 'استخدام' })
+      data.push({ label: 'معدل النجاح (%)', value: totalRecords > 0 ? Math.round((successfulOps / totalRecords) * 100) : 100, category: 'استخدام' })
       break
     }
     case 'progress': {
@@ -54,15 +68,22 @@ function collectMetrics(config: ReportConfig): ReportDataPoint[] {
       break
     }
     case 'security': {
-      const activityLogs = security.activityLogs || []
+      const activityLogs = (security.activityLogs || []).filter((l: { timestamp: number }) => {
+        const logDate = new Date(l.timestamp)
+        return logDate >= startDate && logDate <= endDate
+      })
       data.push({ label: 'عمليات التشفير', value: activityLogs.filter((l: { action: string }) => l.action === 'encrypt').length, category: 'أمان' })
       data.push({ label: 'عمليات التجزئة', value: activityLogs.filter((l: { action: string }) => l.action === 'hash').length, category: 'أمان' })
       data.push({ label: 'سجلات النشاط', value: activityLogs.length, category: 'أمان' })
       break
     }
     case 'custom': {
-      data.push({ label: 'المهمات المكتملة', value: calendar.tasks.filter(t => t.status === 'completed').length, category: 'مخصص' })
-      data.push({ label: 'المهمات المتأخرة', value: calendar.tasks.filter(t => {
+      const tasksInDateRange = calendar.tasks.filter(t => {
+        const taskDate = new Date(`${t.dueDate}T${t.dueTime || '23:59'}`)
+        return taskDate >= startDate && taskDate <= endDate
+      })
+      data.push({ label: 'المهمات المكتملة', value: tasksInDateRange.filter(t => t.status === 'completed').length, category: 'مخصص' })
+      data.push({ label: 'المهمات المتأخرة', value: tasksInDateRange.filter(t => {
         if (t.status === 'completed' || t.status === 'cancelled') return false
         return new Date(`${t.dueDate}T${t.dueTime}`) < now
       }).length, category: 'مخصص' })
@@ -83,7 +104,8 @@ function calculateSummary(data: ReportDataPoint[]): ReportSummary {
   const min = Math.min(...values)
   const max = Math.max(...values)
   const trend = calculateTrend(values)
-  const changePercent = values.length > 1 ? ((values[values.length - 1]! - values[0]!) / (values[0]! || 1)) * 100 : 0
+  const firstVal = values[0]!
+  const changePercent = values.length > 1 && firstVal !== 0 ? ((values[values.length - 1]! - firstVal) / Math.abs(firstVal)) * 100 : 0
 
   return {
     totalRecords: values.length,

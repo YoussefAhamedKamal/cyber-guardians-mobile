@@ -18,6 +18,11 @@ import { useConnectorStore } from './connectorStore'
 import { useProjectStore } from './projectStore'
 import { useVersionHistoryStore } from './versionHistoryStore'
 import { useAnalyticsStore } from './analyticsStore'
+import { useGameStore } from './gameStore'
+import { useCalendarStore } from './calendarStore'
+import { useReportsStore } from './reportsStore'
+import { useSecurityStore } from './securityStore'
+import { useUIStore } from './uiStore'
 
 type BackupStore = BackupState
 
@@ -38,6 +43,11 @@ export const useBackupStore = create<BackupStore>()(
           const projectChats = useProjectStore.getState().chats
           const history = useVersionHistoryStore.getState().changes
           const analytics = useAnalyticsStore.getState().usageRecords
+          const game = useGameStore.getState()
+          const calendar = useCalendarStore.getState()
+          const reports = useReportsStore.getState()
+          const security = useSecurityStore.getState()
+          const ui = useUIStore.getState()
 
           const backupData: BackupData = {
             version: '1.0.0',
@@ -53,6 +63,34 @@ export const useBackupStore = create<BackupStore>()(
             },
             history: history.slice(0, 500),
             analytics: analytics.slice(0, 1000),
+            game: {
+              completedLevels: Array.from(game.completedLevels).map(String),
+              totalScore: game.totalScore,
+              xp: game.xp,
+              rankId: game.rank.id,
+              playerName: game.playerName,
+              unlockedBadges: game.unlockedBadges,
+              dailyStreakDays: game.dailyStreakDays,
+              quizBestScore: game.quizBestScore,
+              speedAnswers: game.speedAnswers,
+              maxCombo: game.maxCombo
+            },
+            calendar: {
+              tasks: calendar.tasks
+            },
+            reports: {
+              configs: reports.configs,
+              results: reports.results
+            },
+            security: {
+              settings: security.settings,
+              activityLogs: security.activityLogs.slice(0, 200)
+            },
+            ui: {
+              themeMode: ui.themeMode,
+              language: ui.language,
+              fontSize: ui.fontSize
+            },
             metadata: {
               deviceInfo: navigator.userAgent,
               appVersion: '2.0.0',
@@ -61,7 +99,7 @@ export const useBackupStore = create<BackupStore>()(
           }
 
           const dataString = JSON.stringify(backupData)
-          backupData.metadata.checksum = calculateChecksum(dataString)
+          backupData.metadata.checksum = await calculateChecksum(dataString)
 
           set((state) => {
             const backups = [backupData, ...state.backups].slice(0, state.maxBackups)
@@ -99,7 +137,7 @@ export const useBackupStore = create<BackupStore>()(
             ...backup,
             metadata: { ...backup.metadata, checksum: '' }
           })
-          const expectedChecksum = calculateChecksum(dataString)
+          const expectedChecksum = await calculateChecksum(dataString)
 
           if (backup.metadata.checksum && backup.metadata.checksum !== expectedChecksum) {
             console.warn('Backup checksum mismatch, restoring anyway')
@@ -123,6 +161,48 @@ export const useBackupStore = create<BackupStore>()(
 
           if (backup.analytics) {
             useAnalyticsStore.setState({ usageRecords: backup.analytics })
+          }
+
+          if (backup.game) {
+            const { getRankByXp } = await import('@/data/ranks')
+            useGameStore.setState({
+              completedLevels: new Set(backup.game.completedLevels || []) as unknown as Set<import('@/types').LevelId>,
+              totalScore: backup.game.totalScore || 0,
+              xp: backup.game.xp || 0,
+              rank: getRankByXp(backup.game.xp || 0),
+              playerName: backup.game.playerName || '',
+              unlockedBadges: backup.game.unlockedBadges || [],
+              dailyStreakDays: backup.game.dailyStreakDays || 0,
+              quizBestScore: backup.game.quizBestScore || 0,
+              speedAnswers: backup.game.speedAnswers || 0,
+              maxCombo: backup.game.maxCombo || 0
+            })
+          }
+
+          if (backup.calendar) {
+            useCalendarStore.setState({ tasks: backup.calendar.tasks || [] })
+          }
+
+          if (backup.reports) {
+            useReportsStore.setState({
+              configs: backup.reports.configs || [],
+              results: backup.reports.results || []
+            })
+          }
+
+          if (backup.security) {
+            useSecurityStore.setState({
+              settings: backup.security.settings || useSecurityStore.getState().settings,
+              activityLogs: backup.security.activityLogs || []
+            })
+          }
+
+          if (backup.ui) {
+            useUIStore.setState({
+              themeMode: backup.ui.themeMode || 'dark',
+              language: backup.ui.language || 'ar',
+              fontSize: backup.ui.fontSize || 14
+            })
           }
 
           set({
@@ -167,12 +247,114 @@ export const useBackupStore = create<BackupStore>()(
         set((state) => ({
           syncConfig: { ...state.syncConfig, autoSync: true }
         }))
+        get().startAutoSync()
       },
 
       disableAutoSync: () => {
         set((state) => ({
           syncConfig: { ...state.syncConfig, autoSync: false }
         }))
+        get().stopAutoSync()
+      },
+
+      syncToGitHub: async (token, repo) => {
+        try {
+          const backup = await get().createBackup('github')
+          const content = btoa(unescape(encodeURIComponent(JSON.stringify(backup, null, 2))))
+          const filename = `cyber-guardians-backup-${backup.timestamp}.json`
+
+          // Check if file exists
+          const checkRes = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${filename}`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+          })
+
+          let sha: string | undefined
+          if (checkRes.ok) {
+            const existing = await checkRes.json()
+            sha = existing.sha
+          }
+
+          const body: Record<string, unknown> = {
+            message: `Backup update: ${filename}`,
+            content,
+            branch: 'main'
+          }
+          if (sha) body.sha = sha
+
+          const res = await fetch(`https://api.github.com/repos/${repo}/contents/backups/${filename}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify(body)
+          })
+
+          if (res.ok) {
+            set((state) => ({ syncConfig: { ...state.syncConfig, lastSync: Date.now() } }))
+            return true
+          }
+          return false
+        } catch {
+          return false
+        }
+      },
+
+      syncFromGitHub: async (token, repo) => {
+        try {
+          const res = await fetch(`https://api.github.com/repos/${repo}/contents/backups`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+          })
+
+          if (!res.ok) return false
+          const files = await res.json()
+          if (!Array.isArray(files)) return false
+
+          // Get latest backup file
+          const backupFiles = files.filter((f: { name: string }) => f.name.endsWith('.json')).sort((a: { name: string }, b: { name: string }) => b.name.localeCompare(a.name))
+          if (backupFiles.length === 0) return false
+
+          const latest = backupFiles[0]
+          if (!latest) return false
+          const fileRes = await fetch(latest.url, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+          })
+
+          if (!fileRes.ok) return false
+          const fileData = await fileRes.json()
+          const content = decodeURIComponent(escape(atob(fileData.content)))
+          const success = get().importBackup(content)
+          return success
+        } catch {
+          return false
+        }
+      },
+
+      _autoSyncTimer: null as ReturnType<typeof setInterval> | null,
+
+      startAutoSync: () => {
+        const state = get()
+        if (state._autoSyncTimer) clearInterval(state._autoSyncTimer)
+        if (!state.syncConfig.autoSync) return
+
+        const timer = setInterval(async () => {
+          const s = get()
+          if (!s.syncConfig.autoSync) { get().stopAutoSync(); return }
+          if (s.syncConfig.provider === 'github' && s.syncConfig.githubToken && s.syncConfig.githubRepo) {
+            await s.syncToGitHub(s.syncConfig.githubToken, s.syncConfig.githubRepo)
+          }
+        }, state.syncConfig.syncInterval)
+
+        set({ _autoSyncTimer: timer })
+      },
+
+      stopAutoSync: () => {
+        const state = get()
+        if (state._autoSyncTimer) {
+          clearInterval(state._autoSyncTimer)
+          set({ _autoSyncTimer: null })
+        }
       },
 
       exportBackup: (backupId) => {

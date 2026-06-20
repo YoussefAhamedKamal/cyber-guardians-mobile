@@ -3,6 +3,8 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { indexedDBStorage } from '@/utils/indexedDBStorage'
 import type { Skill, SkillCategory } from '@/types/skills'
 import { SKILL_TEMPLATES } from '@/types/skills'
+import { useAnalyticsStore } from './analyticsStore'
+import { useVersionHistoryStore } from './versionHistoryStore'
 
 interface SkillState {
   skills: Skill[]
@@ -48,30 +50,43 @@ export const useSkillStore = create<SkillState>()(
           updatedAt: now
         }
         set((state) => ({ skills: [...state.skills, skill] }))
+        useVersionHistoryStore.getState().recordChange('create', 'skill', id, skill.name, JSON.stringify(skill))
         return id
       },
 
       removeSkill: (id) => {
+        const skill = get().skills.find(s => s.id === id)
         set((state) => ({
           skills: state.skills.filter((s) => s.id !== id),
           activeSkillId: state.activeSkillId === id ? null : state.activeSkillId
         }))
+        if (skill) {
+          useVersionHistoryStore.getState().recordChange('delete', 'skill', id, skill.name, null)
+        }
       },
 
       toggleSkill: (id) => {
+        const skill = get().skills.find(s => s.id === id)
         set((state) => ({
           skills: state.skills.map((s) =>
             s.id === id ? { ...s, enabled: !s.enabled, updatedAt: Date.now() } : s
           )
         }))
+        if (skill) {
+          useVersionHistoryStore.getState().recordChange('toggle', 'skill', id, skill.name, JSON.stringify({ enabled: !skill.enabled }))
+        }
       },
 
       updateSkill: (id, updates) => {
+        const skill = get().skills.find(s => s.id === id)
         set((state) => ({
           skills: state.skills.map((s) =>
             s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s
           )
         }))
+        if (skill) {
+          useVersionHistoryStore.getState().recordChange('update', 'skill', id, skill.name, JSON.stringify({ ...skill, ...updates }))
+        }
       },
 
       setActiveSkill: (id) => {
@@ -139,6 +154,16 @@ export const useSkillStore = create<SkillState>()(
               : s
           )
         }))
+        const skill = get().skills.find(s => s.id === skillId)
+        useAnalyticsStore.getState().recordUsage(
+          'use',
+          'skill',
+          skillId,
+          skill?.name || skillId,
+          success,
+          duration,
+          success ? undefined : output.slice(0, 200)
+        )
       }
     }),
     {

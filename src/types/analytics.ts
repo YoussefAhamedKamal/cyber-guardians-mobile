@@ -1,5 +1,5 @@
-export type ChangeType = 'create' | 'update' | 'delete' | 'install' | 'uninstall' | 'toggle' | 'reorder'
-export type ItemType = 'skill' | 'plugin' | 'connector' | 'knowledge' | 'instructions'
+export type ChangeType = 'create' | 'update' | 'delete' | 'install' | 'uninstall' | 'toggle' | 'reorder' | 'use' | 'complete'
+export type ItemType = 'skill' | 'plugin' | 'connector' | 'knowledge' | 'instructions' | 'level' | 'game'
 
 export interface UsageRecord {
   id: string
@@ -106,8 +106,8 @@ export function createEmptyDailyStats(date: string): DailyStats {
     totalActions: 0,
     successfulActions: 0,
     failedActions: 0,
-    byType: { create: 0, update: 0, delete: 0, install: 0, uninstall: 0, toggle: 0, reorder: 0 },
-    byItemType: { skill: 0, plugin: 0, connector: 0, knowledge: 0, instructions: 0 },
+    byType: { create: 0, update: 0, delete: 0, install: 0, uninstall: 0, toggle: 0, reorder: 0, use: 0, complete: 0 },
+    byItemType: { skill: 0, plugin: 0, connector: 0, knowledge: 0, instructions: 0, level: 0, game: 0 },
     peakHour: 0,
     avgDuration: 0
   }

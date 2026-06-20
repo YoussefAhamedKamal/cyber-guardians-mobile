@@ -54,14 +54,20 @@ export const useSecurityStore = create<SecurityStore>()(
       },
 
       encrypt: async (data, password) => {
+        const state = get()
+        const algorithm = state.settings.encryptionAlgorithm
         const encoder = new TextEncoder()
         const salt = crypto.getRandomValues(new Uint8Array(16))
-        const iv = crypto.getRandomValues(new Uint8Array(12))
+        const iv = crypto.getRandomValues(new Uint8Array(algorithm === 'AES-GCM' ? 12 : 16))
 
         const key = await deriveKey(password, salt)
 
+        const encryptParams = algorithm === 'AES-GCM'
+          ? { name: 'AES-GCM', iv }
+          : { name: 'AES-CBC', iv }
+
         const encrypted = await crypto.subtle.encrypt(
-          { name: 'AES-GCM', iv },
+          encryptParams,
           key,
           encoder.encode(data)
         )
@@ -70,7 +76,7 @@ export const useSecurityStore = create<SecurityStore>()(
           data: arrayBufferToBase64(encrypted),
           iv: arrayBufferToBase64(iv.buffer),
           salt: arrayBufferToBase64(salt.buffer),
-          algorithm: 'AES-GCM',
+          algorithm,
           timestamp: Date.now()
         }
       },
@@ -82,8 +88,12 @@ export const useSecurityStore = create<SecurityStore>()(
 
         const key = await deriveKey(password, salt)
 
+        const decryptParams = encrypted.algorithm === 'AES-GCM'
+          ? { name: 'AES-GCM', iv }
+          : { name: 'AES-CBC', iv }
+
         const decrypted = await crypto.subtle.decrypt(
-          { name: 'AES-GCM', iv },
+          decryptParams,
           key,
           data
         )
@@ -132,6 +142,27 @@ export const useSecurityStore = create<SecurityStore>()(
         get().logActivity('lock', 'النظام مقفل', true)
       },
 
+      setPassword: async (password) => {
+        const encoder = new TextEncoder()
+        const salt = crypto.getRandomValues(new Uint8Array(16))
+        const keyMaterial = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(password),
+          'PBKDF2',
+          false,
+          ['deriveBits']
+        )
+        const derivedBits = await crypto.subtle.deriveBits(
+          { name: 'PBKDF2', salt: salt as unknown as BufferSource, iterations: 100000, hash: 'SHA-256' },
+          keyMaterial,
+          256
+        )
+        const hashArray = Array.from(new Uint8Array(derivedBits))
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+        const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')
+        set({ passwordHash: hashHex, passwordSalt: saltHex })
+      },
+
       unlock: async (password) => {
         const state = get()
 
@@ -140,7 +171,29 @@ export const useSecurityStore = create<SecurityStore>()(
           return false
         }
 
-        const success = password.length > 0
+        let success = false
+
+        if (!state.passwordHash || !state.passwordSalt) {
+          success = password.length > 0
+        } else {
+          const encoder = new TextEncoder()
+          const salt = new Uint8Array(state.passwordSalt.match(/.{2}/g)!.map(h => parseInt(h, 16)))
+          const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(password),
+            'PBKDF2',
+            false,
+            ['deriveBits']
+          )
+          const derivedBits = await crypto.subtle.deriveBits(
+            { name: 'PBKDF2', salt: salt as unknown as BufferSource, iterations: 100000, hash: 'SHA-256' },
+            keyMaterial,
+            256
+          )
+          const hashArray = Array.from(new Uint8Array(derivedBits))
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+          success = hashHex === state.passwordHash
+        }
 
         if (success) {
           set({

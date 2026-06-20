@@ -116,6 +116,25 @@ export const useAdvancedSearchStore = create<AdvancedSearchStore>()(
           })
         }
 
+        if (mergedFilters.types.includes('instructions')) {
+          const instructions = useProjectStore.getState().instructions
+          if (instructions) {
+            const instrText = `${instructions.role || ''} ${instructions.customPrompt || ''} ${instructions.tone || ''} ${instructions.responseFormat || ''}`
+            const score = calculateMatchScore(query, instrText)
+            if (score > 0) {
+              results.push({
+                id: 'project-instructions',
+                type: 'instructions' as SearchableItemType,
+                title: 'تعليمات المشروع',
+                description: instructions.customPrompt?.substring(0, 200) || instructions.role || '',
+                matchScore: score,
+                matchHighlights: findHighlights('تعليمات المشروع', query),
+                data: instructions
+              })
+            }
+          }
+        }
+
         if (mergedFilters.types.includes('change')) {
           const changes = useVersionHistoryStore.getState().changes
           changes.forEach((change) => {
