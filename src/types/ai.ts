@@ -102,6 +102,11 @@ export const AI_PROVIDERS: AIProviderDef[] = [
   },
 ]
 
+import type { Skill } from './skills'
+import type { Plugin } from './plugins'
+import type { Connector } from './connectors'
+import type { ProjectState, DEFAULT_INSTRUCTIONS } from './project'
+
 export interface AIState {
   providerId: string
   modelId: string
@@ -121,7 +126,7 @@ export interface AIState {
   activeFacultySessionId: string
   panelOpen: boolean
   panelMaximized: boolean
-  activeTab: 'student' | 'faculty' | 'settings'
+  activeTab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings'
   loading: boolean
   forking: boolean
   githubStatus: string | null
@@ -130,6 +135,12 @@ export interface AIState {
   driveStatus: string | null
   driveLoading: boolean
   githubSyncing: boolean
+  toolsActiveSubTab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security'
+  projectActiveSubTab: 'knowledge' | 'instructions' | 'chats' | 'history'
+  skills: Skill[]
+  plugins: Plugin[]
+  connectors: Connector[]
+  project: ProjectState
 }
 
 export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
@@ -159,4 +170,24 @@ export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {
   driveStatus: null,
   driveLoading: false,
   githubSyncing: false,
+  toolsActiveSubTab: 'skills',
+  projectActiveSubTab: 'knowledge',
+  skills: [],
+  plugins: [],
+  connectors: [],
+  project: {
+    knowledge: [],
+    instructions: {
+      role: '',
+      tone: 'professional',
+      responseFormat: 'markdown',
+      customPrompt: '',
+      templates: [],
+      updatedAt: Date.now()
+    },
+    chats: [],
+    activeChatId: null,
+    sharedMemory: true,
+    lastSync: 0
+  }
 }

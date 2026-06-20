@@ -76,7 +76,7 @@ export async function deepthink(
   useDirectApi: boolean,
   onStep?: (step: string, content: string) => void
 ): Promise<DeepthinkResult> {
-  const userMsg = messages.find((m) => m.role === 'user')
+  const userMsg = [...messages].reverse().find((m) => m.role === 'user')
   const question = userMsg?.content || ''
 
   onStep?.('thinking', '🧠 جارٍ التفكير العميق...')
@@ -131,7 +131,7 @@ export async function* deepthinkStream(
   customBaseUrl: string,
   useDirectApi: boolean
 ): AsyncGenerator<string> {
-  const userMsg = messages.find((m) => m.role === 'user')
+  const userMsg = [...messages].reverse().find((m) => m.role === 'user')
   const question = userMsg?.content || ''
 
   yield '## 🧠 التفكير العميق\n\n'

@@ -16,6 +16,10 @@ import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
 import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
 import { hashPin, verifyPin } from '@/utils/pinCrypto'
+import { ToolsTab } from './ToolsTab'
+import { KnowledgeTab, InstructionsTab, ProjectChatsTab } from './ProjectTab'
+import { VersionHistoryTab } from './VersionHistoryTab'
+import { SettingsTab } from './SettingsTab'
 
 const FAB_POS_KEY = 'cg-ai-fab-pos'
 const PANEL_STATE_KEY = 'cg-ai-panel-state'
@@ -2207,14 +2211,21 @@ export function AIPanel() {
         </div>
         {/* Main tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-          {([{ id: 'student', label: '🎓 طالب' }, { id: 'faculty', label: '👩‍🏫 هيئة تدريس' }, { id: 'settings', label: '⚙' }]).map((tab) => (
+          {([
+            { id: 'student', label: '🎓 طالب' },
+            { id: 'faculty', label: '👩‍🏫 هيئة تدريس' },
+            { id: 'tools', label: '🛠️ أدوات' },
+            { id: 'project', label: '📁 مشروع' },
+            { id: 'settings', label: '⚙' },
+            { id: 'ui-settings', label: '🎨' }
+          ]).map((tab) => (
             <button key={tab.id} onClick={() => { ai.setActiveTab(tab.id as any); if (tab.id === 'faculty' && !ai.facultyUnlocked) handleFacultyAuth() }} style={{
-              flex: tab.id === 'settings' ? '0 0 40px' : 1, padding: '10px 8px', border: 'none', cursor: 'pointer',
+              flex: tab.id === 'settings' || tab.id === 'ui-settings' ? '0 0 40px' : 1, padding: '10px 6px', border: 'none', cursor: 'pointer',
               background: ai.activeTab === tab.id ? 'rgba(206,147,216,0.1)' : 'transparent',
               color: ai.activeTab === tab.id ? '#CE93D8' : '#777',
               fontWeight: ai.activeTab === tab.id ? 700 : 400,
               borderBottom: ai.activeTab === tab.id ? '2px solid #CE93D8' : '2px solid transparent',
-              fontFamily: 'var(--heading-font)', fontSize: '13px',
+              fontFamily: 'var(--heading-font)', fontSize: '12px',
             }}>{tab.label}</button>
           ))}
         </div>
@@ -2241,7 +2252,25 @@ export function AIPanel() {
               </div>
             </div>
           )}
+          {ai.activeTab === 'tools' && <ToolsTab />}
+          {ai.activeTab === 'project' && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <button onClick={() => ai.setProjectActiveSubTab('knowledge')} style={{ flex: 1, padding: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', background: ai.projectActiveSubTab === 'knowledge' ? 'rgba(206,147,216,0.1)' : 'transparent', color: ai.projectActiveSubTab === 'knowledge' ? '#CE93D8' : '#777', fontWeight: ai.projectActiveSubTab === 'knowledge' ? 700 : 400, borderBottom: ai.projectActiveSubTab === 'knowledge' ? '2px solid #CE93D8' : '2px solid transparent' }}>📚 معرفة</button>
+                <button onClick={() => ai.setProjectActiveSubTab('instructions')} style={{ flex: 1, padding: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', background: ai.projectActiveSubTab === 'instructions' ? 'rgba(79,195,247,0.1)' : 'transparent', color: ai.projectActiveSubTab === 'instructions' ? '#4FC3F7' : '#777', fontWeight: ai.projectActiveSubTab === 'instructions' ? 700 : 400, borderBottom: ai.projectActiveSubTab === 'instructions' ? '2px solid #4FC3F7' : '2px solid transparent' }}>📝 تعليمات</button>
+                <button onClick={() => ai.setProjectActiveSubTab('chats')} style={{ flex: 1, padding: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', background: ai.projectActiveSubTab === 'chats' ? 'rgba(156,39,176,0.1)' : 'transparent', color: ai.projectActiveSubTab === 'chats' ? '#CE93D8' : '#777', fontWeight: ai.projectActiveSubTab === 'chats' ? 700 : 400, borderBottom: ai.projectActiveSubTab === 'chats' ? '2px solid #CE93D8' : '2px solid transparent' }}>💬 محادثات</button>
+                <button onClick={() => ai.setProjectActiveSubTab('history')} style={{ flex: 1, padding: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', background: ai.projectActiveSubTab === 'history' ? 'rgba(255,152,0,0.1)' : 'transparent', color: ai.projectActiveSubTab === 'history' ? '#FF9800' : '#777', fontWeight: ai.projectActiveSubTab === 'history' ? 700 : 400, borderBottom: ai.projectActiveSubTab === 'history' ? '2px solid #FF9800' : '2px solid transparent' }}>📜 تاريخ</button>
+              </div>
+              <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, display: ai.projectActiveSubTab === 'knowledge' ? 'flex' : 'none', flexDirection: 'column' }}><KnowledgeTab /></div>
+                <div style={{ position: 'absolute', inset: 0, display: ai.projectActiveSubTab === 'instructions' ? 'flex' : 'none', flexDirection: 'column' }}><InstructionsTab /></div>
+                <div style={{ position: 'absolute', inset: 0, display: ai.projectActiveSubTab === 'chats' ? 'flex' : 'none', flexDirection: 'column' }}><ProjectChatsTab /></div>
+                <div style={{ position: 'absolute', inset: 0, display: ai.projectActiveSubTab === 'history' ? 'flex' : 'none', flexDirection: 'column' }}><VersionHistoryTab /></div>
+              </div>
+            </div>
+          )}
           {ai.activeTab === 'settings' && <AISettings />}
+          {ai.activeTab === 'ui-settings' && <SettingsTab />}
         </div>
       </div>
         </>

@@ -19,7 +19,7 @@ export default function VictoryPage({ onRestart }: Props) {
       <p style={{ color: '#aaa', fontSize: '18px', maxWidth: '400px', textAlign: 'center' }}>
         لقد أتممت جميع المستويات. أنت الآن حارس أمن سيبراني حقيقي!
       </p>
-      <p style={{ fontSize: '24px', color: '#4FC3F7' }}>النقاط: {game.totalScore}</p>
+      <p style={{ fontSize: '24px', color: '#4FC3F7' }}>النقاط: {Number.isFinite(game.totalScore) ? game.totalScore.toLocaleString() : '0'}</p>
       <Button onClick={() => { game.resetProgress(); onRestart() }}>
         لعب مرة أخرى
       </Button>

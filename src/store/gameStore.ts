@@ -131,17 +131,19 @@ export const useGameStore = create<GameStore>()(
 
       completeLevel: (level, score) => {
         const prev = get()
+        const safeScore = Number.isFinite(score) ? score : 0
         const next = new Set(prev.completedLevels)
         next.add(level)
-        const xpGain = Math.floor(score / 5)
+        const xpGain = Math.floor(safeScore / 5)
         const newTotalXp = prev.xp + xpGain
         const newRank = getRankByXp(newTotalXp)
         if (newRank.id > prev.rank.id) {
           logger.info('rank_up', { oldRank: prev.rank.id, newRank: newRank.id })
         }
+        const newTotalScore = (Number.isFinite(prev.totalScore) ? prev.totalScore : 0) + safeScore
         const newBadges = checkBadges({
           completedLevels: next,
-          totalScore: prev.totalScore + score,
+          totalScore: newTotalScore,
           xp: newTotalXp,
           rankId: newRank.id,
           playerName: prev.playerName,
@@ -159,7 +161,7 @@ export const useGameStore = create<GameStore>()(
         }
         set({
           completedLevels: next,
-          totalScore: prev.totalScore + score,
+          totalScore: newTotalScore,
           xp: newTotalXp,
           rank: newRank,
           unlockedBadges: [...prev.unlockedBadges, ...newBadges],
@@ -203,14 +205,15 @@ export const useGameStore = create<GameStore>()(
       // Gamification actions
       addXp: (amount) => {
         const prev = get()
-        const newXp = prev.xp + amount
+        const safeAmount = Number.isFinite(amount) ? amount : 0
+        const newXp = (Number.isFinite(prev.xp) ? prev.xp : 0) + safeAmount
         const newRank = getRankByXp(newXp)
         if (newRank.id > prev.rank.id) {
           logger.info('rank_up', { oldRank: prev.rank.id, newRank: newRank.id })
         }
         const newBadges = checkBadges({
           completedLevels: prev.completedLevels,
-          totalScore: prev.totalScore,
+          totalScore: Number.isFinite(prev.totalScore) ? prev.totalScore : 0,
           xp: newXp,
           rankId: newRank.id,
           playerName: prev.playerName,

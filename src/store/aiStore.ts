@@ -29,7 +29,7 @@ interface AIStore extends AIState {
   togglePanel: () => void
   setPanelOpen: (v: boolean) => void
   setPanelMaximized: (v: boolean) => void
-  setActiveTab: (tab: 'student' | 'faculty' | 'settings') => void
+  setActiveTab: (tab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings') => void
   setLoading: (v: boolean) => void
   setForking: (v: boolean) => void
   setGithubStatus: (v: string | null) => void
@@ -55,6 +55,9 @@ interface AIStore extends AIState {
   addFacultyMessage: (msg: AIMessage) => void
   clearFacultyMessages: () => void
   getActiveFacultySession: () => ChatSession | undefined
+
+  setToolsActiveSubTab: (tab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security') => void
+  setProjectActiveSubTab: (tab: 'knowledge' | 'instructions' | 'chats' | 'history') => void
 }
 
 export const useAIStore = create<AIStore>()(
@@ -162,6 +165,9 @@ export const useAIStore = create<AIStore>()(
         facultySessions: s.facultySessions.map((x) => x.id === s.activeFacultySessionId ? { ...x, messages: [] } : x)
       })),
       getActiveFacultySession: () => { const s = get(); return s.facultySessions.find((x) => x.id === s.activeFacultySessionId) },
+
+      setToolsActiveSubTab: (tab) => set({ toolsActiveSubTab: tab }),
+      setProjectActiveSubTab: (tab) => set({ projectActiveSubTab: tab }),
 
       resetAll: () => set({ ...DEFAULT_AI_STATE, apiKeys: get().apiKeys }),
     }),
