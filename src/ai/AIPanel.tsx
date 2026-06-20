@@ -3,10 +3,13 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
+import { useSkillStore } from '@/store/skillStore'
+import { usePluginStore } from '@/store/pluginStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
 import { deepthink } from './deepthink'
+import { buildActiveSkillPrompt, detectSkillRequest, detectPluginRequest } from './skillIntegration'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -1067,14 +1070,53 @@ function StudentChat() {
     try {
       let finalMessages = [...msgs]
 
+      // Check if user wants to use a specific skill
+      const userMsg = msgs[msgs.length - 1]
+      if (userMsg?.role === 'user') {
+        const requestedSkillId = detectSkillRequest(userMsg.content)
+        if (requestedSkillId) {
+          useSkillStore.getState().setActiveSkill(requestedSkillId)
+          const skill = useSkillStore.getState().skills.find(s => s.id === requestedSkillId)
+          if (skill) {
+            ai.addStudentMessage({ role: 'assistant', content: `🎯 تم تفعيل القدرة: ${skill.icon} ${skill.name}\n\n${skill.description}\n\nالآن يمكنني مساعدتك في هذا المجال. اطرح سؤالك!` })
+          }
+        }
+
+        // Check if user wants to use a plugin
+        const pluginRequest = detectPluginRequest(userMsg.content)
+        if (pluginRequest) {
+          const plugin = usePluginStore.getState().plugins.find(p => p.id === pluginRequest.pluginId)
+          if (plugin) {
+            ai.setStudentStreaming(`🔌 جارٍ تنفيذ الأداة: ${plugin.name}...`)
+            try {
+              const result = await usePluginStore.getState().executePlugin(
+                pluginRequest.pluginId,
+                pluginRequest.endpointId,
+                pluginRequest.params
+              )
+              const resultMsg = `✅ نتيجة ${plugin.name}:\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+              ai.addStudentMessage({ role: 'assistant', content: resultMsg })
+              ai.setLoading(false); ai.setStudentStreaming('')
+              return
+            } catch (err: any) {
+              ai.addStudentMessage({ role: 'assistant', content: `⚠️ خطأ في تنفيذ ${plugin.name}: ${err.message}` })
+              ai.setLoading(false); ai.setStudentStreaming('')
+              return
+            }
+          }
+        }
+      }
+
       if (ai.searchEnabled) {
         ai.setStudentStreaming('🔍 جارٍ البحث...')
-        const userMsg = msgs[msgs.length - 1]
         if (userMsg?.role === 'user') {
           const searchResponse = await advancedSearch(userMsg.content)
           finalMessages = buildSearchAugmentedMessages(finalMessages, searchResponse.results)
         }
       }
+
+      // Build system prompt with active skills/plugins
+      const systemPrompt = buildActiveSkillPrompt()
 
       if (ai.deepthinkEnabled) {
         const apiKey = ai.apiKeys[ai.providerId] || ''
@@ -1085,7 +1127,7 @@ function StudentChat() {
         ai.setStudentStreaming(result.fullText)
         ai.addStudentMessage({ role: 'assistant', content: result.fullText })
       } else {
-        const systemMsg: AIMessage = { role: 'system', content: STUDENT_SYSTEM_PROMPT }
+        const systemMsg: AIMessage = { role: 'system', content: systemPrompt }
         let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
         const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...finalMessages], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
         for await (const chunk of gen) {
