@@ -2,9 +2,9 @@ import { useSkillStore } from '@/store/skillStore'
 import { usePluginStore } from '@/store/pluginStore'
 import { useConnectorStore } from '@/store/connectorStore'
 import { useProjectStore } from '@/store/projectStore'
-import { STUDENT_SYSTEM_PROMPT } from './prompts'
+import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 
-export function buildActiveSkillPrompt(): string {
+function buildSkillsPluginsPrompt(basePrompt: string): string {
   const skillStore = useSkillStore.getState()
   const pluginStore = usePluginStore.getState()
   const connectorStore = useConnectorStore.getState()
@@ -17,7 +17,7 @@ export function buildActiveSkillPrompt(): string {
   const enabledPlugins = pluginStore.plugins.filter(p => p.enabled)
   const activeConnectors = connectorStore.connectors.filter(c => c.connected)
 
-  let prompt = STUDENT_SYSTEM_PROMPT
+  let prompt = basePrompt
 
   // Add project-specific instructions and knowledge
   const projectPrompt = projectStore.buildProjectSystemPrompt(prompt)
@@ -54,6 +54,14 @@ export function buildActiveSkillPrompt(): string {
   }
 
   return prompt
+}
+
+export function buildActiveSkillPrompt(): string {
+  return buildSkillsPluginsPrompt(STUDENT_SYSTEM_PROMPT)
+}
+
+export function buildFacultySystemPrompt(): string {
+  return buildSkillsPluginsPrompt(FACULTY_SYSTEM_PROMPT)
 }
 
 export function detectSkillRequest(message: string): string | null {

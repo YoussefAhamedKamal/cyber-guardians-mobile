@@ -6,10 +6,10 @@ import { useContentStore } from '@/store/contentStore'
 import { useSkillStore } from '@/store/skillStore'
 import { usePluginStore } from '@/store/pluginStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
-import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
+import { STUDENT_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
 import { deepthink } from './deepthink'
-import { buildActiveSkillPrompt, detectSkillRequest, detectPluginRequest } from './skillIntegration'
+import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest } from './skillIntegration'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -1331,6 +1331,9 @@ function FacultyAIChat() {
         }
       }
 
+      // Build system prompt with active skills/plugins
+      const facultySystemPrompt = buildFacultySystemPrompt()
+
       if (ai.deepthinkEnabled) {
         const apiKey = ai.apiKeys[ai.providerId] || ''
         const result = await deepthink(
@@ -1347,7 +1350,7 @@ function FacultyAIChat() {
           useSkillStore.getState().recordUsage(activeSkillId3, lastUser?.content || '', result.fullText, Date.now() - startTime, true)
         }
       } else {
-        const systemMsg: AIMessage = { role: 'system', content: FACULTY_SYSTEM_PROMPT }
+        const systemMsg: AIMessage = { role: 'system', content: facultySystemPrompt }
         const chatMsgs = msgs.filter((m) => m !== contextMsg)
         let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
         const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
