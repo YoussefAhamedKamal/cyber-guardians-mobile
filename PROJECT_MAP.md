@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **2.2.0** — نظام البحث المتقدم + Gemini المجاني + Cloudflare Workers
+> الإصدار: **3.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية
 
 ---
 
@@ -33,6 +33,9 @@
 | AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
 | Search Worker | Cloudflare Worker | — | بحث في الويب عبر DuckDuckGo (API + HTML) |
 | AI Provider | Google Gemini (مجاني) | — | Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash |
+| Security | Web Crypto API | — | AES-GCM encryption + PBKDF2 key derivation + SHA hashing |
+| Voice | Web Speech API | — | بحث صوتي عربي/إنجليزي + تلخيص صوتي |
+| State | Zustand 5 + IndexedDB | — | 19 store مع persist + تأثيرات بصرية |
 
 ### قيود تقنية
 - Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
@@ -113,6 +116,9 @@ UI Layout (top-right corner):
 - 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى) ← lazy
 - 🔊 BGM toggle button: y = 72px (أسفل زر AI)
 - AI Panel: centered on screen when opened ← lazy
+  - 6 تبويبات رئيسية: طالب, هيئة تدريس, 🛠️ أدوات, 📁 مشروع, ⚙, 🎨
+  - تبويب Tools: 12 تبويب فرعية (قدرات, أدوات, اتصالات, سوق, إحصائيات, نسخ, بحث, مساعد, تعاون, أمان, تقويم, تقارير)
+  - تبويب Project: 4 تبويبات فرعية (معرفة, تعليمات, محادثات, تاريخ)
 - Panel closes: زر ✕ / النافذة المعتمة / زر AI (toggle)
 
 Auto-save: كل 30 ثانية (localStorage)
@@ -132,10 +138,25 @@ Analytics: تتبع level_start, level_complete, challenge_retry, error
 ```
 src/
 ├── store/
-│   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
+│   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo + NaN guards
 │   ├── settingsStore.ts            # موجود
 │   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
 │   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
+│   ├── skillStore.ts               # ★ جديد — CRUD قدرات + IndexedDB
+│   ├── pluginStore.ts              # ★ جديد — CRUD أدوات + تنفيذ + IndexedDB
+│   ├── connectorStore.ts           # ★ جديد — CRUD اتصالات + اختبار + IndexedDB
+│   ├── projectStore.ts             # ★ جديد — معرفة + تعليمات + محادثات مشتركة
+│   ├── versionHistoryStore.ts      # ★ جديد — سجل التغييرات + لقطات + استعادة
+│   ├── analyticsStore.ts           # ★ جديد — سجل الاستخدام + إحصائيات
+│   ├── backupStore.ts              # ★ جديد — نسخ احتياطي + مزامنة + IndexedDB
+│   ├── advancedSearchStore.ts      # ★ جديد — بحث ذكي + عمليات + حفظ
+│   ├── aiAssistantStore.ts         # ★ جديد — تلخيص + مشاعر + بحث ذكي
+│   ├── collaborationStore.ts       # ★ جديد — مشاركة + تصدير + روابط مشتركة
+│   ├── securityStore.ts            # ★ جديد — تشفير AES-GCM + تجزئة + سجل نشاط
+│   ├── uiStore.ts                  # ★ جديد — سمات + أوضاع + لغة + حجم خط
+│   ├── calendarStore.ts            # ★ جديد — تقويم + مهام + تذكيرات
+│   ├── reportsStore.ts             # ★ جديد — تقارير مخصصة + تحليلات
+│   ├── voiceStore.ts               # ★ جديد — بحث صوتي + Web Speech API
 │   └── index.ts                    # موجود — exports
 │
 ├── data/
@@ -529,13 +550,28 @@ src/
 ├── main.tsx                         # Entry point + I18nProvider + Service Worker registration
 │
 ├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded)
+│   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded) — 6 تبويبات رئيسية
 │   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
 │   ├── search.ts                    # ★ جديد — بحث في الويب (DuckDuckGo API + HTML + Worker)
 │   ├── deepthink.ts                 # ★ جديد — تفكير عميق متعدد الخطوات
 │   ├── github.ts                    # GitHub API + token encryption + Vite proxy + sync to existing repo
 │   ├── googleDrive.ts               # Google Drive API + proxy support
-│   └── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
+│   ├── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
+│   ├── SkillsTab.tsx                # ★ جديد — CRUD قدرات + سحب/إفلات + تأثيرات
+│   ├── PluginsTab.tsx               # ★ جديد — CRUD أدوات + تنفيذ
+│   ├── ConnectorsTab.tsx            # ★ جديد — CRUD اتصالات + اختبار
+│   ├── MarketplacePanel.tsx         # ★ جديد — سوق (35 قالب) + فلترة + بحث
+│   ├── AnalyticsTab.tsx             # ★ جديد — إحصائيات استخدام + رسوم بيانية
+│   ├── BackupTab.tsx                # ★ جديد — نسخ احتياطي + مزامنة
+│   ├── AdvancedSearchTab.tsx        # ★ جديد — بحث ذكي + حفظ + تاريخ
+│   ├── AIAssistantTab.tsx           # ★ جديد — تلخيص + مشاعر + بحث
+│   ├── CollaborationTab.tsx         # ★ جديد — مشاركة + تصدير + روابط
+│   ├── SecurityTab.tsx              # ★ جديد — تشفير + تجزئة + نشاط
+│   ├── SettingsTab.tsx              # ★ جديد — سمات + إعدادات UI
+│   ├── CalendarTab.tsx              # ★ جديد — تقويم + مهام + تذكيرات
+│   ├── ReportsTab.tsx               # ★ جديد — تقارير مخصصة + تحليلات
+│   ├── ToolsTab.tsx                 # ★ جديد — 12 تبويب فرعية
+│   └── ProjectTab.tsx               # ★ جديد — معرفة + تعليمات + محادثات
 │
 ├── pages/                           # ★ محدث — صفحات lazy-loaded
 │   ├── MenuPage.tsx                 # شاشة البداية (lazy)
@@ -600,7 +636,8 @@ src/
 │   │   ├── DifficultySelect.tsx     # ★ جديد
 │   │   ├── PreAssessment.tsx        # ★ جديد
 │   │   ├── PostAssessment.tsx       # ★ جديد
-│   │   └── TeacherReport.tsx        # ★ جديد
+│   │   ├── TeacherReport.tsx        # ★ جديد
+│   │   └── VoiceButton.tsx          # ★ جديد — بحث صوتي + Web Speech API
 │   └── three/
 │       ├── GameCanvas.tsx
 │       ├── CharacterModel.tsx
@@ -642,10 +679,25 @@ src/
 ├── types/
 │   ├── index.ts
 │   ├── settings.ts
-│   ├── ai.ts
+│   ├── ai.ts                         # ★ محدث — 12 تبويب tools + 6 تبويبات project
 │   ├── game.ts                      # ★ محدث — إضافة أنواع Gamification
 │   ├── quiz.ts                      # ★ جديد
-│   └── learning.ts                  # ★ جديد
+│   ├── learning.ts                  # ★ جديد
+│   ├── skills.ts                    # ★ جديد — 12 قالب قدرة
+│   ├── plugins.ts                   # ★ جديد — 10 قالب أداة
+│   ├── connectors.ts                # ★ جديد — 13 قالب اتصال
+│   ├── project.ts                   # ★ جديد — معرفة + تعليمات + محادثات
+│   ├── versionHistory.ts            # ★ جديد — سجل التغييرات + لقطات
+│   ├── analytics.ts                 # ★ جديد — سجل الاستخدام + إحصائيات
+│   ├── backup.ts                    # ★ جديد — نسخ احتياطي + مزامنة
+│   ├── search.ts                    # ★ جديد — بحث ذكي + عمليات
+│   ├── aiAssistant.ts               # ★ جديد — تلخيص + مشاعر + بحث
+│   ├── collaboration.ts             # ★ جديد — مشاركة + تصدير + روابط
+│   ├── security.ts                  # ★ جديد — تشفير + تجزئة + نشاط
+│   ├── ui.ts                        # ★ جديد — سمات + أوضاع + لغة
+│   ├── calendar.ts                  # ★ جديد — تقويم + مهام + تذكيرات
+│   ├── reports.ts                   # ★ جديد — تقارير مخصصة
+│   └── voice.ts                     # ★ جديد — بحث صوتي
 │
 ├── utils/
 │   ├── constants.ts
@@ -830,7 +882,12 @@ src/
 
 ## [ORPHANS & PENDING]
 
-### مكتمل — الإضافات الجديدة (v2.2.0)
+### مكتمل — الإضافات الجديدة (v3.0.0)
+- [x] **Security Tab** — تشفير AES-GCM + تجزئة SHA + سجل نشاط + قفل تلقائي
+- [x] **XP/Score NaN Fix** — Number.isFinite guards في completeLevel/addXp + VictoryPage
+- [x] **Task Calendar** — إنشاء/تعديل/حذف مهام + أولويات + فئات + تذكيرات + عرض شهري
+- [x] **Custom Reports** — 6 أنواع تقارير + جداول/رسوم بيانية/ملخصات + تحليل الاتجاهات
+- [x] **Voice Search** — Web Speech API + عربي/إنجليزي + تأثير نبض + معالجة أخطاء
 - [x] **Web Search** — بحث في الويب عبر DuckDuckGo (API + HTML)
 - [x] **Search Worker** — Cloudflare Worker للبحث (يتجاوز CORS)
 - [x] **Multi-layer Search** — بحث متعدد الطبقات (Worker → HTML → Direct API)
