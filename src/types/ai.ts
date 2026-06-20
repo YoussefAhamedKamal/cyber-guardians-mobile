@@ -135,7 +135,7 @@ export interface AIState {
   driveStatus: string | null
   driveLoading: boolean
   githubSyncing: boolean
-  toolsActiveSubTab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security' | 'calendar'
+  toolsActiveSubTab: 'skills' | 'plugins' | 'connectors' | 'marketplace' | 'analytics' | 'backup' | 'search' | 'ai-assistant' | 'collaboration' | 'security' | 'calendar' | 'reports'
   projectActiveSubTab: 'knowledge' | 'instructions' | 'chats' | 'history'
   skills: Skill[]
   plugins: Plugin[]

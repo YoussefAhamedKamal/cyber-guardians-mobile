@@ -10,19 +10,21 @@ import { AIAssistantTab } from './AIAssistantTab'
 import { CollaborationTab } from './CollaborationTab'
 import { SecurityTab } from './SecurityTab'
 import { CalendarTab } from './CalendarTab'
+import { ReportsTab } from './ReportsTab'
 
 const SUB_TABS = [
-  { id: 'skills' as const, label: '📋 القدرات' },
-  { id: 'plugins' as const, label: '🔌 الأدوات' },
-  { id: 'connectors' as const, label: '🔗 الاتصالات' },
-  { id: 'marketplace' as const, label: '🛒 السوق' },
-  { id: 'analytics' as const, label: '📊 الإحصائيات' },
-  { id: 'backup' as const, label: '💾 النسخ' },
+  { id: 'skills' as const, label: '📋 قدرات' },
+  { id: 'plugins' as const, label: '🔌 أدوات' },
+  { id: 'connectors' as const, label: '🔗 اتصالات' },
+  { id: 'marketplace' as const, label: '🛒 سوق' },
+  { id: 'analytics' as const, label: '📊 إحصائيات' },
+  { id: 'backup' as const, label: '💾 نسخ' },
   { id: 'search' as const, label: '🔍 بحث' },
   { id: 'ai-assistant' as const, label: '🤖 مساعد' },
   { id: 'collaboration' as const, label: '🤝 تعاون' },
   { id: 'security' as const, label: '🔒 أمان' },
-  { id: 'calendar' as const, label: '📅 تقويم' }
+  { id: 'calendar' as const, label: '📅 تقويم' },
+  { id: 'reports' as const, label: '📋 تقارير' }
 ]
 
 export function ToolsTab() {
@@ -44,7 +46,7 @@ export function ToolsTab() {
             onClick={() => ai.setToolsActiveSubTab(tab.id)}
             style={{
               flex: '0 0 auto',
-              padding: '12px 10px',
+              padding: '12px 8px',
               background: activeSubTab === tab.id ? '#2a2a3e' : 'transparent',
               border: 'none',
               borderBottom: `2px solid ${activeSubTab === tab.id ? '#4CAF50' : 'transparent'}`,
@@ -74,6 +76,7 @@ export function ToolsTab() {
         {activeSubTab === 'collaboration' && <CollaborationTab />}
         {activeSubTab === 'security' && <SecurityTab />}
         {activeSubTab === 'calendar' && <CalendarTab />}
+        {activeSubTab === 'reports' && <ReportsTab />}
       </div>
     </div>
   )
