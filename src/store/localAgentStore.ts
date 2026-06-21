@@ -10,6 +10,7 @@ import {
   installSkillAgent,
   executeCommand,
   parseSkillFile,
+  setOnDisconnect,
 } from '../ai/localAgent'
 import type { Tool, Skill, ScanResult, AgentStatus, CommandResult, FileParseResult } from '../types/localAgent'
 
@@ -48,6 +49,9 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
 
   connect: async (url: string, token?: string) => {
     try {
+      setOnDisconnect(() => {
+        set({ connected: false, status: null, tools: [], skills: [], error: 'Connection lost' })
+      })
       await connectToAgent(url, token)
 
       let status: AgentStatus | null = null
@@ -72,6 +76,7 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   },
 
   disconnect: () => {
+    setOnDisconnect(null)
     disconnectFromAgent()
     set({ connected: false, status: null, tools: [], skills: [] })
   },

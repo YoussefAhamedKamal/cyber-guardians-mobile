@@ -3,6 +3,11 @@ import type { AgentMessage, AgentResponse, ScanResult, Skill, CommandResult, Fil
 let ws: WebSocket | null = null
 let messageId = 0
 const pendingMessages: Map<string, { resolve: (value: any) => void; reject: (reason: any) => void }> = new Map()
+let onDisconnect: (() => void) | null = null
+
+export function setOnDisconnect(cb: (() => void) | null) {
+  onDisconnect = cb
+}
 
 export async function connectToAgent(url: string, token?: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
@@ -40,6 +45,7 @@ export async function connectToAgent(url: string, token?: string): Promise<boole
         pending.reject(new Error('Connection closed'))
       })
       pendingMessages.clear()
+      onDisconnect?.()
     }
 
     ws.onmessage = (event) => {
@@ -78,7 +84,13 @@ const VALID_MESSAGE_TYPES = new Set([
 
 async function sendMessage(type: string, payload: any, timeout: number = 60000): Promise<any> {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    throw new Error('Agent not connected')
+    if (isAgentConnected()) {
+      // ws exists and is open per check, retry after brief delay
+      await new Promise(r => setTimeout(r, 100))
+    }
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      throw new Error('Agent not connected')
+    }
   }
 
   if (!VALID_MESSAGE_TYPES.has(type)) {
