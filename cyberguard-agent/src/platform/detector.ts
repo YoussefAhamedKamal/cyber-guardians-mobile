@@ -51,6 +51,9 @@ function detectShell(): Shell {
 }
 
 function commandExists(cmd: string): boolean {
+  if (!/^[a-zA-Z0-9._-]+$/.test(cmd)) {
+    return false
+  }
   try {
     execSync(`which ${cmd} 2>/dev/null || where ${cmd} 2>NUL`, { stdio: 'ignore' })
     return true

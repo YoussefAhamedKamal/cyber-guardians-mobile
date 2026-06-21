@@ -10,7 +10,7 @@ const UNIX_TO_WINDOWS: Record<string, string> = {
   'chmod': 'icacls',
   'grep': 'findstr',
   'which': 'where',
-  '&&': '&',
+  '&&': ';',
 }
 
 const WINDOWS_TO_UNIX: Record<string, string> = {
@@ -52,15 +52,16 @@ export function translatePath(path: string, targetOS?: OS): string {
 
 export function getShellCommand(command: string, shell?: string): string {
   const s = shell || detectPlatform().shell
+  const escapedCommand = command.replace(/"/g, '\\"')
   switch (s) {
     case 'powershell':
-      return `powershell -Command "${command}"`
+      return `powershell -Command "${escapedCommand}"`
     case 'cmd':
-      return `cmd /c "${command}"`
+      return `cmd /c "${escapedCommand}"`
     case 'fish':
     case 'zsh':
     case 'bash':
     default:
-      return `bash -c "${command}"`
+      return `bash -c "${escapedCommand}"`
   }
 }

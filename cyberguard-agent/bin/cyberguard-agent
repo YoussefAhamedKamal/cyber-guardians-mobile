@@ -47,6 +47,10 @@ async function main() {
   }
 
   const port = parseInt(args[portIdx + 1] || '3001')
+  if (isNaN(port) || port < 1 || port > 65535) {
+    console.error(`Error: Invalid port number: ${args[portIdx + 1]}`)
+    process.exit(1)
+  }
   const token = args[tokenIdx + 1] || undefined
   const profile = args[profileIdx + 1] || 'full'
   const verbose = args.includes('--verbose')

@@ -15,7 +15,10 @@ function generateId(): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0] || ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function getWeekStart(date: Date): string {
@@ -55,13 +58,16 @@ export function computeDailyStats(records: UsageRecord[]): AnalyticsState['daily
     s._hourCounts[hour] = (s._hourCounts[hour] || 0) + 1
     s.byType[r.action as keyof typeof s.byType] = (s.byType[r.action as keyof typeof s.byType] || 0) + 1
     s.byItemType[r.itemType as keyof typeof s.byItemType] = (s.byItemType[r.itemType as keyof typeof s.byItemType] || 0) + 1
-    if (r.duration) s._durations.push(r.duration)
+    if (r.duration !== null && r.duration !== undefined) s._durations.push(r.duration)
   })
   return Object.values(statsMap).map(s => {
-    const peakHour = s._hourCounts.indexOf(Math.max(...s._hourCounts))
-    const avgDuration = s._durations.length > 0 ? Math.round(s._durations.reduce((a, b) => a + b, 0) / s._durations.length) : 0
+    const durations = s._durations.filter(d => !isNaN(d))
+    const maxHourCount = Math.max(...s._hourCounts)
+    const hasActivity = maxHourCount > 0
+    const peakHour = hasActivity ? s._hourCounts.indexOf(maxHourCount) : -1
+    const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0
     const { _hourCounts: _, _durations: __, ...clean } = s
-    return { ...clean, peakHour: peakHour >= 0 ? peakHour : 0, avgDuration }
+    return { ...clean, peakHour, avgDuration }
   }).slice(0, 30)
 }
 
@@ -97,7 +103,7 @@ export function computeWeeklyStats(records: UsageRecord[]): AnalyticsState['week
       failedActions: w._records.filter(r => new Date(r.timestamp).getDay() === i && !r.success).length,
       byType: { create: 0, update: 0, delete: 0, install: 0, uninstall: 0, toggle: 0, reorder: 0, use: 0, complete: 0 },
       byItemType: { skill: 0, plugin: 0, connector: 0, knowledge: 0, instructions: 0, level: 0, game: 0 },
-      peakHour: 0,
+      peakHour: -1,
       avgDuration: 0
     }))
     const itemCounts: Record<string, { name: string; count: number }> = {}
@@ -165,7 +171,8 @@ export function computeMonthlyStats(records: UsageRecord[]): AnalyticsState['mon
       const h = new Date(r.timestamp).getHours()
       hourCounts[h] = (hourCounts[h] || 0) + 1
     })
-    const mostActiveHour = hourCounts.indexOf(Math.max(...hourCounts))
+    const maxHourCount = Math.max(...hourCounts)
+    const mostActiveHour = maxHourCount > 0 ? hourCounts.indexOf(maxHourCount) : -1
 
     // Weekly breakdown
     const weeklyBreakdown = computeWeeklyStats(m._records)

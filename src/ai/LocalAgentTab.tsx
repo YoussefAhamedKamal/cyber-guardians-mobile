@@ -19,6 +19,12 @@ export function LocalAgentTab() {
     connect, disconnect, scan, findSkills, installSkill, execute, parseFile
   } = useLocalAgentStore()
 
+  useEffect(() => {
+    return () => {
+      disconnect()
+    }
+  }, [disconnect])
+
   const [inputUrl, setInputUrl] = useState('ws://localhost:3001')
   const [inputToken, setInputToken] = useState('')
   const [code, setCode] = useState('')
@@ -40,12 +46,20 @@ export function LocalAgentTab() {
 
   const handleScan = async () => {
     if (!code.trim()) return
-    await scan(selectedTool, code, language)
+    try {
+      await scan(selectedTool, code, language)
+    } catch (err: any) {
+      console.error('Scan failed:', err)
+    }
   }
 
   const handleFindSkills = async () => {
     if (!skillQuery.trim()) return
-    await findSkills(skillQuery)
+    try {
+      await findSkills(skillQuery)
+    } catch (err: any) {
+      console.error('Find skills failed:', err)
+    }
   }
 
   const handleInstallSkill = async (pkg: string) => {

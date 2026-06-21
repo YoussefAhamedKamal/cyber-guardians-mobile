@@ -32,6 +32,10 @@ export const useAdvancedSearchStore = create<AdvancedSearchStore>()(
       ...DEFAULT_SEARCH_STATE,
 
       search: (query, filters = {}) => {
+        if (!query || !query.trim()) {
+          set({ results: [], totalResults: 0, isSearching: false, lastQuery: query, searchTime: 0 })
+          return []
+        }
         const startTime = performance.now()
         set({ isSearching: true })
 
@@ -279,7 +283,7 @@ export const useAdvancedSearchStore = create<AdvancedSearchStore>()(
       },
 
       getPopularTerms: (limit = 10) => {
-        return get().popularTerms
+        return [...get().popularTerms]
           .sort((a, b) => b.count - a.count)
           .slice(0, limit)
       },

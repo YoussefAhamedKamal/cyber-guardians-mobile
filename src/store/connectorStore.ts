@@ -110,6 +110,7 @@ export const useConnectorStore = create<ConnectorState>()(
 
       connectConnector: (id, credentials) => {
         const connector = get().connectors.find(c => c.id === id)
+        if (!connector) return
         set((state) => ({
           connectors: state.connectors.map((c) =>
             c.id === id
@@ -156,11 +157,30 @@ export const useConnectorStore = create<ConnectorState>()(
         const endpoint = providerEndpoints[connector.provider] || '/models'
 
         try {
+          const authHeaders: Record<string, string> = {
+            'Content-Type': 'application/json'
+          }
+          const apiKey = connector.credentials.apiKey || ''
+          switch (connector.provider) {
+            case 'anthropic':
+              authHeaders['x-api-key'] = apiKey
+              break
+            case 'azure_openai':
+              authHeaders['api-key'] = apiKey
+              break
+            case 'aws_bedrock':
+              authHeaders['Authorization'] = `Bearer ${apiKey}`
+              break
+            case 'ollama':
+            case 'lmstudio':
+              break
+            default:
+              authHeaders['Authorization'] = `Bearer ${apiKey}`
+              break
+          }
+
           const response = await fetch(`${connector.config.baseUrl}${endpoint}`, {
-            headers: {
-              'Authorization': `Bearer ${connector.credentials.apiKey || ''}`,
-              'Content-Type': 'application/json'
-            }
+            headers: authHeaders
           })
 
           const success = response.ok

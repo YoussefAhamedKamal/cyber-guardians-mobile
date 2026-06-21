@@ -69,11 +69,14 @@ export async function installTool(tool: string): Promise<boolean> {
   const installCmds = TOOL_INSTALL_MAP[safeTool]
 
   if (!installCmds) {
-    // Try generic install methods
+    // Try generic install methods with overall timeout
     const managers = platform.packageManagers.filter(m => m.available)
+    const overallDeadline = Date.now() + 120000
     for (const manager of managers) {
+      const remaining = overallDeadline - Date.now()
+      if (remaining <= 0) break
       try {
-        await execAsync(manager.install(safeTool), { timeout: 120000 })
+        await execAsync(manager.install(safeTool), { timeout: Math.min(120000, remaining) })
         return true
       } catch {
         continue

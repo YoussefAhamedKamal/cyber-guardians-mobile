@@ -104,10 +104,16 @@ export function BackupTab() {
 
   const handleImport = async () => {
     if (importJson.trim()) {
-      const success = await importBackup(importJson)
-      if (success) {
-        setShowImportModal(false)
-        setImportJson('')
+      try {
+        const success = await importBackup(importJson)
+        if (success) {
+          setShowImportModal(false)
+          setImportJson('')
+        } else {
+          alert('فشل الاستيراد: بيانات النسخة الاحتياطية غير صالحة أو تالفة')
+        }
+      } catch (err: any) {
+        alert(`فشل الاستيراد: ${err.message || 'خطأ غير معروف'}`)
       }
     }
   }

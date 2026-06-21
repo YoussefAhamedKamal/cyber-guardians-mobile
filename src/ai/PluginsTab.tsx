@@ -294,9 +294,9 @@ export function PluginsTab() {
                             try {
                               const params: Record<string, string> = {}
                               for (const param of endpoint.parameters || []) {
-                                const inputEl = document.getElementById(`param-${plugin.id}-${param.name}`) as HTMLInputElement | null
-                                if (inputEl && inputEl.value) {
-                                  params[param.name] = inputEl.value
+                                const value = paramValues[plugin.id]?.[param.name]
+                                if (value) {
+                                  params[param.name] = value
                                 } else if (param.defaultValue) {
                                   params[param.name] = String(param.defaultValue)
                                 }

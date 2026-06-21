@@ -186,14 +186,18 @@ export const usePluginStore = create<PluginState>()(
           let url = `${plugin.config.baseUrl || ''}${endpoint.path}`
 
           // Replace path parameters
-          for (const [key, value] of Object.entries(params)) {
+          const queryParams = { ...params }
+          for (const [key, value] of Object.entries(queryParams)) {
             url = url.replace(`:${key}`, String(value))
+            if (url.includes(`:${key}`) === false) {
+              delete queryParams[key]
+            }
           }
 
           // Add query string for GET requests
-          if (endpoint.method === 'GET' && Object.keys(params).length > 0) {
+          if (endpoint.method === 'GET' && Object.keys(queryParams).length > 0) {
             const searchParams = new URLSearchParams()
-            for (const [key, value] of Object.entries(params)) {
+            for (const [key, value] of Object.entries(queryParams)) {
               if (value !== null && value !== undefined) {
                 searchParams.set(key, String(value))
               }
@@ -225,7 +229,6 @@ export const usePluginStore = create<PluginState>()(
 
           if (!response.ok) {
             const errorMsg = `HTTP ${response.status}: ${response.statusText}`
-            get().recordUsage(pluginId, endpointId, JSON.stringify(params), '', duration, false, errorMsg)
             throw new Error(errorMsg)
           }
 

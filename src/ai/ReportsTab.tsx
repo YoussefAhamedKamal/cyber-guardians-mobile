@@ -271,10 +271,11 @@ export function ReportsTab() {
           )}
 
           {/* Chart View */}
-          {viewingConfig.format === 'chart' && (
+          {viewingConfig.format === 'chart' && (() => {
+            const maxVal = result.data.reduce((max, d) => Math.max(max, d.value), 0)
+            return (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '120px', padding: '0 8px' }}>
               {result.data.map((d, i) => {
-                const maxVal = result.data.reduce((max, d) => Math.max(max, d.value), 0)
                 const height = (Math.max(0, d.value) / Math.max(maxVal, 1)) * 100
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
@@ -291,7 +292,8 @@ export function ReportsTab() {
                 )
               })}
             </div>
-          )}
+            )
+          })()}
 
           {/* Summary View */}
           {viewingConfig.format === 'summary' && (

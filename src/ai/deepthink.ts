@@ -145,9 +145,12 @@ export async function* deepthinkStream(
   yield '## 🧠 التفكير العميق\n\n'
   yield '### الخطوة 1: التحليل\n\n'
 
-  const thinkingSystem = customSystemPrompt || THINK_PROMPT
+  const baseContext = customSystemPrompt
+    ? `${customSystemPrompt}\n\n--- DEEPTHINK INSTRUCTIONS ---\n`
+    : ''
+
   const thinkingMessages: AIMessage[] = [
-    { role: 'system', content: thinkingSystem },
+    { role: 'system', content: baseContext + THINK_PROMPT },
     { role: 'user', content: `السؤال: ${question}` },
   ]
 
@@ -160,7 +163,7 @@ export async function* deepthinkStream(
   yield '\n\n### الخطوة 2: المراجعة\n\n'
 
   const reviewMessages: AIMessage[] = [
-    { role: 'system', content: REVIEW_PROMPT },
+    { role: 'system', content: baseContext + REVIEW_PROMPT },
     { role: 'user', content: `السؤال الأصلي: ${question}\n\nالتحليل:\n${thinking}` },
   ]
   const reviewGen = sendChatMessage(
@@ -172,7 +175,7 @@ export async function* deepthinkStream(
   yield '\n\n### الخطوة 3: الإجابة النهائية\n\n'
 
   const finalMessages: AIMessage[] = [
-    { role: 'system', content: FINAL_ANSWER_PROMPT },
+    { role: 'system', content: baseContext + FINAL_ANSWER_PROMPT },
     { role: 'user', content: `السؤال: ${question}\n\nالتحليل:\n${thinking}\n\nالمراجعة:\n${review}` },
   ]
   const finalGen = sendChatMessage(

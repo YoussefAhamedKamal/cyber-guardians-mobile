@@ -60,7 +60,18 @@ export async function runSemgrep(
     }, { timeout: 120000 })
 
     if (result.success) {
-      const sarif = JSON.parse(result.stdout)
+      let sarif: any
+      try {
+        sarif = JSON.parse(result.stdout)
+      } catch {
+        return {
+          success: false,
+          findings: [],
+          raw: result.stdout,
+          summary: `Semgrep returned invalid JSON: ${result.stdout.slice(0, 200)}`,
+          duration: result.duration,
+        }
+      }
       const findings = parseSarifFindings(sarif)
       return {
         success: true,

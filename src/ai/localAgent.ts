@@ -141,5 +141,6 @@ export async function findSkills(query: string): Promise<Skill[]> {
 
 export async function installSkillAgent(packageName: string): Promise<boolean> {
   const result = await sendMessage('install-skill', { packageName })
+  if (!result) return false
   return result.success
 }

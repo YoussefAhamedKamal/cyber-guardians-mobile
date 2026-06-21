@@ -55,7 +55,7 @@ export function createServer(config: AgentConfig) {
       // Verify token
       const url = new URL(req.url || '/', `http://localhost:${config.port}`)
       const token = url.searchParams.get('token')
-      if (config.token && token !== config.token) {
+      if (config.token && (!token || token !== config.token)) {
         ws.close(1008, 'Invalid token')
         return
       }

@@ -68,7 +68,7 @@ export function ConnectorsTab() {
   })
   const [testingId, setTestingId] = useState<string | null>(null)
   const [connectingId, setConnectingId] = useState<string | null>(null)
-  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({})
 
   const filteredConnectors = connectors.filter((connector) => {
     const matchesProvider = filterProvider === 'all' || connector.provider === filterProvider
@@ -319,8 +319,8 @@ export function ConnectorsTab() {
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                       <input
                         type="password"
-                        value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        value={apiKeyInputs[connector.id] || ''}
+                        onChange={(e) => setApiKeyInputs(prev => ({ ...prev, [connector.id]: e.target.value }))}
                         placeholder="API Key"
                         style={{
                           width: '120px',
@@ -334,10 +334,11 @@ export function ConnectorsTab() {
                       />
                       <button
                         onClick={() => {
-                          if (apiKeyInput) {
-                            handleConnect(connector.id, apiKeyInput)
+                          const key = apiKeyInputs[connector.id] || ''
+                          if (key) {
+                            handleConnect(connector.id, key)
                             setConnectingId(null)
-                            setApiKeyInput('')
+                            setApiKeyInputs(prev => { const n = { ...prev }; delete n[connector.id]; return n })
                           }
                         }}
                         style={{
@@ -353,7 +354,7 @@ export function ConnectorsTab() {
                         ✓
                       </button>
                       <button
-                        onClick={() => { setConnectingId(null); setApiKeyInput('') }}
+                        onClick={() => { setConnectingId(null); setApiKeyInputs(prev => { const n = { ...prev }; delete n[connector.id]; return n }) }}
                         style={{
                           padding: '4px 8px',
                           background: '#555',
@@ -369,7 +370,7 @@ export function ConnectorsTab() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => { setConnectingId(connector.id); setApiKeyInput('') }}
+                      onClick={() => { setConnectingId(connector.id); setApiKeyInputs(prev => ({ ...prev, [connector.id]: '' })) }}
                       style={{
                         padding: '4px 8px',
                         background: '#4CAF50',

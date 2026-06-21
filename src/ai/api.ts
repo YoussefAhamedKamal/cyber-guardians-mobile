@@ -15,8 +15,11 @@ let _workerLoadAttempted = false
 async function getWorkerConfig(): Promise<WorkerConfig | null> {
   if (_workerCache !== null) return _workerCache
   if (!_workerLoadAttempted) {
-    _workerLoadAttempted = true
-    _workerCache = await loadWorkerConfig(WORKER_CONFIG_KEY)
+    const config = await loadWorkerConfig(WORKER_CONFIG_KEY)
+    if (config) {
+      _workerLoadAttempted = true
+      _workerCache = config
+    }
   }
   return _workerCache
 }

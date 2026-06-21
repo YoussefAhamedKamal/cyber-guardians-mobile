@@ -11,6 +11,8 @@ import { useSecurityStore } from './securityStore'
 import { useCalendarStore } from './calendarStore'
 import { useAnalyticsStore } from './analyticsStore'
 
+const TOTAL_LEVELS = 7
+
 function collectMetrics(config: ReportConfig): ReportDataPoint[] {
   try {
     const game = useGameStore.getState()
@@ -72,7 +74,7 @@ function collectMetrics(config: ReportConfig): ReportDataPoint[] {
         data.push({ label: 'أفضل نتيجة اختبار', value: game.quizBestScore, category: 'أداء' })
         data.push({ label: 'الإجابات السريعة', value: game.speedAnswers, category: 'أداء' })
         data.push({ label: 'أقصى كومبو', value: game.maxCombo, category: 'أداء' })
-        data.push({ label: 'معدل النجاح', value: Math.min(Math.round((game.completedLevels.size / 7) * 100), 100), category: 'أداء' })
+        data.push({ label: 'معدل النجاح', value: Math.min(Math.round((game.completedLevels.size / TOTAL_LEVELS) * 100), 100), category: 'أداء' })
         break
       }
       case 'security': {
@@ -100,7 +102,8 @@ function collectMetrics(config: ReportConfig): ReportDataPoint[] {
     }
 
     return data
-  } catch {
+  } catch (error) {
+    console.warn('Failed to collect metrics:', error)
     return []
   }
 }
@@ -112,8 +115,8 @@ function calculateSummary(data: ReportDataPoint[]): ReportSummary {
   }
   const total = values.reduce((a, b) => a + b, 0)
   const avg = total / values.length
-  const min = Math.min(...values)
-  const max = Math.max(...values)
+  const min = values.reduce((a, b) => Math.min(a, b), values[0]!)
+  const max = values.reduce((a, b) => Math.max(a, b), values[0]!)
   const trend = calculateTrend(values)
   const firstVal = values[0]!
   const changePercent = values.length > 1 && firstVal !== 0 ? ((values[values.length - 1]! - firstVal) / Math.abs(firstVal)) * 100 : 0

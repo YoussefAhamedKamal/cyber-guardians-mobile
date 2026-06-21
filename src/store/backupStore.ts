@@ -122,11 +122,7 @@ export const useBackupStore = create<BackupStore>()(
         const backup = state.backups.find((b) => b.metadata.checksum && b.timestamp.toString() === backupId)
 
         if (!backup) {
-          const backupById = state.backups.find((b) => {
-            return b.timestamp.toString() === backupId
-          })
-          if (!backupById) return false
-          return get().restoreBackup(backupById.timestamp.toString())
+          return false
         }
 
         set({ isRestoring: true })
@@ -160,7 +156,11 @@ export const useBackupStore = create<BackupStore>()(
           }
 
           if (backup.analytics) {
-            useAnalyticsStore.setState({ usageRecords: backup.analytics })
+            const allRecords = backup.analytics
+            const dailyStats = computeDailyStats(allRecords)
+            const weeklyStats = computeWeeklyStats(allRecords)
+            const monthlyStats = computeMonthlyStats(allRecords)
+            useAnalyticsStore.setState({ usageRecords: allRecords, dailyStats, weeklyStats, monthlyStats })
           }
 
           if (backup.game) {
@@ -219,10 +219,7 @@ export const useBackupStore = create<BackupStore>()(
 
       deleteBackup: (backupId) => {
         set((state) => ({
-          backups: state.backups.filter((b) => {
-            const id = `backup-${b.timestamp}-${b.metadata.checksum}`
-            return id !== backupId && b.timestamp.toString() !== backupId
-          })
+          backups: state.backups.filter((b) => b.timestamp.toString() !== backupId)
         }))
       },
 

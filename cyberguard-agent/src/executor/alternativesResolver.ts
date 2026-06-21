@@ -49,8 +49,8 @@ export function resolveAlternative(command: string): string | null {
   // Return first alternative with same args
   for (const alt of alternatives) {
     if (alt.includes(' ')) {
-      // Complex alternative - return as-is
-      return alt
+      // Complex alternative - append original args if any
+      return args ? `${alt} ${args}` : alt
     }
     // Simple tool replacement
     return args ? `${alt} ${args}` : alt

@@ -36,6 +36,10 @@ export async function findSkills(query: string): Promise<SkillInfo[]> {
 }
 
 export async function installSkill(packageName: string): Promise<boolean> {
+  if (!/^[a-zA-Z0-9._@/-]+$/.test(packageName)) {
+    throw new Error(`Invalid package name: ${packageName}`)
+  }
+
   const npxAvailable = await checkTool('npx')
   if (!npxAvailable) {
     return false

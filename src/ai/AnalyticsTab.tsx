@@ -32,12 +32,17 @@ export function AnalyticsTab() {
   } = useAnalyticsStore()
 
   const filteredTopItems = useMemo(() => {
-    const all = getTopItems(50)
-    if (selectedItemType === 'all') return all.slice(0, 10)
-    return all.filter(item => {
-      const key = item.name
-      return true // getTopItems returns all, we filter by checking usageRecords
-    }).slice(0, 10)
+    if (selectedItemType === 'all') return getTopItems(10)
+    return usageRecords
+      .filter(r => r.itemType === selectedItemType)
+      .reduce<{ name: string; count: number }[]>((acc, r) => {
+        const existing = acc.find(a => a.name === r.itemName)
+        if (existing) existing.count++
+        else acc.push({ name: r.itemName, count: 1 })
+        return acc
+      }, [])
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
   }, [usageRecords, selectedItemType])
   const topItems = useMemo(() => {
     if (selectedItemType === 'all') return getTopItems(10)

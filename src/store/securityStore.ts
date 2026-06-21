@@ -224,6 +224,10 @@ export const useSecurityStore = create<SecurityStore>()(
       checkLock: () => {
         const state = get()
         if (!state.isLocked) return false
+        if (state.isLocked && !state.lockedUntil) {
+          set({ isLocked: false })
+          return false
+        }
         if (state.lockedUntil && state.lockedUntil <= Date.now()) {
           set({ isLocked: false, lockedUntil: null })
           return false
@@ -247,7 +251,9 @@ export const useSecurityStore = create<SecurityStore>()(
         try {
           const data = JSON.parse(json)
           if (data.settings) {
-            set({ settings: { ...DEFAULT_SECURITY_SETTINGS, ...data.settings } })
+            set((state) => ({
+              settings: { ...state.settings, ...data.settings }
+            }))
           }
           if (data.activityLogs && Array.isArray(data.activityLogs)) {
             set({ activityLogs: data.activityLogs.slice(0, 500) })

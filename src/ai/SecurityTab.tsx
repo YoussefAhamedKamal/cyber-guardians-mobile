@@ -58,8 +58,10 @@ export function SecurityTab() {
       const result = await decrypt(encrypted, decryptPassword)
       setDecryptedResult(result)
       logActivity('decrypt', 'تم فك التشفير', true)
-    } catch {
-      logActivity('decrypt', 'فشل فك التشفير', false)
+    } catch (err: any) {
+      const message = err instanceof SyntaxError ? 'البيانات المشفرة غير صالحة (JSON غير صحيح)' : 'فشل فك التشفير'
+      alert(message)
+      logActivity('decrypt', message, false)
     }
   }
 

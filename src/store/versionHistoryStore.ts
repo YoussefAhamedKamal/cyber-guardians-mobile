@@ -106,6 +106,14 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
 
         if (!snap1 || !snap2) return []
 
+        function stableStringify(obj: unknown): string {
+          return JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort())
+        }
+
+        function objectsDiffer(a: unknown, b: unknown): boolean {
+          return stableStringify(a) !== stableStringify(b)
+        }
+
         const diffs: VersionDiff[] = []
 
         // Compare skills
@@ -121,7 +129,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
               newState: null,
               timestamp: snap2.timestamp
             })
-          } else if (JSON.stringify(s1) !== JSON.stringify(s2)) {
+          } else if (objectsDiffer(s1, s2)) {
             diffs.push({
               type: 'update',
               itemType: 'skill',
@@ -162,7 +170,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
               newState: null,
               timestamp: snap2.timestamp
             })
-          } else if (JSON.stringify(p1) !== JSON.stringify(p2)) {
+          } else if (objectsDiffer(p1, p2)) {
             diffs.push({
               type: 'update',
               itemType: 'plugin',
@@ -203,7 +211,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
               newState: null,
               timestamp: snap2.timestamp
             })
-          } else if (JSON.stringify(c1) !== JSON.stringify(c2)) {
+          } else if (objectsDiffer(c1, c2)) {
             diffs.push({
               type: 'update',
               itemType: 'connector',
@@ -232,7 +240,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
         })
 
         // Compare knowledge
-        if (JSON.stringify(snap1.knowledge) !== JSON.stringify(snap2.knowledge)) {
+        if (objectsDiffer(snap1.knowledge, snap2.knowledge)) {
           diffs.push({
             type: 'update',
             itemType: 'knowledge',
@@ -245,7 +253,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
         }
 
         // Compare instructions
-        if (JSON.stringify(snap1.instructions) !== JSON.stringify(snap2.instructions)) {
+        if (objectsDiffer(snap1.instructions, snap2.instructions)) {
           diffs.push({
             type: 'update',
             itemType: 'instructions',
@@ -278,6 +286,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
       importHistory: (json) => {
         try {
           const data = JSON.parse(json)
+          const state = get()
           if (data.changes && Array.isArray(data.changes)) {
             const validChanges = data.changes.filter(
               (item: any) =>
@@ -289,10 +298,16 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
                 typeof item.itemId === 'string' &&
                 typeof item.itemName === 'string'
             )
-            set({ changes: validChanges })
+            const existingIds = new Set(state.changes.map(c => c.id))
+            const newChanges = validChanges.filter((c: any) => !existingIds.has(c.id))
+            const mergedChanges = [...state.changes, ...newChanges].slice(0, state.maxChanges)
+            set({ changes: mergedChanges })
           }
           if (data.snapshots && Array.isArray(data.snapshots)) {
-            set({ snapshots: data.snapshots })
+            const existingSnapshotIds = new Set(state.snapshots.map(s => s.id))
+            const newSnapshots = data.snapshots.filter((s: any) => !existingSnapshotIds.has(s.id))
+            const mergedSnapshots = [...state.snapshots, ...newSnapshots].slice(0, state.maxSnapshots)
+            set({ snapshots: mergedSnapshots })
           }
           return true
         } catch {

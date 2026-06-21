@@ -49,13 +49,14 @@ export const useCalendarStore = create<CalendarState>()(
 
       getTasksForDate: (date) => {
         const { tasks } = get()
-        return tasks.filter((t) => t.dueDate === date).sort((a, b) => a.dueTime.localeCompare(b.dueTime))
+        return tasks.filter((t) => t.dueDate === date).sort((a, b) => (a.dueTime || '23:59').localeCompare(b.dueTime || '23:59'))
       },
 
       getUpcomingTasks: (days) => {
         const { tasks } = get()
         const now = new Date()
-        const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+        const end = new Date(now)
+        end.setDate(end.getDate() + days)
         const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
         const nowStr = formatDate(now)
         const endStr = formatDate(end)
