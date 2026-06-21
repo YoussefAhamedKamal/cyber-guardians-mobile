@@ -72,9 +72,17 @@ export function isAgentConnected(): boolean {
   return ws?.readyState === WebSocket.OPEN
 }
 
+const VALID_MESSAGE_TYPES = new Set([
+  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill'
+])
+
 async function sendMessage(type: string, payload: any, timeout: number = 60000): Promise<any> {
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     throw new Error('Agent not connected')
+  }
+
+  if (!VALID_MESSAGE_TYPES.has(type)) {
+    throw new Error(`Invalid message type: ${type}`)
   }
 
   const id = `msg-${++messageId}`

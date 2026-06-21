@@ -12,86 +12,97 @@ import { useCalendarStore } from './calendarStore'
 import { useAnalyticsStore } from './analyticsStore'
 
 function collectMetrics(config: ReportConfig): ReportDataPoint[] {
-  const game = useGameStore.getState()
-  const skills = useSkillStore.getState()
-  const plugins = usePluginStore.getState()
-  const connectors = useConnectorStore.getState()
-  const security = useSecurityStore.getState()
-  const calendar = useCalendarStore.getState()
-  const analytics = useAnalyticsStore.getState()
+  try {
+    const game = useGameStore.getState()
+    const skills = useSkillStore.getState()
+    const plugins = usePluginStore.getState()
+    const connectors = useConnectorStore.getState()
+    const security = useSecurityStore.getState()
+    const calendar = useCalendarStore.getState()
+    const analytics = useAnalyticsStore.getState()
 
   const data: ReportDataPoint[] = []
   const now = new Date()
-  const startDate = new Date(config.startDate)
-  const endDate = new Date(config.endDate)
-  endDate.setHours(23, 59, 59, 999)
+  const startParts = config.startDate.split('-').map(Number)
+  const endParts = config.endDate.split('-').map(Number)
+  const startYear = startParts[0] || 2024
+  const startMonth = startParts[1] || 1
+  const startDay = startParts[2] || 1
+  const endYear = endParts[0] || 2024
+  const endMonth = endParts[1] || 12
+  const endDay = endParts[2] || 31
+  const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
+  const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
 
-  switch (config.type) {
-    case 'usage': {
-      const records = analytics.usageRecords.filter(r => {
-        const recordDate = new Date(r.timestamp)
-        return recordDate >= startDate && recordDate <= endDate
-      })
-      const totalRecords = records.length
-      const totalDuration = records.reduce((sum, r) => sum + (r.duration || 0), 0)
-      const avgDuration = totalRecords > 0 ? Math.round(totalDuration / totalRecords / 60) : 0
-      const uniqueDays = new Set(records.map(r => new Date(r.timestamp).toISOString().split('T')[0])).size
-      const successfulOps = records.filter(r => r.success).length
-      data.push({ label: 'إجمالي العمليات', value: totalRecords, category: 'استخدام' })
-      data.push({ label: 'الوقت الكلي (ثانية)', value: totalDuration, category: 'استخدام' })
-      data.push({ label: 'متوسط مدة العملية', value: avgDuration, category: 'استخدام' })
-      data.push({ label: 'أيام النشاط', value: uniqueDays || 1, category: 'استخدام' })
-      data.push({ label: 'عمليات ناجحة', value: successfulOps, category: 'استخدام' })
-      data.push({ label: 'معدل النجاح (%)', value: totalRecords > 0 ? Math.round((successfulOps / totalRecords) * 100) : 100, category: 'استخدام' })
-      break
+    switch (config.type) {
+      case 'usage': {
+        const records = analytics.usageRecords.filter(r => {
+          const recordDate = new Date(r.timestamp)
+          return recordDate >= startDate && recordDate <= endDate
+        })
+        const totalRecords = records.length
+        const totalDuration = records.reduce((sum, r) => sum + (r.duration || 0), 0)
+        const avgDuration = totalRecords > 0 ? Math.round(totalDuration / totalRecords / 60) : 0
+        const uniqueDays = new Set(records.map(r => new Date(r.timestamp).toISOString().split('T')[0])).size
+        const successfulOps = records.filter(r => r.success).length
+        data.push({ label: 'إجمالي العمليات', value: totalRecords, category: 'استخدام' })
+        data.push({ label: 'الوقت الكلي (ثانية)', value: totalDuration, category: 'استخدام' })
+        data.push({ label: 'متوسط مدة العملية', value: avgDuration, category: 'استخدام' })
+        data.push({ label: 'أيام النشاط', value: uniqueDays || 1, category: 'استخدام' })
+        data.push({ label: 'عمليات ناجحة', value: successfulOps, category: 'استخدام' })
+        data.push({ label: 'معدل النجاح (%)', value: totalRecords > 0 ? Math.min(Math.round((successfulOps / totalRecords) * 100), 100) : 100, category: 'استخدام' })
+        break
+      }
+      case 'progress': {
+        data.push({ label: 'المستويات المكتملة', value: game.completedLevels.size, category: 'تقدم' })
+        data.push({ label: 'إجمالي النقاط', value: game.totalScore, category: 'تقدم' })
+        data.push({ label: 'نقاط الخبرة', value: game.xp, category: 'تقدم' })
+        data.push({ label: 'الشارات المفتوحة', value: game.unlockedBadges.length, category: 'تقدم' })
+        data.push({ label: 'أيام النشاط المتتالي', value: game.dailyStreakDays, category: 'تقدم' })
+        break
+      }
+      case 'skills': {
+        data.push({ label: 'القدرات المثبتة', value: skills.skills.filter(s => s.enabled).length, category: 'مهارات' })
+        data.push({ label: 'الأدوات المثبتة', value: plugins.plugins.filter(p => p.enabled).length, category: 'مهارات' })
+        data.push({ label: 'الاتصالات النشطة', value: connectors.connectors.filter(c => c.connected).length, category: 'مهارات' })
+        data.push({ label: 'إجمالي العناصر', value: skills.skills.length + plugins.plugins.length + connectors.connectors.length, category: 'مهارات' })
+        break
+      }
+      case 'performance': {
+        data.push({ label: 'أفضل نتيجة اختبار', value: game.quizBestScore, category: 'أداء' })
+        data.push({ label: 'الإجابات السريعة', value: game.speedAnswers, category: 'أداء' })
+        data.push({ label: 'أقصى كومبو', value: game.maxCombo, category: 'أداء' })
+        data.push({ label: 'معدل النجاح', value: Math.min(Math.round((game.completedLevels.size / 7) * 100), 100), category: 'أداء' })
+        break
+      }
+      case 'security': {
+        const activityLogs = (security.activityLogs || []).filter((l: { timestamp: number }) => {
+          const logDate = new Date(l.timestamp)
+          return logDate >= startDate && logDate <= endDate
+        })
+        data.push({ label: 'عمليات التشفير', value: activityLogs.filter((l: { action: string }) => l.action === 'encrypt').length, category: 'أمان' })
+        data.push({ label: 'عمليات التجزئة', value: activityLogs.filter((l: { action: string }) => l.action === 'hash').length, category: 'أمان' })
+        data.push({ label: 'سجلات النشاط', value: activityLogs.length, category: 'أمان' })
+        break
+      }
+      case 'custom': {
+        const tasksInDateRange = calendar.tasks.filter(t => {
+          const taskDate = new Date(`${t.dueDate}T${t.dueTime || '23:59'}`)
+          return taskDate >= startDate && taskDate <= endDate
+        })
+        data.push({ label: 'المهمات المكتملة', value: tasksInDateRange.filter(t => t.status === 'completed').length, category: 'مخصص' })
+        data.push({ label: 'المهمات المتأخرة', value: tasksInDateRange.filter(t => {
+          if (t.status === 'completed' || t.status === 'cancelled') return false
+          return new Date(`${t.dueDate}T${t.dueTime}`) < now
+        }).length, category: 'مخصص' })
+        break
+      }
     }
-    case 'progress': {
-      data.push({ label: 'المستويات المكتملة', value: game.completedLevels.size, category: 'تقدم' })
-      data.push({ label: 'إجمالي النقاط', value: game.totalScore, category: 'تقدم' })
-      data.push({ label: 'نقاط الخبرة', value: game.xp, category: 'تقدم' })
-      data.push({ label: 'الشارات المفتوحة', value: game.unlockedBadges.length, category: 'تقدم' })
-      data.push({ label: 'أيام النشاط المتتالي', value: game.dailyStreakDays, category: 'تقدم' })
-      break
-    }
-    case 'skills': {
-      data.push({ label: 'القدرات المثبتة', value: skills.skills.filter(s => s.enabled).length, category: 'مهارات' })
-      data.push({ label: 'الأدوات المثبتة', value: plugins.plugins.filter(p => p.enabled).length, category: 'مهارات' })
-      data.push({ label: 'الاتصالات النشطة', value: connectors.connectors.filter(c => c.connected).length, category: 'مهارات' })
-      data.push({ label: 'إجمالي العناصر', value: skills.skills.length + plugins.plugins.length + connectors.connectors.length, category: 'مهارات' })
-      break
-    }
-    case 'performance': {
-      data.push({ label: 'أفضل نتيجة اختبار', value: game.quizBestScore, category: 'أداء' })
-      data.push({ label: 'الإجابات السريعة', value: game.speedAnswers, category: 'أداء' })
-      data.push({ label: 'أقصى كومبو', value: game.maxCombo, category: 'أداء' })
-      data.push({ label: 'معدل النجاح', value: Math.min(Math.round((game.completedLevels.size / 7) * 100), 100), category: 'أداء' })
-      break
-    }
-    case 'security': {
-      const activityLogs = (security.activityLogs || []).filter((l: { timestamp: number }) => {
-        const logDate = new Date(l.timestamp)
-        return logDate >= startDate && logDate <= endDate
-      })
-      data.push({ label: 'عمليات التشفير', value: activityLogs.filter((l: { action: string }) => l.action === 'encrypt').length, category: 'أمان' })
-      data.push({ label: 'عمليات التجزئة', value: activityLogs.filter((l: { action: string }) => l.action === 'hash').length, category: 'أمان' })
-      data.push({ label: 'سجلات النشاط', value: activityLogs.length, category: 'أمان' })
-      break
-    }
-    case 'custom': {
-      const tasksInDateRange = calendar.tasks.filter(t => {
-        const taskDate = new Date(`${t.dueDate}T${t.dueTime || '23:59'}`)
-        return taskDate >= startDate && taskDate <= endDate
-      })
-      data.push({ label: 'المهمات المكتملة', value: tasksInDateRange.filter(t => t.status === 'completed').length, category: 'مخصص' })
-      data.push({ label: 'المهمات المتأخرة', value: tasksInDateRange.filter(t => {
-        if (t.status === 'completed' || t.status === 'cancelled') return false
-        return new Date(`${t.dueDate}T${t.dueTime}`) < now
-      }).length, category: 'مخصص' })
-      break
-    }
+
+    return data
+  } catch {
+    return []
   }
-
-  return data
 }
 
 function calculateSummary(data: ReportDataPoint[]): ReportSummary {

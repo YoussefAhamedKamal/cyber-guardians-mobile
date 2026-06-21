@@ -18,14 +18,21 @@ export async function findSkills(query: string): Promise<SkillInfo[]> {
 
   const result = await executeCommand({
     type: 'shell',
-    command: `npx skills find ${query} --json 2>/dev/null || npx skills find ${query}`,
+    command: `npx skills find ${query} --json 2>/dev/null`,
   }, { timeout: 30000 })
 
-  if (result.success) {
-    return parseSkillsOutput(result.stdout)
+  if (!result.success) {
+    const fallback = await executeCommand({
+      type: 'shell',
+      command: `npx skills find ${query}`,
+    }, { timeout: 30000 })
+    if (fallback.success) {
+      return parseSkillsOutput(fallback.stdout)
+    }
+    return []
   }
 
-  return []
+  return parseSkillsOutput(result.stdout)
 }
 
 export async function installSkill(packageName: string): Promise<boolean> {

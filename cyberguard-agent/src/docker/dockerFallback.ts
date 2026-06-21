@@ -50,6 +50,7 @@ export async function executeInDocker(
   const containerName = `cyberguard-${tool}-${Date.now()}`
   const timeout = options.timeout || 120000
 
+  const escapedCommand = command.replace(/'/g, "'\\''")
   const dockerArgs = [
     'docker run --rm',
     `--name ${containerName}`,
@@ -59,7 +60,7 @@ export async function executeInDocker(
     '-v /tmp/cyberguard-input:/input:ro',
     '-v /tmp/cyberguard-output:/output',
     image,
-    `bash -c "${command}"`,
+    `bash -c '${escapedCommand}'`,
   ].join(' ')
 
   try {

@@ -57,10 +57,10 @@ export async function runSlither(
         }
       } catch {
         return {
-          success: true,
+          success: false,
           findings: [],
           raw: result.stdout || result.stderr,
-          summary: 'Slither analysis completed (non-JSON output)',
+          summary: 'Slither analysis failed: could not parse JSON output',
           duration: result.duration,
         }
       }

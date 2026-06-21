@@ -148,8 +148,8 @@ export const usePluginStore = create<PluginState>()(
         const record = {
           timestamp: Date.now(),
           endpoint,
-          input: input.slice(0, 100),
-          output: output.slice(0, 100),
+          input: (input || '').slice(0, 100),
+          output: (output || '').slice(0, 100),
           duration,
           success,
           error: error || null
@@ -169,7 +169,7 @@ export const usePluginStore = create<PluginState>()(
           `${plugin?.name || pluginId}/${endpoint}`,
           success,
           duration,
-          success ? undefined : (error || output.slice(0, 200))
+          success ? undefined : (error || (output || '').slice(0, 200))
         )
       },
 

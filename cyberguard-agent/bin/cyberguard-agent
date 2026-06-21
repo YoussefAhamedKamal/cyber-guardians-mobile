@@ -33,9 +33,22 @@ Examples:
 }
 
 async function main() {
-  const port = parseInt(args[args.indexOf('--port') + 1] || '3001')
-  const token = args[args.indexOf('--token') + 1] || undefined
-  const profile = args[args.indexOf('--profile') + 1] || 'full'
+  const portIdx = args.indexOf('--port')
+  const tokenIdx = args.indexOf('--token')
+  const profileIdx = args.indexOf('--profile')
+
+  if (portIdx !== -1 && (portIdx + 1 >= args.length || args[portIdx + 1]!.startsWith('--'))) {
+    console.error('Error: --port requires a value')
+    process.exit(1)
+  }
+  if (tokenIdx !== -1 && (tokenIdx + 1 >= args.length || args[tokenIdx + 1]!.startsWith('--'))) {
+    console.error('Error: --token requires a value')
+    process.exit(1)
+  }
+
+  const port = parseInt(args[portIdx + 1] || '3001')
+  const token = args[tokenIdx + 1] || undefined
+  const profile = args[profileIdx + 1] || 'full'
   const verbose = args.includes('--verbose')
 
   switch (command) {

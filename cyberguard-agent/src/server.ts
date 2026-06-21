@@ -68,12 +68,18 @@ export function createServer(config: AgentConfig) {
           await handleMessage(ws, msg)
         } catch (err: any) {
           log(`Error handling message: ${err.message}`, 'error')
-          ws.send(JSON.stringify({
-            id: '',
-            status: 'error',
-            error: err.message,
-          }))
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              id: '',
+              status: 'error',
+              error: err.message,
+            }))
+          }
         }
+      })
+
+      ws.on('error', (err) => {
+        log(`WebSocket error: ${err.message}`, 'error')
       })
 
       ws.on('close', () => {

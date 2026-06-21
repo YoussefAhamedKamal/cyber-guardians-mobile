@@ -29,12 +29,12 @@ export function translateCommand(command: string, targetOS?: OS): string {
 
   if (os === 'windows') {
     for (const [unix, win] of Object.entries(UNIX_TO_WINDOWS)) {
-      const regex = new RegExp(`^${unix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+      const regex = new RegExp(`^${unix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b$`, 'gi')
       translated = translated.replace(regex, win)
     }
   } else {
     for (const [win, unix] of Object.entries(WINDOWS_TO_UNIX)) {
-      const regex = new RegExp(`^${win.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
+      const regex = new RegExp(`^${win.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b$`, 'gi')
       translated = translated.replace(regex, unix)
     }
   }

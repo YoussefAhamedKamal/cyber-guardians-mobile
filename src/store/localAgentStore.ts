@@ -49,14 +49,22 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   connect: async (url: string, token?: string) => {
     try {
       await connectToAgent(url, token)
-      set({ connected: true, url, token: token || '', error: null })
 
-      // Fetch initial data
-      const status = await getAgentStatus()
-      set({ status })
+      let status: AgentStatus | null = null
+      try {
+        status = await getAgentStatus()
+      } catch {
+        // getAgentStatus failed — connection may still be usable
+      }
 
-      const tools = await getAgentTools()
-      set({ tools })
+      let tools: Tool[] = []
+      try {
+        tools = await getAgentTools()
+      } catch {
+        // getAgentTools failed — continue without tools
+      }
+
+      set({ connected: true, url, token: token || '', error: null, status, tools })
     } catch (err: any) {
       set({ connected: false, error: err.message })
       throw err

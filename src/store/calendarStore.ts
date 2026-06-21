@@ -48,13 +48,8 @@ export const useCalendarStore = create<CalendarState>()(
       setFilterPriority: (priority) => set({ filterPriority: priority }),
 
       getTasksForDate: (date) => {
-        const { tasks, filterStatus, filterPriority } = get()
-        return tasks.filter((t) => {
-          if (t.dueDate !== date) return false
-          if (filterStatus !== 'all' && t.status !== filterStatus) return false
-          if (filterPriority !== 'all' && t.priority !== filterPriority) return false
-          return true
-        }).sort((a, b) => a.dueTime.localeCompare(b.dueTime))
+        const { tasks } = get()
+        return tasks.filter((t) => t.dueDate === date).sort((a, b) => a.dueTime.localeCompare(b.dueTime))
       },
 
       getUpcomingTasks: (days) => {

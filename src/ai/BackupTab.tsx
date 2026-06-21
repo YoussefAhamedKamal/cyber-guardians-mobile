@@ -102,9 +102,9 @@ export function BackupTab() {
     URL.revokeObjectURL(url)
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (importJson.trim()) {
-      const success = importBackup(importJson)
+      const success = await importBackup(importJson)
       if (success) {
         setShowImportModal(false)
         setImportJson('')

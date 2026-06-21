@@ -26,7 +26,8 @@ export async function executeCommand(
   const startTime = Date.now()
 
   // Ensure required tools are installed
-  const tool = cmd.command.split(' ')[0]
+  const toolMatch = cmd.command.match(/^(\S+)/)
+  const tool = toolMatch ? toolMatch[1].split('/').pop()! : cmd.command
   const installed = await checkTool(tool)
   if (!installed) {
     if (verbose) console.log(`Tool not found: ${tool}, attempting to install...`)

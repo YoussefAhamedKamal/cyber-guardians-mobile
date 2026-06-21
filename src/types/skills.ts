@@ -1,5 +1,3 @@
-import type { AIMessage } from './ai'
-
 export interface Skill {
   id: string
   name: string

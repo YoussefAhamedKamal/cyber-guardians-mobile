@@ -25,6 +25,8 @@ export const useVoiceStore = create<VoiceSearchState>()((set, get) => ({
   lastResult: '',
 
   startListening: () => {
+    if (get().isListening) return
+
     const rec = getRecognition()
     if (!rec) {
       set({ error: 'التعرف على الصوت غير مدعوم في هذا المتصفح' })

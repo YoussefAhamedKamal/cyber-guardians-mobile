@@ -15,7 +15,7 @@ interface SkillState {
   addSkill: (skill: Omit<Skill, 'id' | 'createdAt' | 'updatedAt' | 'usageHistory'>) => string
   removeSkill: (id: string) => void
   toggleSkill: (id: string) => void
-  updateSkill: (id: string, updates: Partial<Skill>) => void
+  updateSkill: (id: string, updates: Omit<Partial<Skill>, 'id' | 'createdAt' | 'usageHistory'>) => void
   setActiveSkill: (id: string | null) => void
   setFilterCategory: (category: SkillCategory | 'all') => void
   setSearchQuery: (query: string) => void
@@ -142,8 +142,8 @@ export const useSkillStore = create<SkillState>()(
       recordUsage: (skillId, input, output, duration, success) => {
         const record = {
           timestamp: Date.now(),
-          inputPreview: input.slice(0, 100),
-          outputPreview: output.slice(0, 100),
+          inputPreview: (input || '').slice(0, 100),
+          outputPreview: (output || '').slice(0, 100),
           duration,
           success
         }
@@ -162,7 +162,7 @@ export const useSkillStore = create<SkillState>()(
           skill?.name || skillId,
           success,
           duration,
-          success ? undefined : output.slice(0, 200)
+          success ? undefined : (output || '').slice(0, 200)
         )
       }
     }),

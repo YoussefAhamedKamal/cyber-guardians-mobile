@@ -22,6 +22,7 @@ export class SmartCache {
   }
 
   set(key: string, value: any, ttl?: number): void {
+    this.cleanupExpired()
     this.cache.set(key, {
       key,
       value,
@@ -29,6 +30,15 @@ export class SmartCache {
       ttl: ttl || this.defaultTTL,
       hits: 0,
     })
+  }
+
+  cleanupExpired(): void {
+    const now = Date.now()
+    for (const [key, entry] of this.cache) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key)
+      }
+    }
   }
 
   get(key: string): any | null {

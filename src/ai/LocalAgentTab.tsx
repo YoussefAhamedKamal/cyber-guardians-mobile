@@ -28,6 +28,7 @@ export function LocalAgentTab() {
   const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'execute'>('scan')
   const [executeCommand, setExecuteCommand] = useState('')
   const [executeResult, setExecuteResult] = useState<string | null>(null)
+  const [executing, setExecuting] = useState(false)
 
   const handleConnect = async () => {
     try {
@@ -54,11 +55,14 @@ export function LocalAgentTab() {
 
   const handleExecute = async () => {
     if (!executeCommand.trim()) return
+    setExecuting(true)
     try {
       const result = await execute(executeCommand)
       setExecuteResult(JSON.stringify(result, null, 2))
     } catch (err: any) {
       setExecuteResult(`Error: ${err.message}`)
+    } finally {
+      setExecuting(false)
     }
   }
 
@@ -257,14 +261,14 @@ export function LocalAgentTab() {
           />
           <button
             onClick={handleExecute}
-            disabled={!connected || !executeCommand.trim()}
+            disabled={!connected || !executeCommand.trim() || executing}
             style={{
               width: '100%', padding: '8px', marginTop: '8px', borderRadius: '4px', border: 'none',
-              background: !connected || !executeCommand.trim() ? '#444' : 'linear-gradient(135deg,#4CAF50,#66BB6A)',
-              color: '#fff', fontWeight: 700, cursor: !connected || !executeCommand.trim() ? 'not-allowed' : 'pointer'
+              background: !connected || !executeCommand.trim() || executing ? '#444' : 'linear-gradient(135deg,#4CAF50,#66BB6A)',
+              color: '#fff', fontWeight: 700, cursor: !connected || !executeCommand.trim() || executing ? 'not-allowed' : 'pointer'
             }}
           >
-            ⚡ Execute
+            {executing ? '⏳ Executing...' : '⚡ Execute'}
           </button>
           {executeResult && (
             <pre style={{ marginTop: '8px', padding: '8px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', color: '#4CAF50', fontFamily: 'monospace', fontSize: '10px', whiteSpace: 'pre-wrap', maxHeight: '200px', overflow: 'auto' }}>

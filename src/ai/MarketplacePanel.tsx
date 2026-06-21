@@ -69,8 +69,8 @@ export function MarketplacePanel() {
   const filteredItems = allItems.filter((item) => {
     const matchesType = singularTab === item.type
     const matchesSearch = !searchQuery ||
-      item.name.includes(searchQuery) ||
-      item.description.includes(searchQuery)
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory
     return matchesType && matchesSearch && matchesCategory
   })

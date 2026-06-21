@@ -270,8 +270,8 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
       exportHistory: () => {
         const state = get()
         return JSON.stringify({
-          changes: state.changes.slice(0, 100),
-          snapshots: state.snapshots.slice(0, 5)
+          changes: state.changes,
+          snapshots: state.snapshots
         }, null, 2)
       },
 
@@ -279,7 +279,17 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
         try {
           const data = JSON.parse(json)
           if (data.changes && Array.isArray(data.changes)) {
-            set({ changes: data.changes })
+            const validChanges = data.changes.filter(
+              (item: any) =>
+                item &&
+                typeof item.id === 'string' &&
+                typeof item.timestamp === 'number' &&
+                typeof item.type === 'string' &&
+                typeof item.itemType === 'string' &&
+                typeof item.itemId === 'string' &&
+                typeof item.itemName === 'string'
+            )
+            set({ changes: validChanges })
           }
           if (data.snapshots && Array.isArray(data.snapshots)) {
             set({ snapshots: data.snapshots })

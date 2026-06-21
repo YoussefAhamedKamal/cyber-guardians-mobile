@@ -30,6 +30,16 @@ function parseMakefile(content: string, filename: string): ManifestFile {
   const lines = content.split('\n')
 
   for (const line of lines) {
+    if (line.startsWith('\t')) {
+      const trimmed = line.trim()
+      if (trimmed && !trimmed.startsWith('#')) {
+        commands.push({
+          type: 'build',
+          command: trimmed,
+        })
+      }
+      continue
+    }
     const trimmed = line.trim()
     if (trimmed && !trimmed.startsWith('#') && !trimmed.includes(':') && !trimmed.includes('=')) {
       commands.push({
@@ -139,7 +149,7 @@ function parseShellScript(content: string, filename: string): ManifestFile {
 export function detectFileType(filename: string): 'skill' | 'plugin' | 'manifest' | 'unknown' {
   const lower = filename.toLowerCase()
 
-  if (lower.endsWith('.md') && (lower.includes('skill') || lower.startsWith('readme'))) {
+  if (lower.endsWith('.md') && lower.startsWith('skill-')) {
     return 'skill'
   }
   if (lower === 'plugin.json' || lower.endsWith('.plugin.json')) {

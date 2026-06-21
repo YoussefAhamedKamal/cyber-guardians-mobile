@@ -25,7 +25,6 @@ export function VersionHistoryTab() {
   const {
     changes,
     snapshots,
-    recordChange,
     createSnapshot,
     restoreSnapshot,
     getRecentChanges,
@@ -66,6 +65,7 @@ export function VersionHistoryTab() {
       }
     } else if (pendingAction === 'clear') {
       clearHistory()
+      clearSnapshots()
     }
     setShowConfirmModal(false)
     setPendingAction(null)

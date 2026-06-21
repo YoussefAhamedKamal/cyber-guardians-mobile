@@ -35,163 +35,169 @@ export const useAdvancedSearchStore = create<AdvancedSearchStore>()(
         const startTime = performance.now()
         set({ isSearching: true })
 
-        const searchQuery = parseSearchQuery(query)
-        const mergedFilters: SearchFilter = {
-          types: filters.types || searchQuery.filters.types,
-          limit: filters.limit || 50,
-          offset: filters.offset || 0
-        }
+        try {
+          const searchQuery = parseSearchQuery(query)
+          const mergedFilters: SearchFilter = {
+            types: filters.types || searchQuery.filters.types,
+            limit: filters.limit || 50,
+            offset: filters.offset || 0
+          }
 
-        const results: SearchResult[] = []
+          const results: SearchResult[] = []
 
-        if (mergedFilters.types.includes('skill')) {
-          const skills = useSkillStore.getState().skills
-          skills.forEach((skill) => {
-            const score = calculateMatchScore(query, `${skill.name} ${skill.description}`)
-            if (score > 0) {
-              results.push({
-                id: skill.id,
-                type: 'skill',
-                title: skill.name,
-                description: skill.description,
-                matchScore: score,
-                matchHighlights: findHighlights(skill.name, query),
-                data: skill
-              })
-            }
-          })
-        }
+          if (mergedFilters.types.includes('skill')) {
+            const skills = useSkillStore.getState().skills
+            skills.forEach((skill) => {
+              const score = calculateMatchScore(query, `${skill.name} ${skill.description}`)
+              if (score > 0) {
+                results.push({
+                  id: skill.id,
+                  type: 'skill',
+                  title: skill.name,
+                  description: skill.description,
+                  matchScore: score,
+                  matchHighlights: findHighlights(skill.name, query),
+                  data: skill
+                })
+              }
+            })
+          }
 
-        if (mergedFilters.types.includes('plugin')) {
-          const plugins = usePluginStore.getState().plugins
-          plugins.forEach((plugin) => {
-            const score = calculateMatchScore(query, `${plugin.name} ${plugin.description}`)
-            if (score > 0) {
-              results.push({
-                id: plugin.id,
-                type: 'plugin',
-                title: plugin.name,
-                description: plugin.description,
-                matchScore: score,
-                matchHighlights: findHighlights(plugin.name, query),
-                data: plugin
-              })
-            }
-          })
-        }
+          if (mergedFilters.types.includes('plugin')) {
+            const plugins = usePluginStore.getState().plugins
+            plugins.forEach((plugin) => {
+              const score = calculateMatchScore(query, `${plugin.name} ${plugin.description}`)
+              if (score > 0) {
+                results.push({
+                  id: plugin.id,
+                  type: 'plugin',
+                  title: plugin.name,
+                  description: plugin.description,
+                  matchScore: score,
+                  matchHighlights: findHighlights(plugin.name, query),
+                  data: plugin
+                })
+              }
+            })
+          }
 
-        if (mergedFilters.types.includes('connector')) {
-          const connectors = useConnectorStore.getState().connectors
-          connectors.forEach((connector) => {
-            const score = calculateMatchScore(query, `${connector.name} ${connector.description}`)
-            if (score > 0) {
-              results.push({
-                id: connector.id,
-                type: 'connector',
-                title: connector.name,
-                description: connector.description,
-                matchScore: score,
-                matchHighlights: findHighlights(connector.name, query),
-                data: connector
-              })
-            }
-          })
-        }
+          if (mergedFilters.types.includes('connector')) {
+            const connectors = useConnectorStore.getState().connectors
+            connectors.forEach((connector) => {
+              const score = calculateMatchScore(query, `${connector.name} ${connector.description}`)
+              if (score > 0) {
+                results.push({
+                  id: connector.id,
+                  type: 'connector',
+                  title: connector.name,
+                  description: connector.description,
+                  matchScore: score,
+                  matchHighlights: findHighlights(connector.name, query),
+                  data: connector
+                })
+              }
+            })
+          }
 
-        if (mergedFilters.types.includes('knowledge')) {
-          const knowledge = useProjectStore.getState().knowledge
-          knowledge.forEach((k) => {
-            const score = calculateMatchScore(query, `${k.name} ${k.content}`)
-            if (score > 0) {
-              results.push({
-                id: k.id,
-                type: 'knowledge',
-                title: k.name,
-                description: k.content.substring(0, 200),
-                matchScore: score,
-                matchHighlights: findHighlights(k.name, query),
-                data: k
-              })
-            }
-          })
-        }
+          if (mergedFilters.types.includes('knowledge')) {
+            const knowledge = useProjectStore.getState().knowledge
+            knowledge.forEach((k) => {
+              const score = calculateMatchScore(query, `${k.name} ${k.content}`)
+              if (score > 0) {
+                results.push({
+                  id: k.id,
+                  type: 'knowledge',
+                  title: k.name,
+                  description: k.content.substring(0, 200),
+                  matchScore: score,
+                  matchHighlights: findHighlights(k.name, query),
+                  data: k
+                })
+              }
+            })
+          }
 
-        if (mergedFilters.types.includes('instructions')) {
-          const instructions = useProjectStore.getState().instructions
-          if (instructions) {
-            const instrText = `${instructions.role || ''} ${instructions.customPrompt || ''} ${instructions.tone || ''} ${instructions.responseFormat || ''}`
-            const score = calculateMatchScore(query, instrText)
-            if (score > 0) {
-              results.push({
-                id: 'project-instructions',
-                type: 'instructions' as SearchableItemType,
-                title: 'تعليمات المشروع',
-                description: instructions.customPrompt?.substring(0, 200) || instructions.role || '',
-                matchScore: score,
-                matchHighlights: findHighlights('تعليمات المشروع', query),
-                data: instructions
-              })
+          if (mergedFilters.types.includes('instructions')) {
+            const instructions = useProjectStore.getState().instructions
+            if (instructions) {
+              const instrText = `${instructions.role || ''} ${instructions.customPrompt || ''} ${instructions.tone || ''} ${instructions.responseFormat || ''}`
+              const score = calculateMatchScore(query, instrText)
+              if (score > 0) {
+                results.push({
+                  id: 'project-instructions',
+                  type: 'instructions' as SearchableItemType,
+                  title: 'تعليمات المشروع',
+                  description: instructions.customPrompt?.substring(0, 200) || instructions.role || '',
+                  matchScore: score,
+                  matchHighlights: findHighlights('تعليمات المشروع', query),
+                  data: instructions
+                })
+              }
             }
           }
-        }
 
-        if (mergedFilters.types.includes('change')) {
-          const changes = useVersionHistoryStore.getState().changes
-          changes.forEach((change) => {
-            const score = calculateMatchScore(query, `${change.itemName} ${change.type}`)
-            if (score > 0) {
-              results.push({
-                id: change.id,
-                type: 'change',
-                title: change.itemName,
-                description: `${change.type} ${change.itemType}`,
-                matchScore: score,
-                matchHighlights: findHighlights(change.itemName, query),
-                data: change,
-                timestamp: change.timestamp
-              })
-            }
+          if (mergedFilters.types.includes('change')) {
+            const changes = useVersionHistoryStore.getState().changes
+            changes.forEach((change) => {
+              const score = calculateMatchScore(query, `${change.itemName} ${change.type}`)
+              if (score > 0) {
+                results.push({
+                  id: change.id,
+                  type: 'change',
+                  title: change.itemName,
+                  description: `${change.type} ${change.itemType}`,
+                  matchScore: score,
+                  matchHighlights: findHighlights(change.itemName, query),
+                  data: change,
+                  timestamp: change.timestamp
+                })
+              }
+            })
+          }
+
+          if (mergedFilters.types.includes('usage')) {
+            const usages = useAnalyticsStore.getState().usageRecords
+            usages.forEach((usage) => {
+              const score = calculateMatchScore(query, `${usage.itemName} ${usage.action}`)
+              if (score > 0) {
+                results.push({
+                  id: usage.id,
+                  type: 'usage',
+                  title: usage.itemName,
+                  description: `${usage.action} ${usage.itemType}`,
+                  matchScore: score,
+                  matchHighlights: findHighlights(usage.itemName, query),
+                  data: usage,
+                  timestamp: usage.timestamp
+                })
+              }
+            })
+          }
+
+          results.sort((a, b) => b.matchScore - a.matchScore)
+
+          const limit = mergedFilters.limit || 50
+          const offset = mergedFilters.offset || 0
+          const limitedResults = results.slice(offset, offset + limit)
+
+          const searchTime = performance.now() - startTime
+
+          set({
+            results: limitedResults,
+            totalResults: results.length,
+            isSearching: false,
+            lastQuery: query,
+            searchTime
           })
+
+          get().addRecentSearch(query)
+
+          return limitedResults
+        } catch {
+          const searchTime = performance.now() - startTime
+          set({ results: [], totalResults: 0, isSearching: false, lastQuery: query, searchTime })
+          return []
         }
-
-        if (mergedFilters.types.includes('usage')) {
-          const usages = useAnalyticsStore.getState().usageRecords
-          usages.forEach((usage) => {
-            const score = calculateMatchScore(query, `${usage.itemName} ${usage.action}`)
-            if (score > 0) {
-              results.push({
-                id: usage.id,
-                type: 'usage',
-                title: usage.itemName,
-                description: `${usage.action} ${usage.itemType}`,
-                matchScore: score,
-                matchHighlights: findHighlights(usage.itemName, query),
-                data: usage,
-                timestamp: usage.timestamp
-              })
-            }
-          })
-        }
-
-        results.sort((a, b) => b.matchScore - a.matchScore)
-
-        const limit = mergedFilters.limit || 50
-        const offset = mergedFilters.offset || 0
-        const limitedResults = results.slice(offset, offset + limit)
-
-        const searchTime = performance.now() - startTime
-
-        set({
-          results: limitedResults,
-          totalResults: results.length,
-          isSearching: false,
-          lastQuery: query,
-          searchTime
-        })
-
-        get().addRecentSearch(query)
-
-        return limitedResults
       },
 
       searchWithOperators: (query) => {

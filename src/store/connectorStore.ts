@@ -125,7 +125,7 @@ export const useConnectorStore = create<ConnectorState>()(
         set((state) => ({
           connectors: state.connectors.map((c) =>
             c.id === id
-              ? { ...c, connected: false, credentials: {}, updatedAt: Date.now() }
+              ? { ...c, connected: false, updatedAt: Date.now() }
               : c
           )
         }))
@@ -137,8 +137,26 @@ export const useConnectorStore = create<ConnectorState>()(
         if (!connector) return false
         const startTime = Date.now()
 
+        const providerEndpoints: Record<ConnectorProvider, string> = {
+          openai: '/v1/models',
+          anthropic: '/v1/messages',
+          google: '/v1/models',
+          meta: '/v1/models',
+          mistral: '/v1/models',
+          github_copilot: '/models',
+          cursor: '/models',
+          codeium: '/models',
+          aws_bedrock: '/models',
+          azure_openai: '/openai/models',
+          google_cloud: '/v1/models',
+          ollama: '/api/tags',
+          lmstudio: '/v1/models',
+          custom: '/models'
+        }
+        const endpoint = providerEndpoints[connector.provider] || '/models'
+
         try {
-          const response = await fetch(`${connector.config.baseUrl}/models`, {
+          const response = await fetch(`${connector.config.baseUrl}${endpoint}`, {
             headers: {
               'Authorization': `Bearer ${connector.credentials.apiKey || ''}`,
               'Content-Type': 'application/json'

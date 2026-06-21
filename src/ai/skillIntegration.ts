@@ -81,7 +81,7 @@ export function detectSkillRequest(message: string): string | null {
     'teacher': ['explain', 'teach', 'learn', 'understand', 'tutorial', 'اشرح', 'تعلم'],
     'content_writer': ['write article', 'blog post', 'content writing', 'اكتب مقال'],
     'software_engineer': ['develop', 'build app', 'create software', 'programming', 'code', 'برمج', 'طور'],
-    'image_generator': ['generate image', 'create image', 'draw', 'picture', 'image', 'صور'],
+    'image_generator': ['generate image', 'create image', 'draw', 'picture', 'image', 'صور', 'صورة'],
   }
 
   for (const skill of skillStore.skills) {

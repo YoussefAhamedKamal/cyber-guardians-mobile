@@ -4,6 +4,13 @@ import { detectPlatform } from '../platform/detector.js'
 
 const execAsync = promisify(exec)
 
+function sanitizeToolName(tool: string): string {
+  if (!/^[a-zA-Z0-9._-]+$/.test(tool)) {
+    throw new Error(`Invalid tool name: ${tool}`)
+  }
+  return tool
+}
+
 const TOOL_INSTALL_MAP: Record<string, Record<string, string>> = {
   semgrep: {
     pip: 'pip install semgrep',
@@ -57,15 +64,16 @@ const TOOL_INSTALL_MAP: Record<string, Record<string, string>> = {
 }
 
 export async function installTool(tool: string): Promise<boolean> {
+  const safeTool = sanitizeToolName(tool)
   const platform = detectPlatform()
-  const installCmds = TOOL_INSTALL_MAP[tool]
+  const installCmds = TOOL_INSTALL_MAP[safeTool]
 
   if (!installCmds) {
     // Try generic install methods
     const managers = platform.packageManagers.filter(m => m.available)
     for (const manager of managers) {
       try {
-        await execAsync(manager.install(tool), { timeout: 120000 })
+        await execAsync(manager.install(safeTool), { timeout: 120000 })
         return true
       } catch {
         continue

@@ -49,6 +49,9 @@ export function PluginsTab() {
     authType: 'none' as 'none' | 'api_key' | 'oauth'
   })
 
+  const [selectedEndpoint, setSelectedEndpoint] = useState<Record<string, string>>({})
+  const [paramValues, setParamValues] = useState<Record<string, Record<string, string>>>({})
+
   const filteredPlugins = plugins.filter((plugin) => {
     const matchesCategory = filterCategory === 'all' || plugin.category === filterCategory
     const matchesSearch = !searchQuery ||
@@ -222,7 +225,7 @@ export function PluginsTab() {
                   display: 'flex',
                   alignItems: 'center',
                   padding: '12px',
-                  background: plugin.enabled ? '#1a1a2e' : '#1a1a2e',
+                  background: plugin.enabled ? '#1a2e1a' : '#1a1a2e',
                   border: `1px solid ${plugin.enabled ? '#2196F3' : '#333'}`,
                   borderRadius: '8px',
                   transition: 'all 0.2s'
@@ -237,35 +240,88 @@ export function PluginsTab() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  {plugin.enabled && plugin.config.baseUrl && (
-                    <button
-                      onClick={async () => {
-                        const endpoint = plugin.endpoints[0]
-                        if (endpoint) {
-                          try {
-                            const params: Record<string, string> = {}
-                            for (const param of endpoint.parameters || []) {
-                              if (param.defaultValue) params[param.name] = String(param.defaultValue)
+                  {plugin.enabled && plugin.config.baseUrl && plugin.endpoints.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                      <select
+                        value={selectedEndpoint[plugin.id] || plugin.endpoints[0]?.id || ''}
+                        onChange={(e) => setSelectedEndpoint({ ...selectedEndpoint, [plugin.id]: e.target.value })}
+                        style={{
+                          padding: '4px 8px',
+                          background: '#2a2a3e',
+                          border: '1px solid #444',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          fontSize: '11px'
+                        }}
+                      >
+                        {plugin.endpoints.map((ep) => (
+                          <option key={ep.id} value={ep.id}>{ep.name || ep.id}</option>
+                        ))}
+                      </select>
+                      {(() => {
+                        const epId = selectedEndpoint[plugin.id] || plugin.endpoints[0]?.id
+                        const ep = plugin.endpoints.find((e) => e.id === epId)
+                        const requiredParams = (ep?.parameters || []).filter((p) => p.required)
+                        if (requiredParams.length === 0) return null
+                        return requiredParams.map((param) => (
+                          <input
+                            key={param.name}
+                            id={`param-${plugin.id}-${param.name}`}
+                            type="text"
+                            placeholder={param.name}
+                            value={paramValues[plugin.id]?.[param.name] || ''}
+                            onChange={(e) => setParamValues({
+                              ...paramValues,
+                              [plugin.id]: { ...paramValues[plugin.id], [param.name]: e.target.value }
+                            })}
+                            style={{
+                              padding: '4px 8px',
+                              background: '#2a2a3e',
+                              border: '1px solid #444',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              fontSize: '11px',
+                              width: '140px'
+                            }}
+                          />
+                        ))
+                      })()}
+                      <button
+                        onClick={async () => {
+                          const epId = selectedEndpoint[plugin.id] || plugin.endpoints[0]?.id
+                          const endpoint = plugin.endpoints.find((e) => e.id === epId)
+                          if (endpoint) {
+                            try {
+                              const params: Record<string, string> = {}
+                              for (const param of endpoint.parameters || []) {
+                                const inputEl = document.getElementById(`param-${plugin.id}-${param.name}`) as HTMLInputElement | null
+                                if (inputEl && inputEl.value) {
+                                  params[param.name] = inputEl.value
+                                } else if (param.defaultValue) {
+                                  params[param.name] = String(param.defaultValue)
+                                }
+                              }
+                              const result = await usePluginStore.getState().executePlugin(plugin.id, endpoint.id, params)
+                              alert(`✅ نتيجة ${plugin.name}:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2).slice(0, 500)}`)
+                            } catch (err: unknown) {
+                              const message = err instanceof Error ? err.message : 'Unknown error'
+                              alert(`❌ خطأ: ${message}`)
                             }
-                            const result = await usePluginStore.getState().executePlugin(plugin.id, endpoint.id, params)
-                            alert(`✅ نتيجة ${plugin.name}:\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2).slice(0, 500)}`)
-                          } catch (err: any) {
-                            alert(`❌ خطأ: ${err.message}`)
                           }
-                        }
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-                        border: 'none',
-                        borderRadius: '4px',
-                        color: 'white',
-                        cursor: 'pointer',
-                        fontSize: '11px'
-                      }}
-                    >
-                      ▶ تنفيذ
-                    </button>
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          background: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '11px'
+                        }}
+                      >
+                        ▶ تنفيذ
+                      </button>
+                    </div>
                   )}
                   <button
                     onClick={() => togglePlugin(plugin.id)}

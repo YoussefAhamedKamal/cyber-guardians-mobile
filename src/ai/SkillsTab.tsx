@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useSkillStore } from '@/store/skillStore'
 import { SKILL_TEMPLATES, type SkillCategory, type Skill } from '@/types/skills'
 
@@ -53,7 +53,6 @@ export function SkillsTab() {
   })
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const filteredSkills = skills.filter((skill) => {
     const matchesCategory = filterCategory === 'all' || skill.category === filterCategory
@@ -88,9 +87,6 @@ export function SkillsTab() {
   const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault()
     if (draggedIndex === null || draggedIndex === index) return
-    const filteredSkills = skills
-      .filter(s => filterCategory === 'all' || s.category === filterCategory)
-      .filter(s => !searchQuery || s.name.includes(searchQuery) || s.description.includes(searchQuery))
     const draggedSkill = filteredSkills[draggedIndex]
     const targetSkill = filteredSkills[index]
     if (!draggedSkill || !targetSkill) return

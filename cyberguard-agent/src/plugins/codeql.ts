@@ -1,7 +1,7 @@
 import { executeCommand } from '../executor/commandExecutor.js'
 import { checkTool } from '../executor/toolChecker.js'
 import { createTempDir, cleanupTempDir } from '../platform/pathResolver.js'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile } from 'fs/promises'
 import { join } from 'path'
 import type { PluginResult, Finding } from './semgrep.js'
 

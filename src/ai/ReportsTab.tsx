@@ -274,8 +274,8 @@ export function ReportsTab() {
           {viewingConfig.format === 'chart' && (
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '120px', padding: '0 8px' }}>
               {result.data.map((d, i) => {
-                const maxVal = Math.max(...result.data.map(x => x.value), 1)
-                const height = (d.value / maxVal) * 100
+                const maxVal = result.data.reduce((max, d) => Math.max(max, d.value), 0)
+                const height = (Math.max(0, d.value) / Math.max(maxVal, 1)) * 100
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <span style={{ fontSize: '10px', color: '#4FC3F7' }}>{d.value}</span>

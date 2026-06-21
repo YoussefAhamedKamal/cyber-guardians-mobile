@@ -145,7 +145,7 @@ export async function* deepthinkStream(
   yield '## 🧠 التفكير العميق\n\n'
   yield '### الخطوة 1: التحليل\n\n'
 
-  const thinkingSystem = customSystemPrompt || DEEPTHINK_SYSTEM_PROMPT
+  const thinkingSystem = customSystemPrompt || THINK_PROMPT
   const thinkingMessages: AIMessage[] = [
     { role: 'system', content: thinkingSystem },
     { role: 'user', content: `السؤال: ${question}` },

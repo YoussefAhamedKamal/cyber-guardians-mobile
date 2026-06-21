@@ -96,7 +96,7 @@ export interface BackupState {
   stopAutoSync: () => void
 
   exportBackup: (backupId: string) => string
-  importBackup: (json: string) => boolean
+  importBackup: (json: string) => Promise<boolean>
 
   clearBackups: () => void
   clearSyncConfig: () => void

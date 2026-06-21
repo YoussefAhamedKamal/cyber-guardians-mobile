@@ -277,14 +277,14 @@ export const useAnalyticsStore = create<AnalyticsStore>()(
 
       getSuccessRate: () => {
         const records = get().usageRecords
-        if (records.length === 0) return 100
+        if (records.length === 0) return 0
         const successful = records.filter((r) => r.success).length
         return (successful / records.length) * 100
       },
 
       getAverageDuration: () => {
         const records = get().usageRecords
-        const durations = records.filter((r) => r.duration).map((r) => r.duration || 0)
+        const durations = records.filter((r) => r.duration !== null && r.duration !== undefined).map((r) => r.duration || 0)
         if (durations.length === 0) return 0
         return durations.reduce((a, b) => a + b, 0) / durations.length
       },

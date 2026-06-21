@@ -72,7 +72,8 @@ export function isTaskOverdue(task: CalendarTask): boolean {
 
 export function getDaysUntilDue(dateStr: string): number {
   const now = new Date()
-  const due = new Date(dateStr)
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const due = new Date(year || 2024, (month || 1) - 1, day || 1)
   const diff = due.getTime() - now.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }

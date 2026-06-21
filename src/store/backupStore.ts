@@ -123,8 +123,7 @@ export const useBackupStore = create<BackupStore>()(
 
         if (!backup) {
           const backupById = state.backups.find((b) => {
-            const id = `backup-${b.timestamp}-${b.metadata.checksum}`
-            return id === backupId
+            return b.timestamp.toString() === backupId
           })
           if (!backupById) return false
           return get().restoreBackup(backupById.timestamp.toString())
@@ -220,7 +219,10 @@ export const useBackupStore = create<BackupStore>()(
 
       deleteBackup: (backupId) => {
         set((state) => ({
-          backups: state.backups.filter((b) => b.timestamp.toString() !== backupId)
+          backups: state.backups.filter((b) => {
+            const id = `backup-${b.timestamp}-${b.metadata.checksum}`
+            return id !== backupId && b.timestamp.toString() !== backupId
+          })
         }))
       },
 
@@ -360,7 +362,7 @@ export const useBackupStore = create<BackupStore>()(
             })
           }
 
-          get().importBackup(content)
+          await get().importBackup(content)
           return true
         } catch {
           return false
@@ -399,11 +401,22 @@ export const useBackupStore = create<BackupStore>()(
         return JSON.stringify(backup, null, 2)
       },
 
-      importBackup: (json) => {
+      importBackup: async (json) => {
         try {
           const backup = JSON.parse(json) as BackupData
           if (!backup.timestamp || !backup.skills) {
             return false
+          }
+
+          if (backup.metadata?.checksum) {
+            const dataString = JSON.stringify({
+              ...backup,
+              metadata: { ...backup.metadata, checksum: '' }
+            })
+            const expectedChecksum = await calculateChecksum(dataString)
+            if (backup.metadata.checksum !== expectedChecksum) {
+              return false
+            }
           }
 
           set((state) => {

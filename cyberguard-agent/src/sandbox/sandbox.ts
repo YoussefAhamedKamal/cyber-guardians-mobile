@@ -70,6 +70,7 @@ async function executeInDocker(
 ): Promise<SandboxResult> {
   const startTime = Date.now()
 
+  const escapedCommand = command.replace(/'/g, "'\\''")
   const dockerArgs = [
     'docker run --rm',
     `--memory=${config.maxMemory}`,
@@ -79,7 +80,7 @@ async function executeInDocker(
     '--tmpfs /tmp:size=100m',
     '-v /tmp/cyberguard-sandbox:/workspace',
     'node:20-slim',
-    `bash -c "${command}"`,
+    `bash -c '${escapedCommand}'`,
   ].join(' ')
 
   try {

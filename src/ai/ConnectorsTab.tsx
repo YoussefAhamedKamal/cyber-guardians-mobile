@@ -67,6 +67,8 @@ export function ConnectorsTab() {
     models: ''
   })
   const [testingId, setTestingId] = useState<string | null>(null)
+  const [connectingId, setConnectingId] = useState<string | null>(null)
+  const [apiKeyInput, setApiKeyInput] = useState('')
 
   const filteredConnectors = connectors.filter((connector) => {
     const matchesProvider = filterProvider === 'all' || connector.provider === filterProvider
@@ -313,12 +315,61 @@ export function ConnectorsTab() {
                         🔌 قطع
                       </button>
                     </>
+                  ) : connectingId === connector.id ? (
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <input
+                        type="password"
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        placeholder="API Key"
+                        style={{
+                          width: '120px',
+                          padding: '4px 8px',
+                          background: '#2a2a3e',
+                          border: '1px solid #444',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          fontSize: '11px'
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          if (apiKeyInput) {
+                            handleConnect(connector.id, apiKeyInput)
+                            setConnectingId(null)
+                            setApiKeyInput('')
+                          }
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          background: '#4CAF50',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '11px'
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => { setConnectingId(null); setApiKeyInput('') }}
+                        style={{
+                          padding: '4px 8px',
+                          background: '#555',
+                          border: 'none',
+                          borderRadius: '4px',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '11px'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ) : (
                     <button
-                      onClick={() => {
-                        const apiKey = prompt('أدخل API Key:')
-                        if (apiKey) handleConnect(connector.id, apiKey)
-                      }}
+                      onClick={() => { setConnectingId(connector.id); setApiKeyInput('') }}
                       style={{
                         padding: '4px 8px',
                         background: '#4CAF50',

@@ -110,7 +110,12 @@ export const useSecurityStore = create<SecurityStore>()(
 
       verify: async (data, hash, algorithm = 'SHA-256') => {
         const dataHash = await get().hash(data, algorithm)
-        return dataHash === hash
+        if (dataHash.length !== hash.length) return false
+        let result = 0
+        for (let i = 0; i < dataHash.length; i++) {
+          result |= dataHash.charCodeAt(i) ^ hash.charCodeAt(i)
+        }
+        return result === 0
       },
 
       logActivity: (action, details, success) => {
@@ -245,7 +250,7 @@ export const useSecurityStore = create<SecurityStore>()(
             set({ settings: { ...DEFAULT_SECURITY_SETTINGS, ...data.settings } })
           }
           if (data.activityLogs && Array.isArray(data.activityLogs)) {
-            set({ activityLogs: data.activityLogs })
+            set({ activityLogs: data.activityLogs.slice(0, 500) })
           }
           return true
         } catch {
