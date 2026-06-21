@@ -50,7 +50,7 @@ export async function executeInDocker(
   const containerName = `cyberguard-${tool}-${Date.now()}`
   const timeout = options.timeout || 120000
 
-  const escapedCommand = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`')
+  const escapedCommand = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`').replace(/\n/g, '\\n').replace(/!/g, '\\!')
   const dockerArgs = [
     'docker run --rm',
     `--name ${containerName}`,

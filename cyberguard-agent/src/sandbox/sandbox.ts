@@ -70,7 +70,7 @@ async function executeInDocker(
 ): Promise<SandboxResult> {
   const startTime = Date.now()
 
-  const escapedCommand = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`')
+  const escapedCommand = command.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`').replace(/\n/g, '\\n').replace(/!/g, '\\!')
   const dockerArgs = [
     'docker run --rm',
     `--memory=${config.maxMemory}`,

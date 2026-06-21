@@ -78,7 +78,7 @@ export async function runLibFuzzer(
     }, { timeout: (durationSeconds + 10) * 1000 })
 
     // Collect crashes
-    const crashes = await collectCrashes(tempDir)
+    const crashes = await collectCrashes(corpusDir)
 
     return {
       success: true,
@@ -118,17 +118,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 `
 }
 
-async function collectCrashes(dir: string): Promise<CrashInfo[]> {
+async function collectCrashes(corpusDir: string): Promise<CrashInfo[]> {
   const crashes: CrashInfo[] = []
   const { readdirSync } = await import('fs')
 
   try {
-    const files = readdirSync(dir)
+    const files = readdirSync(corpusDir)
     for (const file of files) {
       if (file.startsWith('crash-') || file.startsWith('oom-') || file.startsWith('leak-')) {
         crashes.push({
           file,
-          input: `./${file}`,
+          input: join(corpusDir, file),
         })
       }
     }

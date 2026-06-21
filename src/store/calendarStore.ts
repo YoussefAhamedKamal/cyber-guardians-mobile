@@ -8,7 +8,7 @@ export const useCalendarStore = create<CalendarState>()(
   persist(
     (set, get) => ({
       tasks: [],
-      selectedDate: new Date().toISOString().split('T')[0]!,
+      selectedDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })(),
       viewMode: 'month',
       filterStatus: 'all',
       filterPriority: 'all',
@@ -74,7 +74,7 @@ export const useCalendarStore = create<CalendarState>()(
           completed: tasks.filter((t) => t.status === 'completed').length,
           overdue: tasks.filter((t) => {
             if (t.status === 'completed' || t.status === 'cancelled') return false
-            return new Date(`${t.dueDate}T${t.dueTime}`) < now
+            return new Date(`${t.dueDate}T${t.dueTime || '23:59'}`) < now
           }).length,
         }
       },

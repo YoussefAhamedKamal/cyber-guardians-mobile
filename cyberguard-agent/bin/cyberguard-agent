@@ -53,6 +53,10 @@ async function main() {
   }
   const token = args[tokenIdx + 1] || undefined
   const profile = args[profileIdx + 1] || 'full'
+  if (!['minimal', 'full', 'education'].includes(profile)) {
+    console.error(`Error: Invalid profile '${profile}'. Must be one of: minimal, full, education`)
+    process.exit(1)
+  }
   const verbose = args.includes('--verbose')
 
   switch (command) {

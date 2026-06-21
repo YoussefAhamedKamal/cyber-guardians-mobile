@@ -104,6 +104,10 @@ export function BackupTab() {
 
   const handleImport = async () => {
     if (importJson.trim()) {
+      if (importJson.length > 50 * 1024 * 1024) {
+        alert('حجم البيانات يتجاوز 50 ميجابايت — يرجى تقليل حجم النسخة الاحتياطية')
+        return
+      }
       try {
         const success = await importBackup(importJson)
         if (success) {

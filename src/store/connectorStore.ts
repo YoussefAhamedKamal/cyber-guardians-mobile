@@ -169,7 +169,7 @@ export const useConnectorStore = create<ConnectorState>()(
               authHeaders['api-key'] = apiKey
               break
             case 'aws_bedrock':
-              authHeaders['Authorization'] = `Bearer ${apiKey}`
+              // AWS Bedrock requires SigV4 signing — auth header omitted for now
               break
             case 'ollama':
             case 'lmstudio':

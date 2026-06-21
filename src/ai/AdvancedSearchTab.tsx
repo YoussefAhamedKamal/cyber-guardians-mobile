@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useAdvancedSearchStore } from '@/store/advancedSearchStore'
 import { VoiceButton } from '@/components/ui/VoiceButton'
 import type { SearchResult, SearchableItemType, SearchQuery } from '@/types/search'
@@ -23,6 +23,7 @@ export function AdvancedSearchTab() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
     results,
@@ -116,7 +117,13 @@ export function AdvancedSearchTab() {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                if (debounceRef.current) clearTimeout(debounceRef.current)
+                debounceRef.current = setTimeout(() => {
+                  search(e.target.value, { types: selectedTypes })
+                }, 300)
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="ابحث عن أي شيء..."
               style={{

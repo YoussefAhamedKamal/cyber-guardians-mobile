@@ -39,8 +39,8 @@ export function LocalAgentTab() {
   const handleConnect = async () => {
     try {
       await connect(inputUrl, inputToken || undefined)
-    } catch (err: any) {
-      alert(`Connection failed: ${err.message}`)
+    } catch (err: unknown) {
+      alert(`Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -48,7 +48,7 @@ export function LocalAgentTab() {
     if (!code.trim()) return
     try {
       await scan(selectedTool, code, language)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Scan failed:', err)
     }
   }
@@ -57,7 +57,7 @@ export function LocalAgentTab() {
     if (!skillQuery.trim()) return
     try {
       await findSkills(skillQuery)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Find skills failed:', err)
     }
   }
@@ -73,8 +73,8 @@ export function LocalAgentTab() {
     try {
       const result = await execute(executeCommand)
       setExecuteResult(JSON.stringify(result, null, 2))
-    } catch (err: any) {
-      setExecuteResult(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      setExecuteResult(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setExecuting(false)
     }

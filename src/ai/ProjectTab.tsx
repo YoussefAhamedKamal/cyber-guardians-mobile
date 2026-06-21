@@ -33,6 +33,11 @@ export function KnowledgeTab() {
     setUploading(true)
 
     for (const file of Array.from(files)) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('حجم الملف يتجاوز 10 ميجابايت — يرجى اختيار ملف أصغر')
+        setUploading(false)
+        return
+      }
       try {
         const content = await file.text()
         const fileType = detectKnowledgeFileType(file.type)

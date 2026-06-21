@@ -96,16 +96,32 @@ export function computeWeeklyStats(records: UsageRecord[]): AnalyticsState['week
   })
   return Object.values(statsMap).map(w => {
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-    const dailyBreakdown: AnalyticsState['dailyStats'][0][] = dayNames.map((day, i) => ({
-      date: day,
-      totalActions: w._records.filter(r => new Date(r.timestamp).getDay() === i).length,
-      successfulActions: w._records.filter(r => new Date(r.timestamp).getDay() === i && r.success).length,
-      failedActions: w._records.filter(r => new Date(r.timestamp).getDay() === i && !r.success).length,
-      byType: { create: 0, update: 0, delete: 0, install: 0, uninstall: 0, toggle: 0, reorder: 0, use: 0, complete: 0 },
-      byItemType: { skill: 0, plugin: 0, connector: 0, knowledge: 0, instructions: 0, level: 0, game: 0 },
-      peakHour: -1,
-      avgDuration: 0
-    }))
+    const dailyBreakdown: AnalyticsState['dailyStats'][0][] = dayNames.map((day, i) => {
+      const dayRecords = w._records.filter(r => new Date(r.timestamp).getDay() === i)
+      const byType: AnalyticsState['dailyStats'][0]['byType'] = { create: 0, update: 0, delete: 0, install: 0, uninstall: 0, toggle: 0, reorder: 0, use: 0, complete: 0 }
+      const byItemType: AnalyticsState['dailyStats'][0]['byItemType'] = { skill: 0, plugin: 0, connector: 0, knowledge: 0, instructions: 0, level: 0, game: 0 }
+      const durations: number[] = []
+      const hourCounts = new Array(24).fill(0)
+      dayRecords.forEach(r => {
+        byType[r.action as keyof typeof byType] = (byType[r.action as keyof typeof byType] || 0) + 1
+        byItemType[r.itemType as keyof typeof byItemType] = (byItemType[r.itemType as keyof typeof byItemType] || 0) + 1
+        if (r.duration !== null && r.duration !== undefined) durations.push(r.duration)
+        hourCounts[new Date(r.timestamp).getHours()]++
+      })
+      const maxHourCount = Math.max(...hourCounts)
+      const peakHour = maxHourCount > 0 ? hourCounts.indexOf(maxHourCount) : -1
+      const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0
+      return {
+        date: day,
+        totalActions: dayRecords.length,
+        successfulActions: dayRecords.filter(r => r.success).length,
+        failedActions: dayRecords.filter(r => !r.success).length,
+        byType,
+        byItemType,
+        peakHour,
+        avgDuration
+      }
+    })
     const itemCounts: Record<string, { name: string; count: number }> = {}
     w._records.forEach(r => {
       const key = `${r.itemType}-${r.itemId}`

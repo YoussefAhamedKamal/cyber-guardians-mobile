@@ -56,6 +56,11 @@ export function SecurityTab() {
     try {
       const encrypted = JSON.parse(decryptData)
       const result = await decrypt(encrypted, decryptPassword)
+      if (!result) {
+        setDecryptedResult('خطأ في فك التشفير — تأكد من كلمة المرور')
+        logActivity('decrypt', 'فشل فك التشفير — كلمة المرور غير صحيحة', false)
+        return
+      }
       setDecryptedResult(result)
       logActivity('decrypt', 'تم فك التشفير', true)
     } catch (err: any) {

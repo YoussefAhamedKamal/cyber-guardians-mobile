@@ -107,7 +107,15 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
         if (!snap1 || !snap2) return []
 
         function stableStringify(obj: unknown): string {
-          return JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort())
+          return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              return Object.keys(value as Record<string, unknown>).sort().reduce((sorted: Record<string, unknown>, k) => {
+                sorted[k] = (value as Record<string, unknown>)[k]
+                return sorted
+              }, {} as Record<string, unknown>)
+            }
+            return value
+          })
         }
 
         function objectsDiffer(a: unknown, b: unknown): boolean {

@@ -18,7 +18,12 @@ interface PluginJson {
 }
 
 export function parsePluginJson(content: string): PluginDefinition {
-  const json: PluginJson = JSON.parse(content)
+  let json: PluginJson
+  try {
+    json = JSON.parse(content)
+  } catch (e) {
+    throw new Error(`Failed to parse plugin JSON: ${e instanceof Error ? e.message : String(e)}`)
+  }
 
   const install: InstallConfig = {
     method: (json.install?.method as InstallConfig['method']) || 'npm',
