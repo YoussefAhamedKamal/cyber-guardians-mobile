@@ -37,8 +37,8 @@ export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
   const profileConfig = PROFILES[profile] || PROFILES.full
 
   return {
-    port: overrides.port ?? 3001,
-    token: overrides.token || randomBytes(32).toString('hex'),
+    port: overrides.port ?? 3002,
+    token: overrides.token !== undefined ? overrides.token : randomBytes(32).toString('hex'),
     profile,
     verbose: overrides.verbose || false,
     maxConcurrent: profileConfig.maxConcurrent!,

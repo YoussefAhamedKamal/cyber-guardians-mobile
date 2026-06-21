@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MenuScreen } from '@/components/ui'
 import { DailyMissions } from '@/components/ui/DailyMissions'
 import { WeeklyChallengeBanner } from '@/components/ui/WeeklyChallengeBanner'
@@ -7,13 +7,15 @@ import { ShareModal } from '@/components/ui/ShareModal'
 import { BadgeGrid } from '@/components/ui/BadgeGrid'
 import { PlayerNameInput } from '@/components/ui/PlayerNameInput'
 import { Shop } from '@/components/ui/Shop'
+import { HelpGuide } from '@/components/ui/HelpGuide'
 import { ReferencePage } from '@/pages/ReferencePage'
-import { useGameStore } from '@/store'
+import { useGameStore, useUIStore } from '@/store'
 
 interface Props { onStart: () => void; onSettings: () => void }
 
 export default function MenuPage({ onStart, onSettings }: Props) {
   const game = useGameStore()
+  const showOnboarding = useUIStore((s) => s.showOnboarding)
   const [showMissions, setShowMissions] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showShare, setShowShare] = useState(false)
@@ -21,7 +23,14 @@ export default function MenuPage({ onStart, onSettings }: Props) {
   const [showReference, setShowReference] = useState(false)
   const [showShop, setShowShop] = useState(false)
   const [showName, setShowName] = useState(false)
+  const [showHelpGuide, setShowHelpGuide] = useState(false)
   const [tooltip, setTooltip] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (showOnboarding) {
+      setShowHelpGuide(true)
+    }
+  }, [showOnboarding])
 
   if (showReference) {
     return <ReferencePage onBack={() => setShowReference(false)} />
@@ -119,6 +128,14 @@ export default function MenuPage({ onStart, onSettings }: Props) {
               color="#2196F3"
               border="rgba(33,150,243,0.3)"
               onClick={() => setShowReference(true)}
+              setTooltip={setTooltip}
+            />
+            <TooltipButton
+              icon="❓"
+              tooltip="دليل الاستخدام"
+              color="#00E676"
+              border="rgba(0,230,118,0.3)"
+              onClick={() => setShowHelpGuide(true)}
               setTooltip={setTooltip}
             />
           </div>
@@ -227,6 +244,11 @@ export default function MenuPage({ onStart, onSettings }: Props) {
             <BadgeGrid />
           </div>
         </div>
+      )}
+
+      {/* Help Guide */}
+      {showHelpGuide && (
+        <HelpGuide onDone={() => setShowHelpGuide(false)} />
       )}
     </div>
   )

@@ -37,7 +37,7 @@ interface LocalAgentState {
 
 export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   connected: false,
-  url: 'ws://localhost:3001',
+    url: 'ws://localhost:3002',
   token: '',
   status: null,
   tools: [],

@@ -31,6 +31,7 @@ interface AgentResponse {
 export function createServer(config: AgentConfig) {
   const platform = detectPlatform()
   const cache = new SmartCache(config.cacheTTL)
+  let wss: WebSocketServer | null = null
 
   function createWSServer() {
     const httpServer = createHttpServer((req, res) => {
@@ -49,7 +50,11 @@ export function createServer(config: AgentConfig) {
       res.end()
     })
 
-    const wss = new WebSocketServer({ server: httpServer })
+    wss = new WebSocketServer({ server: httpServer })
+
+    wss.on('error', (err) => {
+      log(`WebSocket server error: ${err.message}`, 'error')
+    })
 
     wss.on('connection', (ws, req) => {
       // Verify token
@@ -227,7 +232,7 @@ export function createServer(config: AgentConfig) {
   async function start() {
     const { httpServer } = createWSServer()
 
-    httpServer.listen(config.port, 'localhost', () => {
+    httpServer.listen(config.port, '0.0.0.0', () => {
       log(`╔══════════════════════════════════════════════════════════════╗`)
       log(`║  @cyberguard/agent v1.0.0                                   ║`)
       log(`║  Universal Skill/Plugin Executor                           ║`)

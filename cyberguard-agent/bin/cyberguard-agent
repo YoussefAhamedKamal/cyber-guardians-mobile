@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { createServer } from '../src/server.js'
-import { loadConfig } from '../src/config.js'
+import { createServer } from '../dist/server.js'
+import { loadConfig } from '../dist/config.js'
 
 const args = process.argv.slice(2)
 const command = args[0]
@@ -32,32 +32,32 @@ Examples:
 `)
 }
 
+function getArgValue(flag) {
+  const idx = args.indexOf(flag)
+  if (idx === -1) return undefined
+  const val = args[idx + 1]
+  if (val === undefined || val.startsWith('--')) {
+    console.error(`Error: ${flag} requires a value`)
+    process.exit(1)
+  }
+  return val
+}
+
 async function main() {
-  const portIdx = args.indexOf('--port')
-  const tokenIdx = args.indexOf('--token')
-  const profileIdx = args.indexOf('--profile')
+  const portStr = getArgValue('--port')
+  const token = getArgValue('--token')
+  const profile = getArgValue('--profile') || 'full'
+  const verbose = args.includes('--verbose')
 
-  if (portIdx !== -1 && (portIdx + 1 >= args.length || args[portIdx + 1]!.startsWith('--'))) {
-    console.error('Error: --port requires a value')
-    process.exit(1)
-  }
-  if (tokenIdx !== -1 && (tokenIdx + 1 >= args.length || args[tokenIdx + 1]!.startsWith('--'))) {
-    console.error('Error: --token requires a value')
-    process.exit(1)
-  }
-
-  const port = parseInt(args[portIdx + 1] || '3001')
+  const port = portStr ? parseInt(portStr) : 3001
   if (isNaN(port) || port < 1 || port > 65535) {
-    console.error(`Error: Invalid port number: ${args[portIdx + 1]}`)
+    console.error(`Error: Invalid port number: ${portStr}`)
     process.exit(1)
   }
-  const token = args[tokenIdx + 1] || undefined
-  const profile = args[profileIdx + 1] || 'full'
   if (!['minimal', 'full', 'education'].includes(profile)) {
     console.error(`Error: Invalid profile '${profile}'. Must be one of: minimal, full, education`)
     process.exit(1)
   }
-  const verbose = args.includes('--verbose')
 
   switch (command) {
     case 'start': {

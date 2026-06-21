@@ -1,5 +1,7 @@
 # مرشد prompts نظام Cyber Guardians
 
+> الإصدار: **9.0.0**
+
 ## محتويات
 
 1. [STUDENT_SYSTEM_PROMPT — المساعد الرئيسي للطالب](#student_system_prompt)

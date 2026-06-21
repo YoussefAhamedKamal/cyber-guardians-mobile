@@ -2,7 +2,7 @@
 
 > Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
 > Status: **🟢 Live on Cloudflare Pages**
-> Version: **8.0.0**
+> Version: **9.0.0**
 
 ---
 
@@ -55,6 +55,7 @@
   │     ├─→ Badges                                  │
   │     ├─→ Leaderboard                             │
   │     ├─→ Daily Missions                          │
+  │     ├─→ Help Guide (onboarding + manual)        │  ← NEW
   │     └─→ Settings (6 tabs)                       │
   │                                    │
   ├─→ Level Select (BGM starts) ←─────────┐  │
@@ -215,7 +216,8 @@ src/
 │   │   ├── PreAssessment.tsx
 │   │   ├── PostAssessment.tsx
 │   │   ├── TeacherReport.tsx
-│   │   └── VoiceButton.tsx          # Voice search + Web Speech API
+│   │   ├── VoiceButton.tsx          # Voice search + Web Speech API
+│   │   └── HelpGuide.tsx           # In-game usage guide + onboarding
 │   └── three/
 │       ├── GameCanvas.tsx
 │       ├── CharacterModel.tsx
@@ -242,7 +244,7 @@ src/
 │   ├── reportsStore.ts              # Custom reports + analytics
 │   ├── voiceStore.ts                # Voice search + Web Speech API
 │   ├── localAgentStore.ts           # WebSocket client + Agent integration
-│   └── index.ts                     # Exports
+│   └── index.ts                     # Exports (gameStore, settingsStore, aiStore, uiStore)
 │
 ├── i18n/
 │   ├── context.tsx
@@ -553,6 +555,16 @@ Game ↔ Agent via WebSocket (`ws://localhost:3001`)
 ---
 
 ## [ORPHANS & PENDING]
+
+### Completed — v9.0.0 (Help Guide + Documentation)
+- [x] **HelpGuide component** — 11-section in-game usage guide with Arabic content
+- [x] **Onboarding flow** — showOnboarding flag now wired to HelpGuide
+- [x] **Help button** — added to MenuPage bottom bar
+- [x] **useUIStore export** — added to store barrel exports
+- [x] **WebSocket fix** — Agent server uses `server: httpServer` for reliable WS upgrade
+- [x] **PROJECT_MAP.md** — updated to v9.0.0 with all new features
+- [x] **USAGE_GUIDE.md** — comprehensive Arabic usage guide
+- [x] **AGENT_GUIDE.md** — agent setup and usage guide
 
 ### Completed — v8.0.0
 - [ ] (current release — no new orphans listed)
