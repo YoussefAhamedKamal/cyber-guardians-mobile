@@ -11,7 +11,6 @@ const UNIX_TO_WINDOWS: Record<string, string> = {
   'grep': 'findstr',
   'which': 'where',
   '&&': '&',
-  '||': '&',
 }
 
 const WINDOWS_TO_UNIX: Record<string, string> = {

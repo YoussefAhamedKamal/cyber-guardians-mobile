@@ -42,7 +42,6 @@ export interface FileParseResult {
 }
 
 export interface AgentStatus {
-  connected: boolean
   platform: string
   arch: string
   shell: string

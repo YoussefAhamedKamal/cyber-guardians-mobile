@@ -61,8 +61,9 @@ export const useCalendarStore = create<CalendarState>()(
         const { tasks } = get()
         const now = new Date()
         const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
-        const nowStr = now.toISOString().split('T')[0]!
-        const endStr = end.toISOString().split('T')[0]!
+        const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        const nowStr = formatDate(now)
+        const endStr = formatDate(end)
         return tasks
           .filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && t.dueDate >= nowStr && t.dueDate <= endStr)
           .sort((a, b) => `${a.dueDate}T${a.dueTime}`.localeCompare(`${b.dueDate}T${b.dueTime}`))

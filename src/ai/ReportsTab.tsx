@@ -45,8 +45,12 @@ export function ReportsTab() {
   }
 
   function handleGenerate(configId: string) {
-    const result = store.generateReport(configId)
-    setViewingReport(configId)
+    try {
+      const result = store.generateReport(configId)
+      setViewingReport(configId)
+    } catch (err: any) {
+      alert(`Error generating report: ${err.message}`)
+    }
   }
 
   function toggleMetric(metric: string) {

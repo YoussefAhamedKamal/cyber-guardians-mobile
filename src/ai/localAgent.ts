@@ -107,7 +107,7 @@ export async function getAgentStatus(): Promise<AgentStatus> {
 
 export async function getAgentTools(): Promise<{ name: string; description: string }[]> {
   const result = await sendMessage('tools', {})
-  return result.tools
+  return result?.tools || []
 }
 
 export async function scanWithTool(

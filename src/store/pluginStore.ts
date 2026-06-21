@@ -229,7 +229,12 @@ export const usePluginStore = create<PluginState>()(
             throw new Error(errorMsg)
           }
 
-          const result = await response.json()
+          let result: any
+          try {
+            result = await response.json()
+          } catch {
+            result = { raw: await response.text() }
+          }
           get().recordUsage(pluginId, endpointId, JSON.stringify(params), JSON.stringify(result), duration, true)
 
           return result

@@ -6,7 +6,7 @@ import {
   getAgentStatus,
   getAgentTools,
   scanWithTool,
-  findSkills,
+  findSkills as findSkillsFromAgent,
   installSkillAgent,
   executeCommand,
   parseSkillFile,
@@ -102,7 +102,7 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
 
   findSkills: async (query: string) => {
     try {
-      const skills = await findSkills(query)
+      const skills = await findSkillsFromAgent(query)
       set({ skills })
       return skills
     } catch (err: any) {

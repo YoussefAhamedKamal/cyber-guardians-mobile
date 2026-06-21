@@ -160,6 +160,7 @@ export async function* deepthinkStream(
   yield '\n\n### الخطوة 2: المراجعة\n\n'
 
   const reviewMessages: AIMessage[] = [
+    { role: 'system', content: REVIEW_PROMPT },
     { role: 'user', content: `السؤال الأصلي: ${question}\n\nالتحليل:\n${thinking}` },
   ]
   const reviewGen = sendChatMessage(
@@ -171,6 +172,7 @@ export async function* deepthinkStream(
   yield '\n\n### الخطوة 3: الإجابة النهائية\n\n'
 
   const finalMessages: AIMessage[] = [
+    { role: 'system', content: FINAL_ANSWER_PROMPT },
     { role: 'user', content: `السؤال: ${question}\n\nالتحليل:\n${thinking}\n\nالمراجعة:\n${review}` },
   ]
   const finalGen = sendChatMessage(
