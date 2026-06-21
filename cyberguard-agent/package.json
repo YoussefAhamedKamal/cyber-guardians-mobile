@@ -1,0 +1,31 @@
+{
+  "name": "@cyberguard/agent",
+  "version": "1.0.0",
+  "description": "Local Agent for Cyber Guardians - Universal Skill/Plugin Executor",
+  "type": "module",
+  "bin": {
+    "cyberguard-agent": "./bin/cyberguard-agent"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["cyber-security", "agent", "skills", "plugins", "semgrep", "codeql"],
+  "license": "MIT"
+}

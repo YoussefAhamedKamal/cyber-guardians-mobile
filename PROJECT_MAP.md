@@ -2,7 +2,7 @@
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
 > الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **6.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية + تنفيذ أدوات + إصلاحات شاملة + قدرات مخصصة + فحص وإصلاحات RSA-OAEP + Analytics + AI Search + Connector + Backup + timezone + reports + إصلاحات stats + drag-and-drop + GitHub sync + auto-sync + disk usage
+> الإصدار: **7.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية + تنفيذ أدوات + إصلاحات شاملة + قدرات مخصصة + فحص وإصلاحات RSA-OAEP + Analytics + AI Search + Connector + Backup + timezone + reports + إصلاحات stats + drag-and-drop + GitHub sync + auto-sync + disk usage + **Local Agent**
 
 ---
 
@@ -47,6 +47,86 @@
 - **SPA fallback:** `public/_redirects` (`/* /index.html 200`) لـ Cloudflare
 - Screen transitions: CSS animations (cg-fade-in, cg-fade-out)
 - all screens wrapped in ErrorBoundary + Suspense
+
+---
+
+## [LOCAL_AGENT] — ★ جديد (v7.0.0)
+
+### نظرة عامة
+Local Agent = خادم محلي يعمل على جهاز المستخدم ويوصل المتصفح بالأدوات الخارجية.
+
+### التوافق
+| النظام | Shell | Package Managers |
+|--------|-------|------------------|
+| Windows | cmd, powershell | choco, winget, scoop, npm, pip |
+| macOS | bash, zsh | brew, pip, npm |
+| Linux | bash, fish | apt, yum, pacman, pip, npm, cargo |
+
+### المكونات
+| الملف | الوظيفة |
+|---|---|
+| `cyberguard-agent/src/server.ts` | WebSocket + HTTP server |
+| `cyberguard-agent/src/platform/detector.ts` | كشف النظام + Package managers |
+| `cyberguard-agent/src/platform/commandTranslator.ts` | ترجمة الأوامر بين الأنظمة |
+| `cyberguard-agent/src/platform/pathResolver.ts` | حل المسارات + temp dirs |
+| `cyberguard-agent/src/parser/skillParser.ts` | محلل SKILL.md (frontmatter + commands) |
+| `cyberguard-agent/src/parser/pluginParser.ts` | محلل plugin.json |
+| `cyberguard-agent/src/parser/manifestParser.ts` | Makefile, Dockerfile, requirements.txt |
+| `cyberguard-agent/src/executor/commandExecutor.ts` | تنفيذ أوامر مع alternatives |
+| `cyberguard-agent/src/executor/toolChecker.ts` | تحقق من وجود الأدوات |
+| `cyberguard-agent/src/executor/packageInstaller.ts` | تثبيت تلقائي (pip, npm, apt, brew, choco) |
+| `cyberguard-agent/src/executor/alternativesResolver.ts` | إيجاد بديل للأداة المفقودة |
+| `cyberguard-agent/src/executor/modelResolver.ts` | حل model (لا يُقيد بأي نموذج) |
+| `cyberguard-agent/src/sandbox/sandbox.ts` | عزل الكود (Docker + process isolation) |
+| `cyberguard-agent/src/docker/dockerFallback.ts` | Docker fallback للأدوات الثقيلة |
+| `cyberguard-agent/src/cache/smartCache.ts` | تخزين مؤقت ذكي |
+| `cyberguard-agent/src/marketplace/marketplace.ts` | سوق المهارات |
+| `cyberguard-agent/src/plugins/semgrep.ts` | Semgrep integration |
+| `cyberguard-agent/src/plugins/codeql.ts` | CodeQL integration |
+| `cyberguard-agent/src/plugins/slither.ts` | Slither (Solidity) integration |
+| `cyberguard-agent/src/plugins/libfuzzer.ts` | libFuzzer (C/C++) integration |
+| `cyberguard-agent/src/plugins/skillsDiscovery.ts` | npx skills find/add |
+| `src/types/localAgent.ts` | Types |
+| `src/ai/localAgent.ts` | WebSocket client |
+| `src/store/localAgentStore.ts` | Zustand store |
+| `src/ai/LocalAgentTab.tsx` | واجهة المستخدم |
+
+### Plugins المدعومة
+| Plugin | الأداة | المدخلات | المخرجات |
+|---|---|---|---|
+| semgrep | Semgrep CLI | code + language | SARIF findings |
+| codeql | CodeQL CLI | code + language | SARIF findings |
+| slither | Slither (Python) | Solidity code | Vulnerability report |
+| libfuzzer | Clang + LLVM | C/C++ code | Crashes + coverage |
+| skills-discovery | npx skills | query | Skill list |
+
+### الميزات
+- **Universal Executor** — يقرأ أي ملف تعليمات (SKILL.md, plugin.json, Makefile, Dockerfile) وينفذ كل شيء
+- **Cross-platform** — Windows / macOS / Linux
+- **Auto-install** — يثبت المكتبات المفقودة تلقائياً
+- **Alternatives** — يجد بديل للأداة المفقودة
+- **Model flexibility** — لا يُقيد بأي نموذج، يستخدم المتاح
+- **Sandboxing** — عزل الكود غير الموثوق
+- **Docker fallback** — تشغيل في حاوية معزولة
+- **Smart caching** — تخزين مؤقت للنتائج
+- **Skills marketplace** — بحث + تثبيت من الإنترنت
+
+### التثبيت
+```bash
+npm install -g @cyberguard/agent
+cyberguard-agent start --port 3001 --profile full
+```
+
+### البروتوكول
+Game ↔ Agent عبر WebSocket (`ws://localhost:3001`)
+
+```typescript
+// Game → Agent
+{ id: "1", type: "scan", payload: { tool: "semgrep", code: "...", language: "python" } }
+
+// Agent → Game
+{ id: "1", status: "complete", result: { findings: [...], summary: "Found 3 issues" } }
+```
 
 ---
 
@@ -576,7 +656,8 @@ src/
 │   ├── CalendarTab.tsx              # ★ جديد — تقويم + مهام + تذكيرات
 │   ├── ReportsTab.tsx               # ★ جديد — تقارير مخصصة + تحليلات + منع القسم على صفر
 │   ├── ToolsTab.tsx                 # ★ جديد — 12 تبويب فرعية
-│   └── ProjectTab.tsx               # ★ جديد — معرفة + تعليمات + محادثات
+│   ├── ProjectTab.tsx               # ★ جديد — معرفة + تعليمات + محادثات
+│   └── LocalAgentTab.tsx            # ★ جديد — واجهة Local Agent (Scan + Skills + Execute)
 │
 ├── pages/                           # ★ محدث — صفحات lazy-loaded
 │   ├── MenuPage.tsx                 # شاشة البداية (lazy)
@@ -648,7 +729,7 @@ src/
 │       ├── CharacterModel.tsx
 │       └── Environment.tsx
 │
-├── store/                          # ★ 19 store مع persist + تأثيرات بصرية
+├── store/                          # ★ 20 store مع persist + تأثيرات بصرية
 │   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
 │   ├── settingsStore.ts            # موجود
 │   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
@@ -668,6 +749,7 @@ src/
 │   ├── calendarStore.ts            # ★ جديد — تقويم + مهام + تذكيرات
 │   ├── reportsStore.ts             # ★ جديد — تقارير مخصصة + تحليلات
 │   ├── voiceStore.ts               # ★ جديد — بحث صوتي + Web Speech API
+│   ├── localAgentStore.ts          # ★ جديد — WebSocket client + Agent integration
 │   └── index.ts                    # موجود — exports
 │
 ├── i18n/
@@ -717,7 +799,8 @@ src/
 │   ├── ui.ts                        # ★ جديد — سمات + أوضاع + لغة
 │   ├── calendar.ts                  # ★ جديد — تقويم + مهام + تذكيرات
 │   ├── reports.ts                   # ★ جديد — تقارير مخصصة
-│   └── voice.ts                     # ★ جديد — بحث صوتي
+│   ├── voice.ts                     # ★ جديد — بحث صوتي
+│   └── localAgent.ts                # ★ جديد — Agent types (Tool, Skill, ScanResult, Finding)
 │
 ├── utils/
 │   ├── constants.ts

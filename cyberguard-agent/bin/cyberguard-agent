@@ -1,0 +1,70 @@
+#!/usr/bin/env node
+
+import { createServer } from '../src/server.js'
+import { loadConfig } from '../src/config.js'
+
+const args = process.argv.slice(2)
+const command = args[0]
+
+function printHelp() {
+  console.log(`
+╔══════════════════════════════════════════════════════════════╗
+║  @cyberguard/agent — Universal Skill/Plugin Executor       ║
+║  Cyber Guardians Local Agent v1.0.0                        ║
+╚══════════════════════════════════════════════════════════════╝
+
+Usage:
+  cyberguard-agent start [options]    Start the agent server
+  cyberguard-agent status            Show agent status
+  cyberguard-agent tools             List available tools
+  cyberguard-agent help              Show this help message
+
+Options:
+  --port <number>     Server port (default: 3001)
+  --token <string>    Auth token (default: auto-generated)
+  --profile <name>    Config profile: minimal|full|education (default: full)
+  --verbose           Enable verbose logging
+
+Examples:
+  cyberguard-agent start --port 3001 --profile full
+  cyberguard-agent start --token my-secret-token
+  cyberguard-agent status
+`)
+}
+
+async function main() {
+  const port = parseInt(args[args.indexOf('--port') + 1] || '3001')
+  const token = args[args.indexOf('--token') + 1] || undefined
+  const profile = args[args.indexOf('--profile') + 1] || 'full'
+  const verbose = args.includes('--verbose')
+
+  switch (command) {
+    case 'start': {
+      const config = loadConfig({ port, token, profile, verbose })
+      const server = createServer(config)
+      await server.start()
+      break
+    }
+    case 'status': {
+      console.log('Agent status: checking...')
+      break
+    }
+    case 'tools': {
+      console.log('Available tools: semgrep, codeql, slither, libfuzzer, skills-discovery')
+      break
+    }
+    case 'help':
+    case undefined:
+      printHelp()
+      break
+    default:
+      console.error(`Unknown command: ${command}`)
+      printHelp()
+      process.exit(1)
+  }
+}
+
+main().catch((err) => {
+  console.error('Fatal error:', err)
+  process.exit(1)
+})
