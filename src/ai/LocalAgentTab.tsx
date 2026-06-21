@@ -35,6 +35,7 @@ export function LocalAgentTab() {
   const [executeCommand, setExecuteCommand] = useState('')
   const [executeResult, setExecuteResult] = useState<string | null>(null)
   const [executing, setExecuting] = useState(false)
+  const [installingPkg, setInstallingPkg] = useState<string | null>(null)
 
   useEffect(() => {
     if (url) setInputUrl(url)
@@ -69,8 +70,19 @@ export function LocalAgentTab() {
   }
 
   const handleInstallSkill = async (pkg: string) => {
-    const success = await installSkill(pkg)
-    if (success) alert(`Installed: ${pkg}`)
+    setInstallingPkg(pkg)
+    try {
+      const success = await installSkill(pkg)
+      if (success) {
+        alert(`✅ Installed: ${pkg}`)
+      } else {
+        alert(`❌ Failed to install: ${pkg}`)
+      }
+    } catch (err: unknown) {
+      alert(`❌ Install error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setInstallingPkg(null)
+    }
   }
 
   const handleExecute = async () => {
@@ -260,9 +272,15 @@ export function LocalAgentTab() {
                 <span style={{ fontSize: '10px', color: '#888' }}>{skill.installs} installs</span>
                 <button
                   onClick={() => handleInstallSkill(skill.name)}
-                  style={{ padding: '4px 8px', borderRadius: '4px', border: 'none', background: '#4CAF50', color: '#fff', fontSize: '10px', cursor: 'pointer' }}
+                  disabled={installingPkg === skill.name}
+                  style={{
+                    padding: '4px 8px', borderRadius: '4px', border: 'none',
+                    background: installingPkg === skill.name ? '#666' : '#4CAF50',
+                    color: '#fff', fontSize: '10px',
+                    cursor: installingPkg === skill.name ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  Install
+                  {installingPkg === skill.name ? '⏳ Installing...' : 'Install'}
                 </button>
               </div>
             </div>

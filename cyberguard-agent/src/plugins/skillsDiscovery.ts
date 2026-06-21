@@ -36,18 +36,20 @@ export async function findSkills(query: string): Promise<SkillInfo[]> {
 }
 
 export async function installSkill(packageName: string): Promise<boolean> {
-  if (!/^[a-zA-Z0-9._@/-]+$/.test(packageName)) {
+  // Sanitize: only allow safe characters for shell commands
+  const sanitized = packageName.replace(/[^a-zA-Z0-9._@\/\-:]/g, '')
+  if (!sanitized) {
     throw new Error(`Invalid package name: ${packageName}`)
   }
 
   const npxAvailable = await checkTool('npx')
   if (!npxAvailable) {
-    return false
+    throw new Error('npx is not available')
   }
 
   const result = await executeCommand({
     type: 'install',
-    command: `npx skills add ${packageName} -g -y`,
+    command: `npx skills add "${sanitized}" -g -y`,
   }, { timeout: 120000 })
 
   return result.success
