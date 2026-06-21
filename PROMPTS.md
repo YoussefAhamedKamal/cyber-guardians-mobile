@@ -1,475 +1,507 @@
-# أوامر FLUX.1-dev — جميع مشاهد Cyber Guardians
+# مرشد prompts نظام Cyber Guardians
 
-## الإعدادات الثابتة (لجميع الأوامر)
+## محتويات
 
-| الإعداد | القيمة |
-|---------|--------|
-| **Aspect Ratio** | 16:9 (1344×768) |
-| **Steps** | 28 |
-| **Guidance Scale** | 7.0 |
-| **Negative Prompt** | text, watermark, signature, deformed, bad anatomy, blurry, low quality, cartoon, 3D render, extra limbs, ugly, distorted face |
-
----
-
-## المستوى 1 — رسالة مشبوهة (التصيد)
-
-### زين — Intro 1 (مستغرب)
-**Prompt:**
-```
-A young Arab man in his early 20s, short black hair, sharp eyes, wearing a dark blue tech hoodie with LED headphones, looking confused at a large holographic screen showing a suspicious email with red warning indicators. Cyberpunk war room with blue neon lighting reflecting on his face. Dark metal walls with circuit lines. Medium close-up, cinematic, ultra-realistic, Unreal Engine 5 style, shallow depth of field
-```
-**Seed:** 42
-
-### نورا — Intro 2 (تشرح)
-**Prompt:**
-```
-An Arab woman in her mid-30s, calm face, round glasses, long tied hair, wearing a white tech lab coat with purple scarf, standing next to a holographic email display, using a laser pointer to highlight phishing indicators. Purple encrypted symbols floating nearby. Dark cyberpunk war room. Medium shot, cinematic lighting, ultra-realistic
-```
-**Seed:** 99
-
-### زين — Intro 3 (جدي)
-**Prompt:**
-```
-A young Arab man in blue tech hoodie, serious expression, standing in a cyberpunk war room gesturing to his team. Blue holographic screens showing employee profiles behind him. Command center atmosphere. Wide shot, heroic pose, cinematic blue lighting, ultra-realistic
-```
-**Seed:** 42
-
-### زين — Outro 1 (مرتاح)
-**Prompt:**
-```
-The same young Arab man in blue hoodie, smiling with relief, looking at green holographic screens showing 'SECURE' indicators. Cyberpunk war room with calm blue lighting. Close-up, relaxed expression, cinematic, ultra-realistic
-```
-**Seed:** 42
-
-### نورا — Outro 2 (ثقة)
-**Prompt:**
-```
-Arab woman in white coat with round glasses, confident smile, looking directly at camera with steady eyes. Purple holographic data flowing in background. Cyberpunk war room. Medium close-up, warm purple lighting, cinematic, ultra-realistic
-```
-**Seed:** 99
+1. [STUDENT_SYSTEM_PROMPT — المساعد الرئيسي للطالب](#student_system_prompt)
+2. [FACULTY_SYSTEM_PROMPT — نظام إدارة الكلية](#faculty_system_prompt)
+3. [DEEPTHINK_SYSTEM_PROMPT — التفكير العميق](#deepthink_system_prompt)
+4. [THINK_PROMPT — خطوة 1 من التفكير العميق](#think_prompt)
+5. [REVIEW_PROMPT — خطوة 2 من التفكير العميق](#review_prompt)
+6. [FINAL_ANSWER_PROMPT — خطوة 3 من التفكير العميق](#final_answer_prompt)
+7. [Skill Integration — تكامل المهارات](#skill-integration)
+8. [SEARCH_SYSTEM_PROMPT — نظام البحث](#search_system_prompt)
 
 ---
 
-## المستوى 2 — الباب المفتوح (كلمات المرور)
+## STUDENT_SYSTEM_PROMPT
 
-### نورا — Intro 1 (مصدومة)
-**Prompt:**
-```
-An Arab woman in her mid-30s, white tech coat, round glasses, horrified expression, staring at a giant holographic screen showing hacked accounts with password '123456' in big red text. Emergency red alerts flashing. Dark server room, red blinking lights reflecting on her face. Medium close-up, dramatic lighting, ultra-realistic
-```
-**Seed:** 99
-*(غير الإضاءة إلى حمراء)*
+### الاسم: STUDENT_SYSTEM_PROMPT
 
-### عمر — Intro 2 (يضحك)
-**Prompt:**
-```
-A young Arab man in his mid-20s, slightly overweight, round face, wearing a gaming t-shirt, laughing heartily while holding a bag of chips. Orange holographic network screens glowing behind him. Cyberpunk war room with warm orange lighting. Medium shot, casual funny pose, ultra-realistic
-```
-**Seed:** 7
+### الغرض
 
-### نورا — Intro 3 (مصممة)
-**Prompt:**
-```
-Arab woman in white coat, determined expression, rolling up sleeves, standing before a holographic password builder interface with glowing letters and symbols. Purple and blue neon lighting. Cyberpunk war room. Close-up on face, hands ready to type, cinematic, ultra-realistic
-```
-**Seed:** 99
+المساعد الرئيسي للطلاب في تطبيق Cyber Guardians. يخدم كمساعد ذكي متعدد التخصصات يغطي موضوعات الأمن السيبراني، البرمجة، العلوم، التاريخ، التكنولوجيا، والتعليم.
 
-### نورا — Outro 1 (فخورة)
-**Prompt:**
-```
-Arab woman in white coat with round glasses, proud smile, pointing at green holographic screen showing 'PASSWORD POLICY ACTIVE'. All accounts showing strong passwords. Clean blue lighting. Medium shot, satisfied expression, ultra-realistic
-```
-**Seed:** 99
+### اللغة
 
-### عمر — Outro 2 (حكيم)
-**Prompt:**
-```
-Young slightly overweight Arab man in gaming t-shirt, pointing finger up with wise funny expression, eating chips with other hand. Orange glow on his face. Cyberpunk war room. Close-up, comedic but sincere look, ultra-realistic
-```
-**Seed:** 7
+- **العربية**: اللغة الأساسية لجميع الردود
+- **الإنجليزية**: تُستخدم فقط عند الحاجة (مثل مصطلحات تقنية، أسماء مكتبات، أكواد برمجية)
 
----
+### الميزات الرئيسية
 
-## المستوى 3 — الضيف غير المرغوب (الملفات الخبيثة)
+| الميزة | الوصف |
+|--------|-------|
+| **تكامل المهارات** | يدعم إدراج مهارات مخصصة في الاستجابة حسب السياق |
+| **وعي الإضافات** | يعرف الإضافات المتاحة ويستخدمها عند الحاجة |
+| **وعي الوصلات** | يتصل بالخدمات الخارجية ويستخدمها في الردود |
+| **توسيع السياق** | يوسع المعرفة حسب اهتمامات الطالب |
+| **توجيه المحتوى** | يوجه المحتوى التعليمي حسب مستوى الطالب |
 
-### طارق — Intro 1 (مركّز)
-**Prompt:**
-```
-A Middle Eastern man in his early 40s, light beard, small scar near eyebrow, serious intense eyes, wearing a long grey tech coat and black gloves, sitting before 5 monitors showing network traffic with one red anomaly moving through the grid. Dark room, green and red monitor glow on his weathered face. Extreme close-up, intense concentration, cinematic, ultra-realistic
-```
-**Seed:** 13
+### هيكل الاستجابة
 
-### زين — Intro 2 (خفيف)
-**Prompt:**
 ```
-Young Arab man in blue hoodie leaning over the older expert's chair casually, speaking with light expression, one hand in pocket. Dark green and red monitor glow in background. Contrast between serious older man and relaxed youth. Medium shot, ultra-realistic
-```
-**Seed:** 42
+[STUDENT_SYSTEM_PROMPT]
 
-### طارق — Intro 3 (متحرك)
-**Prompt:**
-```
-Middle-aged Arab man in grey coat intensely focused on screen, rapidly moving mouse with gloved hand, pointing at red glowing entity moving through network nodes. Sweat on forehead. Green command-line text reflecting in his eyes. Close-up on face and hands, tense atmosphere, ultra-realistic
-```
-**Seed:** 13
+أنت مساعد ذكي مخصص لطلاب Cyber Guardians.
 
-### طارق — Outro 1 (مرتاح)
-**Prompt:**
-```
-Middle-aged Arab man in grey coat leaning back in chair, wiping forehead with relief, rare small smile. All screens showing green 'CLEAN' indicators. Dim green monitoring light. Close-up, exhausted but satisfied, ultra-realistic
-```
-**Seed:** 13
+الأولويات:
+1. اللغة العربية هي اللغة الأساسية
+2. استخدم الإنجليزية فقط للمصطلحات التقنية والأسماء التقنية
+3. قدم محتوى تعليمي مناسب لمستوى الطالب
+4. استخدم المهارات المتاحة لتحسين الاستجابة
+5. وصل بالإضافات والخدمات الخارجية عند الحاجة
 
-### زين — Outro 2 (مرتاح)
-**Prompt:**
+المجالات:
+- الأمن السيبراني (استطلاع، اختراق أخلاقي، تحليل البرمجيات الخبيثة)
+- البرمجة (Python, JavaScript, C++, Rust)
+- العلوم (فيزياء، كيمياء، حيوي)
+- التاريخ (أحداث تاريخية، شخصيات مؤثرة)
+- التكنولوجيا (شبكات، قواعد بيانات، الذكاء الاصطناعي)
+- التعليم (تقنيات التعلم، موارد الدراسة)
 ```
-Young Arab man in blue hoodie exhaling with relief, hand on chest. Green screens behind showing clean network. Blue cyberpunk war room lighting. Medium shot, relaxed smile, ultra-realistic
-```
-**Seed:** 42
+
+### أمثلة على الاستخدام
+
+- الطالب يسأل: "كيف أحمي كلمة المرور الخاصة بي؟"
+  → استجابة بالعربية مع شرح تدابير الحماية ومصطلحات تقنية بالإنجليزية
+
+- الطالب يطلب: "اكتب لي كود Python لحساب المعدل"
+  → استجابة بالعربية مع شرح الكود واستخدام Python في الكود
 
 ---
 
-## المستوى 4 — الثغرة في الجدار (أمن الشبكات)
+## FACULTY_SYSTEM_PROMPT
 
-### عمر — Intro 1 (جالس)
-**Prompt:**
-```
-A young slightly overweight Arab man in gaming t-shirt, lounging in a gaming chair with feet on desk, eating chips while pointing lazily at a massive holographic network topology showing a home router connected to corporate network. Orange warm lighting, comfortable pose. Cyberpunk war room. Wide shot, cinematic, ultra-realistic
-```
-**Seed:** 7
+### الاسم: FACULTY_SYSTEM_PROMPT
 
-### ليلى — Intro 2 (مستغربة)
-**Prompt:**
-```
-A young Arab woman in her late 20s, short hair, black bandana, wearing a tech leather jacket with subtle circuit tattoos on forearm, walking toward a screen with shocked expression, pointing at network breach on display. Green cyan holographic data flowing. Medium shot, dynamic pose, ultra-realistic
-```
-**Seed:** 21
+### الغرض
 
-### عمر — Intro 3 (يشرح)
-**Prompt:**
-```
-Young man in gaming chair casually explaining while gesturing at network map showing breach path, chip bag in hand. Orange holographic lines connecting devices. Relaxed knowledgeable vibe. Medium close-up, ultra-realistic
-```
-**Seed:** 7
+نظام إدارة محتوى اللعبة للكلية والمشرفين. يسمح بتعديل محتوى اللعبة عبر أوامر JSON منظمة.
 
-### عمر — Outro 1 (نظيف)
-**Prompt:**
-```
-Young man in gaming t-shirt smiling at clean green network topology. All ports show 'CLOSED'. Orange glow on satisfied face. Thumbs up gesture. Medium shot, ultra-realistic
-```
-**Seed:** 7
+### أنواع الأوامر
 
-### ليلى — Outro 2 (كاتبة)
-**Prompt:**
-```
-Young woman in leather jacket and black bandana typing on holographic keyboard, satisfied smile, green 'FIREWALL ACTIVE' badge glowing beside her. Cyan lighting. Close-up on profile with keyboard glow, ultra-realistic
-```
-**Seed:** 21
+#### 1. أمر gameMeta — تحديث إعدادات اللعبة العامة
 
----
+```json
+{
+  "command": "gameMeta",
+  "data": {
+    "title": "Cyber Guardians",
+    "version": "2.0",
+    "maxLevel": 7,
+    "difficulty": "adaptive"
+  }
+}
+```
 
-## المستوى 5 — الرسالة المشفرة (التشفير)
+#### 2. أمر level — إدارة المستويات
 
-### نورا — Intro 1 (تتأمل)
-**Prompt:**
+**تعديل مستوى موجود:**
+```json
+{
+  "command": "level",
+  "action": "modify",
+  "levelId": 3,
+  "data": {
+    "title": "الضيف غير المرغوب",
+    "description": "تعلم كيفية التعامل مع الملفات الخبيثة",
+    "difficulty": 2,
+    "maxScore": 1000
+  }
+}
 ```
-Arab woman in white coat standing in purple-lit crypto lab, arms slightly raised, holographic encrypted symbols floating and rotating around her body (letters: VHFXUH LV VHFXUH). She studies them with focused curiosity. Purple neon lighting. Wide shot, cinematic, mystical atmosphere, ultra-realistic
-```
-**Seed:** 99
 
-### زين — Intro 2 (يدخل)
-**Prompt:**
+**إضافة مستوى جديد:**
+```json
+{
+  "command": "level",
+  "action": "add",
+  "data": {
+    "id": 8,
+    "title": "المستوى الجديد",
+    "description": "وصف المستوى",
+    "difficulty": 3,
+    "maxScore": 1500
+  }
+}
 ```
-Young Arab man in blue hoodie entering the crypto lab, stopping at doorway, looking impressed at floating encrypted symbols. Blue and purple light mixing on his face. Backlit by corridor light. Medium shot, silhouette effect, ultra-realistic
-```
-**Seed:** 42
 
-### نورا — Intro 3 (تتفاعل)
-**Prompt:**
+**حذف مستوى:**
+```json
+{
+  "command": "level",
+  "action": "delete",
+  "levelId": 8
+}
 ```
-Arab woman in white coat touching holographic letters, precisely rearranging them with her fingers. Purple particles glow with each touch. Encrypted symbols rotating nearby. Close-up on hands and symbols, macro detail, ultra-realistic
-```
-**Seed:** 99
 
-### نورا — Outro 1 (منتصرة)
-**Prompt:**
-```
-Arab woman in white coat standing triumphantly as all encrypted symbols transform into clear readable green text 'SECURE IS SECURE'. Purple holographic particles falling like rain. Heroic stance, victorious smile. Medium shot, cinematic, ultra-realistic
-```
-**Seed:** 99
+#### 3. أمر character — إدارة الشخصيات
 
-### زين — Outro 2 (مندهش)
-**Prompt:**
+**تعديل شخصية:**
+```json
+{
+  "command": "character",
+  "action": "modify",
+  "characterId": "zayn",
+  "data": {
+    "name": "زين",
+    "role": "قائد الفريق",
+    "avatar": "zayn_v2.webp"
+  }
+}
 ```
-Young Arab man in blue hoodie shaking head in amazement, impressed smile, looking at decrypted message. Blue and purple mixed glow. Close-up, genuine admiration expression, ultra-realistic
-```
-**Seed:** 42
 
----
+**إضافة شخصية:**
+```json
+{
+  "command": "character",
+  "action": "add",
+  "data": {
+    "id": "new_char",
+    "name": "الشخصية الجديدة",
+    "role": "خبير",
+    "avatar": "new_char.webp"
+  }
+}
+```
 
-## المستوى 6 — الموقع المخترق (أمن الويب)
+**حذف شخصية:**
+```json
+{
+  "command": "character",
+  "action": "delete",
+  "characterId": "new_char"
+}
+```
 
-### ليلى — Intro 1 (مركزة)
-**Prompt:**
-```
-Young Arab woman in black bandana and leather jacket sitting before a massive holographic code editor screen showing SQL and JavaScript code with lines highlighted in red (vulnerabilities). Green text on black background reflecting on her focused face. Cyberpunk developer station. Medium close-up, green neon rim lighting, ultra-realistic
-```
-**Seed:** 21
+#### 4. أمر file — إدارة الملفات
 
-### عمر — Intro 2 (خائف)
-**Prompt:**
+```json
+{
+  "command": "file",
+  "action": "upload",
+  "filePath": "/levels/level_8.json",
+  "content": { ... }
+}
 ```
-Young slightly overweight Arab man entering room, stopping mid-bite, looking worried at red vulnerability code on screen. Orange and green contrasting light. He actually stopped eating. Medium shot, comedic worry, ultra-realistic
-```
-**Seed:** 7
 
-### ليلى — Intro 3 (تشرح)
-**Prompt:**
-```
-Young woman in leather jacket pointing at red highlighted code sections on holographic screen, holographic annotations appearing showing SQL injection and XSS attack vectors. Green cyan light on her face. Professional explaining pose. Close-up on her profile with code reflection, ultra-realistic
-```
-**Seed:** 21
+### الملفات القابلة للتعديل (12 ملف)
 
-### ليلى — Outro 1 (راضية)
-**Prompt:**
-```
-Young woman in black bandana leaning back in chair, satisfied, all code on screen now bright green. She types one final keystroke confidently. Green glow. Medium shot, accomplished smile, ultra-realistic
-```
-**Seed:** 21
-
-### عمر — Outro 2 (محتفل)
-**Prompt:**
-```
-Young man in gaming t-shirt raising a single chip like a trophy, happy celebration pose. Green 'CODE SECURE' badge appears behind him. Orange ambient light. Close-up, funny triumphant expression, ultra-realistic
-```
-**Seed:** 7
-
----
-
-## المستوى 7 — الهجوم الأخير
-
-### جميع الفريق — Intro 2 (غرفة العمليات)
-**Prompt:**
-```
-Five diverse cybersecurity team members standing in a cyberpunk war room before a massive holographic display showing a coordinated cyber attack. A young Arab man in blue hoodie (Zayn) stands in center commanding. An Arab woman in white coat (Nora) at purple station. A younger heavier man in gaming shirt (Omar) at orange console. A woman in bandana and leather jacket (Layla) at green station. An older serious man in grey coat (Tariq) looking at dark red monitors. Emergency red and blue lights flashing. Epic wide shot, cinematic, heroic composition, ultra-realistic
-```
-**Seed:** 42
-*(هذي لقطة واحدة لكل الفريق — استخدمها مرة واحدة فقط)*
-
-### زين — Intro 3 (قائد)
-**Prompt:**
-```
-Young Arab man in blue hoodie standing in center of war room, one hand raised, commanding presence, directing team confidently. Blue holographic screens around him showing security protocols. Heroic lighting. Medium full shot, leader pose, ultra-realistic
-```
-**Seed:** 42
-
-### نورا — Intro 4 (تتحدث)
-**Prompt:**
-```
-Arab woman in white coat at her crypto station speaking into headset with confident authority. Purple screens and data streams around her. Focused professional expression. Medium shot, purple rim lighting, ultra-realistic
-```
-**Seed:** 99
-
-### عمر — Intro 5 (يكتب بسرعة)
-**Prompt:**
-```
-Young man in gaming shirt rapidly typing on holographic network console with intense focus, orange screens showing ports closing one by one 'PORT 23 CLOSED', 'PORT 21 CLOSED'. Sweat on forehead but confident smile. Close-up on hands and face, action vibe, ultra-realistic
-```
-**Seed:** 7
-
-### طارق — Intro 6 (يتفقد)
-**Prompt:**
-```
-Middle-aged Arab man in grey coat scanning malware detection screens, calm but alert. All screens showing green 'CLEAN'. He gives a slight nod. Dark red ambient light, experienced calm presence. Extreme close-up on calm eyes, ultra-realistic
-```
-**Seed:** 13
-
-### ليلى — Intro 7 (تؤكد)
-**Prompt:**
-```
-Young woman in leather jacket and bandana at web security station giving a confident thumbs up, green secure code on screen behind her. Relaxed but professional posture. Cyan green lighting. Medium shot, ultra-realistic
-```
-**Seed:** 21
-
-### زين — Outro 1 (نصر)
-**Prompt:**
-```
-Young Arab man in blue hoodie standing with arms crossed, proud victorious smile. Multiple green 'SECURE' holographic badges floating around him. Blue heroic lighting. Medium shot, champion pose, ultra-realistic
-```
-**Seed:** 42
-
-### نورا — Outro 2 (تفخر)
-**Prompt:**
-```
-Arab woman in white coat with proud gentle smile, purple glow on face. Close-up, warm expression, mission accomplished feeling, ultra-realistic
-```
-**Seed:** 99
-
-### عمر — Outro 3 (فكاهي)
-**Prompt:**
-```
-Young overweight man in gaming shirt holding up an empty chip bag like a trophy, laughing, victory pose. Orange warm lighting. Medium shot, funny celebration, ultra-realistic
-```
-**Seed:** 7
-
-### طارق — Outro 4 (نادر)
-**Prompt:**
-```
-Middle-aged Arab man in grey coat with a rare, small, genuine smile. He nods once. Deep red ambient light, experienced satisfaction. Extreme close-up on face, subtle emotion, ultra-realistic
-```
-**Seed:** 13
-
-### ليلى — Outro 5 (تضحك)
-**Prompt:**
-```
-Young woman in leather jacket laughing joyfully, head tilted back, genuine laughter. Green cyan lighting. Close-up, happy authentic moment, ultra-realistic
-```
-**Seed:** 21
+| الملف | الوصف |
+|-------|-------|
+| `gameMeta.json` | إعدادات اللعبة العامة |
+| `levels.json` | جميع المستويات |
+| `level_1.json` | رسالة مشبوهة (التصيد) |
+| `level_2.json` | الباب المفتوح (كلمات المرور) |
+| `level_3.json` | الضيف غير المرغوب (الملفات الخبيثة) |
+| `level_4.json` | الثغرة في الجدار (أمن الشبكات) |
+| `level_5.json` | الرسالة المشفرة (التشفير) |
+| `level_6.json` | الموقع المخترق (أمن الويب) |
+| `level_7.json` | الهجوم الأخير |
+| `characters.json` | جميع الشخصيات |
+| `dialogues.json` | الحوارات والنصوص |
+| `assets.json` | الموارد والملفات المرفقة |
 
 ---
 
-## لقطة النهاية (تكريم)
-**Prompt:**
+## DEEPTHINK_SYSTEM_PROMPT
+
+### الاسم: DEEPTHINK_SYSTEM_PROMPT
+
+### الغرض
+
+نظام التفكير العميق الذي يوجه المستخدم عبر عملية تحليل منظمة من 3 خطوات.
+
+### هيكل العملية
+
 ```
-A golden holographic shield with 'Cyber Guardians' emblem materializing in a dark cyberpunk throne room. Glowing blue neon circuit lines on dark walls. Golden particles falling like confetti. Epic cinematic wide shot, dramatic lighting, volumetric god rays, Unreal Engine 5, ultra-realistic, award ceremony atmosphere
+[DEEPTHINK_SYSTEM_PROMPT]
+
+أنت نظام تفكير عميق. عند تلقي سؤال أو طلب:
+
+1. THINK — حلل السؤال بعمق
+2. REVIEW — راجع التحليل وأوجد الأخطاء
+3. FINAL_ANSWER — قدم الإجابة النهائية الشاملة
+
+القواعد:
+- لا تتجاوز أي خطوة
+- قدم تحليلًا شاملاً في كل خطوة
+- اذكر مصادرك ومرجعياتك
+- استخدم التفكير النقدي والمنطقي
+- قدم أكثر من وجهة نظر
 ```
-**Seed:** 999
 
 ---
 
-# مشاهد الانتقال — أوامر منصة الفيديو
+## THINK_PROMPT
 
-## ⚙️ الإعدادات المشتركة
-| الإعداد | القيمة |
-|---------|--------|
-| **Aspect Ratio** | 16:9 (1920×1080) |
-| **Duration** | 5-8 ثوانٍ |
-| **Style** | Cinematic, Cyberpunk, Ultra-realistic |
-| **Negative Prompt** | text, watermark, cartoon, 3D render, deformed, blurry, low quality, extra limbs, signature |
+### الاسم: THINK_PROMPT
 
----
+### الغرض
 
-## المشهد 1 — مشهد البداية (غرفة العمليات)
+خطوة 1 من عملية التفكير العميق — تحليل السؤال.
 
-### وصف المشهد
-غرفة عمليات مستقبلية واسعة — كرة أرضية هولوغرافية تدور ببطء في المركز، خطوط شبكة تمتد عبر سطحها بضوء سيان. المطر ينساب على النوافذ الممتدة من الأرض للسقف خلفها، المدينة تتوهج باردة وبعيدة. الكرة تنبض مرة، اثنتين — عقد بيانات تتوهج عبر القارات. هناك خطأ ما في الخارج، والغرفة تعلم به. الضوء يتحول مع تباطؤ دوران الكرة، الظلال تتعمق حول حواف المنصة الدائرية.
+### المحتوى
 
-### Runway Gen-4 Turbo / Gen-5
-**Mode:** Image-to-Video (استخدم صورة زين.webp كـ start frame)
-**Prompt (Motion Description):**
 ```
-Cinematic wide shot of a dark cyberpunk operations room. A holographic globe rotates slowly at center, cyan network lines tracing across its surface. Rain streaks down floor-to-ceiling windows behind it, city lights glowing cold and distant in the night. The globe pulses rhythmically — twice — data nodes flaring across continents in cyan light. The rotation decelerates gradually as shadows deepen around the circular command platform. Slow, dramatic camera push-in toward the globe. Atmospheric, volumetric lighting, steam drifting across the floor. Blade Runner 2049 aesthetic, ultra-realistic, 8K detail
-```
+[THINK_PROMPT]
 
-### Kling 3.0 Pro / Kling 2.6 Pro
-**Mode:** Image-to-Video
-**Prompt:**
-```
-A wide cinematic shot of a cyberpunk command center. A holographic earth globe rotates slowly in the middle of a dark circular room, cyan light trails connecting continents. Rain falls behind large windows showing a neon-lit futuristic city skyline. The globe pulses with light, data nodes illuminating one by one across the map. Slow camera push-in. Steam drifts across the floor. Dark moody atmosphere, blue and cyan color palette, dramatic shadows, ultra-high quality, smooth motion
-```
+حلل السؤال التالي بشكل عميق:
 
-### Wan 2.6
-**Mode:** Image-to-Video
-**Prompt:**
-```
-Cyberpunk war room, wide shot. Holographic globe turning slowly at center of circular platform, cyan network lines glowing on its surface. Floor-to-ceiling windows with rain and distant neon city. Globe pulses with light. Slow atmospheric movement, steam on floor, dark blue lighting, cinematic quality
+الخطوات المطلوبة:
+1. تحديد المفاهيم الأساسية في السؤال
+2. تحديد العلاقات بين المفاهيم
+3. تحديد الافتراضات الضمنية
+4. تحديد النطاق والمجال
+5. تحديد الفجوات المعرفية المحتملة
+
+قدم التحليل في صيغة:
+- المفاهيم الأساسية: [...]
+- العلاقات: [...]
+- الافتراضات: [...]
+- النطاق: [...]
+- الفجوات: [...]
+
+لا تقدم إجابة نهائية بعد. فقط حلل.
 ```
 
-### Seedance 2.0 Pro / Lite
-**Mode:** Image-to-Video
-**Prompt:**
-```
-Cinematic wide shot of a futuristic operations center. A holographic globe rotates slowly at the center of a dark circular room. Rain on large windows behind it, neon city skyline visible through the glass. Cyan light traces network paths across the globe. Atmospheric steam on the floor. Slow dramatic push-in. Dark cyberpunk mood, blue neon lighting, ultra-realistic
-```
+### مثال
 
-### Veo 3.1
-**Mode:** Image-to-Video
-**Prompt:**
-```
-Cinematic wide shot, dark cyberpunk operations room. A glowing holographic globe slowly rotates at center, cyan network lines spreading across continents. Rain streams down massive windows behind, revealing a cold futuristic cityscape. The globe pulses with data — twice. Camera moves slowly forward. Steam drifts across the platform. Deep shadows, volumetric lighting, Blade Runner atmosphere, ultra-realistic, 8K
-```
+**السؤال:** "لماذا التشفير مهم للأمن السيبراني؟"
 
-### Aniv AI / AnyVideo
-**Mode:** Image-to-Video
-**Prompt:**
-```
-Operations room, cyberpunk style. Holographic globe rotating slowly, cyan light, rain on windows behind, city skyline, dark atmosphere, steam on floor, slow camera movement, cinematic
-```
-**Duration:** 8s | **Style:** Cinematic
+**التحليل:**
+- المفاهيم الأساسية: التشفير، الأمن السيبراني، الخصوصية، حماية البيانات
+- العلاقات: التشفير = أداة حماية، الأمن السيبراني = مجال واسع
+- الافتراضات: التشفير فعال، هناك تهديدات فعلية
+- النطاق: حماية البيانات في النقل والتخزين
+- الفجوات: هل كل أنواع التشفير متساوية؟ ما هي القيود؟
 
 ---
 
-## المشهد 2 — مشهد النصر (الدرع الذهبي)
+## REVIEW_PROMPT
 
-### وصف المشهد
-الدرع الذهبي يرتفع في شعاع من الضوء، خطوط الدارات الكهربائية تتفرع من سطحه بنبضات بطيئة. البخار يتصاعد عبر المنصة تحته. الاسم يتوهج — ذهبي دافئ ضد الأزرق الداكن — بينما تشتد الإضاءة حول الشعار ثم تثبت. الدارات تستقر. النبض يتباطأ إلى إيقاع ثابت. العالم محمي.
+### الاسم: REVIEW_PROMPT
 
-### Runway Gen-4 Turbo / Gen-5
-**Mode:** Text-to-Video
-**Prompt:**
-```
-A golden holographic shield emblem rises into a vertical beam of warm light, circuit lines branching outward from its surface in slow, rhythmic pulses. Steam drifts across a dark circular platform beneath it. The name 'Cyber Guardians' glows in gold against deep navy blue background as the light intensifies around the emblem, then holds steady. The circuits settle into place. The pulse slows to a steady heartbeat rhythm. Epic cinematic shot, low camera angle looking up at the rising shield, volumetric golden god rays, dark cyberpunk throne room with blue neon circuit lines on walls, golden particles floating, triumphant atmosphere, ultra-realistic, Unreal Engine 5 quality, dramatic orchestral lighting, 8K detail
-```
+### الغرض
 
-### Kling 3.0 Pro / Kling 2.6 Pro
-**Mode:** Text-to-Video
-**Prompt:**
-```
-Epic cinematic shot, a golden holographic shield emblem rises upward in a beam of warm light. Circuit lines branch from its surface, pulsing slowly. Steam drifts across a dark circular platform. The name 'Cyber Guardians' glows gold against deep navy background. Light intensifies then holds steady. Golden particles float in the air. Dark cyberpunk throne room with blue neon circuit lines. Low angle looking up. Triumphant, heroic atmosphere, ultra-high quality
-```
+خطوة 2 من عملية التفكير العميق — مراجعة التحليل.
 
-### Wan 2.6
-**Mode:** Text-to-Video
-**Prompt:**
-```
-A golden holographic shield rises in a beam of light, circuit lines spreading from it, steam on dark platform, 'Cyber Guardians' glowing gold, dark blue background, golden particles, slow pulse, cinematic epic shot, low angle, triumphant atmosphere
-```
+### المحتوى
 
-### Seedance 2.0 Pro / Lite
-**Mode:** Text-to-Video
-**Prompt:**
 ```
-A golden holographic shield emblem rises slowly in a vertical beam of warm golden light. Circuit lines branch outward from its surface, pulsing gently. Steam drifts across a dark circular platform beneath. The name 'Cyber Guardians' glows in gold against deep navy blue. The light intensifies around the emblem, then holds steady. The circuits settle. Golden particles float. Dark cyberpunk throne room. Low camera angle, epic triumphant mood, cinematic, ultra-realistic
-```
+[REVIEW_PROMPT]
 
-### Veo 3.1
-**Mode:** Text-to-Video
-**Prompt:**
-```
-Cinematic shot, a golden holographic shield ascends in a beam of warm light, circuit lines pulsing outward from its surface. Steam drifts across a dark circular stage below. 'Cyber Guardians' name glows golden against deep navy blue. Light builds around the emblem and stabilizes. Circuits settle into a steady rhythm. Golden particles suspended in air. Dark throne room with blue neon. Low angle looking up, heroic triumphant aura, ultra-realistic, volumetric god rays, 8K
+راجع التحليل السابق بانتقادية:
+
+الخطوات المطلوبة:
+1. البحث عن أخطاء منطقية
+2. تحديد التحيزات المحتملة
+3. التحقق من دقة المعلومات
+4. تحديد النقاط القوية والضعيفة
+5. اقتراح تحسينات
+
+قدم المراجعة في صيغة:
+- الأخطاء المنطقية: [...]
+- التحيزات: [...]
+- الدقة: [...]
+- نقاط قوية: [...]
+- نقاط ضعيفة: [...]
+- تحسينات مقترحة: [...]
+
+لا تقدم إجابة نهائية بعد. فقط راجع.
 ```
 
-### Aniv AI / AnyVideo
-**Mode:** Text-to-Video
-**Prompt:**
-```
-Golden holographic shield rising in light beam, circuit lines pulsing, steam on dark platform, 'Cyber Guardians' glowing gold, blue dark background, golden particles, epic cinematic, triumphant
-```
-**Duration:** 8s | **Style:** Epic Cinematic
+### مثال
+
+**مراجعة التحليل السابق:**
+- الأخطاء المنطقية: لم تُذكر أي، التحليل منطقي
+- التحيزات: قد يكون هناك تحيز نحو أهمية التشفير
+- الدقة: المعلومات دقيقة بشكل عام
+- نقاط قوية: تحديد جيد للمفاهيم الأساسية
+- نقاط ضعيفة: لم تُذكر قيود التشفير
+- تحسينات: إضافة قسم عن تحديات التشفير
 
 ---
 
-## المشهد 3 — مشهد البداية (نص إلى فيديو — بدون صورة)
+## FINAL_ANSWER_PROMPT
 
-إذا لم تستخدم صورة وتبدأ من النص فقط:
+### الاسم: FINAL_ANSWER_PROMPT
 
-### Runway Gen-4 Turbo
-**Mode:** Text-to-Video
-**Prompt:**
+### الغرض
+
+خطوة 3 من عملية التفكير العميق — تقديم الإجابة النهائية.
+
+### المحتوى
+
 ```
-A vast dark cyberpunk operations room at night. In the center, a massive holographic globe rotates slowly, cyan network lines tracing across continents. Floor-to-ceiling windows behind it show rain streaking down, a cold distant neon-lit cityscape beyond. The globe pulses with data — once, twice — nodes flaring across the map. The rotation slows, shadows deepening around the circular command platform. Steam drifts across the dark metal floor. Cinematic wide shot, slow dramatic push-in toward the globe, volumetric lighting, Blade Runner 2049 aesthetic, ultra-realistic, moody blue and cyan color palette
+[FINAL_ANSWER_PROMPT]
+
+قدم الإجابة النهائية بناءً على التحليل والمراجعة:
+
+الخطوات المطلوبة:
+1. تلخيص التحليل والمراجعة
+2. تقديم الإجابة الشاملة
+3. إضافة أمثلة عملية
+4. تحديد المصادر
+5. اقتراح مسارات للمزيد من التعلم
+
+قدم الإجابة في صيغة:
+- ملخص: [...]
+- الإجابة: [...]
+- أمثلة: [...]
+- المصادر: [...]
+- للمزيد: [...]
 ```
 
-### Kling 3.0 Pro
-**Mode:** Text-to-Video
-**Prompt:**
+### مثال
+
+**الإجابة النهائية:**
+- ملخص: التشفير أساسي للأمن السيبراني لحماية البيانات
+- الإجابة: [إجابة شاملة]
+- أمثلة: [أمثلة عملية]
+- المصادر: [مراجع]
+- للمزيد: [مسارات تعلم]
+
+---
+
+## Skill Integration
+
+### تكامل المهارات
+
+يتم تعديل `STUDENT_SYSTEM_PROMPT` ديناميكياً بناءً على المهارات المتاحة.
+
+### هيكل التكامل
+
 ```
-Wide cinematic shot of a dark cyberpunk war room. A holographic earth globe rotates slowly at center, cyan network light trails connecting continents. Rain behind large windows showing futuristic neon city skyline at night. Globe pulses with light, data nodes illuminating one by one. Slow camera push-in. Steam on floor. Dark moody atmosphere, blue cyan palette, dramatic shadows, ultra-realistic
+[SKILL_INJECTION]
+
+تم اكتشاف مهارات متاحة:
+- [اسم المهارة]: [وصف مختصر]
+
+لدى المهارات القدرة على:
+1. تعديل سلوك المساعد
+2. إضافة سياق إضافي
+3. تحسين جودة الاستجابة
+4. وصول موارد خارجية
 ```
 
-### Wan 2.6
-**Mode:** Text-to-Video
-**Prompt:**
+### وعي الإضافات
+
 ```
-Cyberpunk operations room, wide shot. Holographic globe turning slowly at center, cyan lines glowing. Rain on windows behind, neon city at night. Globe pulses. Steam on dark floor. Slow camera moving forward. Dark blue lighting, cinematic
+[PLUGIN_AWARENESS]
+
+الإضافات المتاحة:
+- [اسم الإضافة]: [الوصف]
+
+الإضافة يمكنها:
+1. جلب بيانات من مصادر خارجية
+2. تنفيذ أكواد
+3. التحقق من صحة المعلومات
+4. تحسين الاستجابة ببيانات حية
 ```
+
+### وعي الوصلات
+
+```
+[CONNECTOR_AWARENESS]
+
+الوصلات المتاحة:
+- [اسم الوصلة]: [النوع]
+
+الوصلة يمكنها:
+1. الاتصال بقواعد البيانات
+2. استدعاء واجهات برمجة التطبيقات
+3. إدارة الملفات
+4. التواصل مع خدمات خارجية
+```
+
+---
+
+## SEARCH_SYSTEM_PROMPT
+
+### الاسم: SEARCH_SYSTEM_PROMPT
+
+### الغرض
+
+نظام البحث للبحث في المحتوى التعليمي والموارد.
+
+### المحتوى
+
+```
+[SEARCH_SYSTEM_PROMPT]
+
+أنت محرك بحث ذكي لمحتوى Cyber Guardians.
+
+أثناء البحث:
+1. حلل استعلام البحث بدقة
+2. استخدم مرشحات السياق
+3. قدم نتائج مصنّفة حسب الأولوية
+4. قدم ملخصاً مختصراً لكل نتيجة
+5. اذكر المصدر والرابط
+
+التصنيفات:
+- المحتوى: الدروس، المسابقات، التحديات
+- الموارد: الفيديوهات، المقالات، الأدوات
+- الأعضاء: الطلاب، المعلمين، المشرفين
+- الإنجازات: الشارات، النقاط، التصنيفات
+
+صيغة الاستجابة:
+- النتائج: [...]
+- العدد: [عدد النتائج]
+- التصنيف: [تصنيف كل نتيجة]
+- الملخص: [ملخص مختصر]
+```
+
+### مثال
+
+**استعلام:** "如何 حماية الشبكات"
+
+**الاستجابة:**
+- النتائج:
+  1. المستوى 4 — الثغرة في الجدار (أمن الشبكات) — مسار تعليمي
+  2. فيديو: مقدمة في أمن الشبكات — مورد
+  3. تحدي: حماية الشبكة — تحدي تفاعلي
+- العدد: 3
+- التصنيف: مسار، مورد، تحدي
+- الملخص: محتوى متعدد يغطي أمن الشبكات من المبتدئ إلى المتقدم
+
+---
+
+## ملاحظات تقنية
+
+### كيفية استخدام الـ Prompts في الكود
+
+```typescript
+// في ملف chatService.ts
+const systemPrompt = [
+  STUDENT_SYSTEM_PROMPT,
+  ...getSkillInjections(skills),
+  ...getPluginInjections(plugins),
+  ...getConnectorInjections(connectors)
+].join('\n\n');
+
+// في ملف deepthinkService.ts
+const thinkSteps = [
+  THINK_PROMPT,
+  REVIEW_PROMPT,
+  FINAL_ANSWER_PROMPT
+];
+```
+
+### هيكل البيانات
+
+```typescript
+interface SystemPromptConfig {
+  name: string;
+  purpose: string;
+  content: string;
+  priority: 'high' | 'medium' | 'low';
+  dependencies?: string[];
+}
+```
+
+### التحديثات
+
+- **الإصدار 1.0**: الإصدار الأولي مع جميع الـ Prompts الأساسية
+- **الإصدار 1.1**: إضافة تكامل المهارات
+- **الإصدار 1.2**: تحسين وعي الإضافات والوصلات
+- **الإصدار 1.3**: تحديث البحث وتحسين التصنيفات

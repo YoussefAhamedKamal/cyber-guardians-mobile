@@ -1,86 +1,497 @@
-# Cyber Guardians — PROJECT MAP
+# Cyber Guardians Mobile — PROJECT MAP
 
-> لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
-> الحالة: **🟢 تشغيل وإنتاج (Live on Cloudflare Pages)**
-> الإصدار: **7.0.0** — نظام أمان + تقويم + تقارير + بحث صوتي + تأثيرات بصرية + تنفيذ أدوات + إصلاحات شاملة + قدرات مخصصة + فحص وإصلاحات RSA-OAEP + Analytics + AI Search + Connector + Backup + timezone + reports + إصلاحات stats + drag-and-drop + GitHub sync + auto-sync + disk usage + **Local Agent**
+> Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
+> Status: **🟢 Live on Cloudflare Pages**
+> Version: **8.0.0**
 
 ---
 
 ## [TECH_STACK]
 
-| الطبقة | التقنية | الإصدار | الغرض |
+| Layer | Technology | Version | Purpose |
 |---|---|---|---|
-| Build | Vite | 8.0.14 | Bundler / Dev server |
-| Language | TypeScript | 6.0.3 | Strict typing |
+| Build | Vite | 8.x | Bundler / Dev server |
+| Language | TypeScript | 6.x | Strict typing |
 | UI Framework | React | 19.x | UI / HUD / Menus |
-| 3D Engine | Three.js | 0.184.0 | WebGL rendering |
-| React → Three | @react-three/fiber | 9.6.1 | R3F renderer |
-| 3D Helpers | @react-three/drei | 10.7.7 | Utility components |
-| State | Zustand | 5.0.13 | Game + Settings store |
-| Persist | IndexedDB (مخصص) | — | تخزين الملفات الكبيرة (WAV, صور) |
-| Audio | Web Audio API (Procedural) | — | BGM (procedural/file) + SFX (7 أنواع) |
-| 3D Characters | useGLTF (RobotExpressive) + Float + useAnimations | — | نماذج محملة من الإنترنت مع حركات |
-| 3D Environment | Stars + Particles + Grid | — | خلفية نجمية مع جزيئات عائمة |
-| Code Splitting | React.lazy + Suspense | — | 7 صفحات lazy-loaded + ChallengeRenderer |
-| PWA | manifest.json + Service Worker | — | تثبيت التطبيق (standalone) |
-| i18n | Context API (مخصص) | — | ترجمة عربي/إنجليزي |
-| Analytics | مخصص (localStorage) | — | تتبع الأحداث + إحصائيات المستويات |
-| Cloud Save | localStorage | — | رفع/تحميل/مزامنة التقدم |
-| Auto Save | مخصص (30s interval) | — | حفظ تلقائي كل 30 ثانية |
-| Testing | Vitest | 4.1.7 | 70 اختبار ✅ |
-| Deploy | **Cloudflare Pages** (auto-deploy via Git) | — | نشر آلي مع كل push على `main` |
-| Old Deploy | GitHub Actions → GitHub Pages (معطل) | — | كان يستخدم workflow_dispatch |
-| AI Music | MiniMax Music 2.6 | — | أوامر توليد موسيقى (Instrumental Mode) |
-| Search Worker | Cloudflare Worker | — | بحث في الويب عبر DuckDuckGo (API + HTML) |
-| AI Provider | Google Gemini (مجاني) | — | Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash |
-| Security | Web Crypto API | — | AES-GCM encryption + PBKDF2 key derivation + SHA hashing |
-| Voice | Web Speech API | — | بحث صوتي عربي/إنجليزي + تلخيص صوتي |
-| State | Zustand 5 + IndexedDB | — | 19 store مع persist + تأثيرات بصرية + skills/plugins/connectors + analytics + backup + version history |
+| State | Zustand | 5.x | Game + Settings store (20 stores) |
+| Audio | Web Audio API | — | Procedural BGM + 7 SFX types |
+| Security | Web Crypto API | — | AES-GCM/AES-CBC encryption, PBKDF2 key derivation, SHA-256 hashing |
+| Voice | Web Speech API | — | Voice search (Arabic/English) + audio summaries |
+| Persist | IndexedDB (custom) | — | Large file storage (WAV, images) |
+| Code Splitting | React.lazy + Suspense | — | Lazy-loaded pages + ChallengeRenderer |
+| PWA | manifest.json + Service Worker | — | Standalone app install |
+| i18n | Context API (custom) | — | Arabic/English translation |
+| Testing | Vitest | — | 70 tests |
+| Deploy | **Cloudflare Pages** | — | Auto-deploy via Git push |
+| Search Worker | Cloudflare Worker | — | DuckDuckGo search (API + HTML) |
+| Local Agent | @cyberguard/agent v1.0.0 | — | npm package, WebSocket |
+| AI Music | MiniMax Music 2.6 | — | Music generation (Instrumental Mode) |
 
-### قيود تقنية
+### Technical Constraints
 - Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
 - ES2022 target
 - Path aliases: `@/` → `src/`
 - Resolution: responsive 16:9 (base 1200×675)
-- Chunk size: ~548KB (بعد إضافة code splitting)
-- **Deployment base:** `'/'` لـ Cloudflare Pages ← `'/'` (جذر) / GitHub Pages ← `'/repo-name/'`
-- **SPA fallback:** `public/_redirects` (`/* /index.html 200`) لـ Cloudflare
+- Chunk size: ~548KB (after code splitting)
+- Deployment base: `'/'` for Cloudflare Pages
+- SPA fallback: `public/_redirects` (`/* /index.html 200`)
 - Screen transitions: CSS animations (cg-fade-in, cg-fade-out)
-- all screens wrapped in ErrorBoundary + Suspense
+- All screens wrapped in ErrorBoundary + Suspense
 
 ---
 
-## [LOCAL_AGENT] — ★ جديد (v7.0.0)
+## [SYSTEM_FLOW]
 
-### نظرة عامة
-Local Agent = خادم محلي يعمل على جهاز المستخدم ويوصل المتصفح بالأدوات الخارجية.
+```
+[Boot]
+  │
+  ├─→ Daily Reward Check
+  │     └─→ DailyRewardOverlay (if new day)
+  │
+  ├─→ Main Menu (video with sound, no BGM) ←──────┐
+  │     ├─→ Start Game → Level Select              │
+  │     ├─→ Security Reference                      │
+  │     ├─→ Quiz                                    │
+  │     ├─→ Badges                                  │
+  │     ├─→ Leaderboard                             │
+  │     ├─→ Daily Missions                          │
+  │     └─→ Settings (6 tabs)                       │
+  │                                    │
+  ├─→ Level Select (BGM starts) ←─────────┐  │
+  │     ├─→ Difficulty Select (4 modes)     │  │
+  │     │     ├─→ Level[N] (new/repeat)     │  │
+  │     │     │     ├─→ Story Dialogue     │  │         ← lazy
+  │     │     │     ├─→ Challenge Intro    │  │
+  │     │     │     ├─→ Challenge          │  │         ← lazy (ChallengeRenderer)
+  │     │     │     │     ├─→ Timer        │  │
+  │     │     │     │     ├─→ Hearts       │  │
+  │     │     │     │     ├─→ Combo        │  │
+  │     │     │     │     ├─→ Energy       │  │
+  │     │     │     │     ├─→ Hints        │  │
+  │     │     │     │     ├─→ Score Popups │  │
+  │     │     │     │     ├─→ Game Over    │  │
+  │     │     │     │     └─→ Result       │  │
+  │     │     │     │           ├─→ XP Earned │  │
+  │     │     │     │           ├─→ Badge Check│ │
+  │     │     │     │           ├─→ Summary   │  │
+  │     │     │     │           └─→ Continue  │  │
+  │     │     │     ├─→ Outro Dialogue       │  │
+  │     │     │     └─→ Back to Level Select ┘  │
+  │     │     └─→ All levels replayable      ┘  │
+  │     └─→ Speed Rush Mode                     ┘
+  │
+  ├─→ Security Reference ←─────────┐
+  │     ├─→ 7 core topics          │
+  │     ├─→ Short text + examples  │
+  │     └─→ Side navigation        │
+  │
+  ├─→ Quiz (multi-difficulty) ←──────┐
+  │     ├─→ Difficulty Selection     │
+  │     ├─→ Timer + Hints + Combo   │
+  │     ├─→ Energy + Hearts         │
+  │     └─→ Results + Score         │
+  │
+  ├─→ Settings (6 tabs)
+  │
+  ├─→ Celebration Video (Level 7 only) ← lazy
+  │
+  └─→ Victory (reset → Main Menu) ← lazy
 
-### التوافق
-| النظام | Shell | Package Managers |
-|--------|-------|------------------|
+Keyboard Shortcuts: M (mute), B (BGM mute), Esc (back)
+
+UI Layout (top-right corner):
+- AI FAB button: y = 16px ← lazy
+- BGM toggle button: y = 72px
+- AI Panel: centered, 6 main tabs ← lazy
+   - Main tabs: Student, Faculty, Tools, Project, Settings, UI
+   - Tools: 13 sub-tabs
+   - Project: 4 sub-tabs
+   - Skills/Plugins integration with AI chat
+   - System prompt injection with project knowledge
+   - Usage recording (recordUsage) after every AI reply
+- Panel close: ✕ button / backdrop / AI toggle
+
+Auto-save: every 30s (localStorage)
+Cloud save: manual upload/download/sync
+Analytics: track level_start, level_complete, challenge_retry, error
+```
+
+---
+
+## [ARCHITECTURE]
+
+```
+src/
+├── App.tsx                          # 7 lazy-loaded screens — React.lazy + Suspense + ErrorBoundary
+├── main.tsx                         # Entry point + I18nProvider + Service Worker
+│
+├── ai/
+│   ├── AIPanel.tsx                  # AI Assistant panel — 6 main tabs
+│   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
+│   ├── search.ts                    # Web search (DuckDuckGo API + HTML + Worker)
+│   ├── deepthink.ts                 # Multi-step reasoning (think → review → answer)
+│   ├── skillIntegration.ts          # Auto-detect skill/plugin requests + system prompt injection
+│   ├── github.ts                    # GitHub API + token encryption + Vite proxy + sync
+│   ├── googleDrive.ts               # Google Drive API + proxy
+│   ├── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
+│   ├── SkillsTab.tsx                # CRUD skills + drag-drop + effects
+│   ├── PluginsTab.tsx               # CRUD plugins + execute
+│   ├── ConnectorsTab.tsx            # CRUD connectors + test + clear on disconnect
+│   ├── MarketplacePanel.tsx         # Marketplace (35 templates) + filter + search
+│   ├── AnalyticsTab.tsx             # Usage stats + charts + local timezone
+│   ├── BackupTab.tsx                # Backup + sync + SHA-256 checksum
+│   ├── AdvancedSearchTab.tsx        # Smart search + save + history + instructions search
+│   ├── AIAssistantTab.tsx           # Summarize + sentiment + search
+│   ├── CollaborationTab.tsx         # Share + export + shared links
+│   ├── SecurityTab.tsx              # Encryption + hashing + activity log
+│   ├── SettingsTab.tsx              # Themes + UI settings
+│   ├── CalendarTab.tsx              # Calendar + tasks + reminders
+│   ├── ReportsTab.tsx               # Custom reports + analytics + zero-division guard
+│   ├── ToolsTab.tsx                 # 13 sub-tabs
+│   ├── ProjectTab.tsx               # Knowledge + instructions + shared chats
+│   └── LocalAgentTab.tsx            # Local Agent UI (Scan + Skills + Execute)
+│
+├── pages/
+│   ├── MenuPage.tsx                 # Home screen (lazy)
+│   ├── LevelSelectPage.tsx          # Level selection (lazy)
+│   ├── DialoguePage.tsx             # Dialogues (lazy)
+│   ├── GameplayPage.tsx             # Challenges (lazy — ChallengeRenderer loaded separately)
+│   ├── SettingsPage.tsx             # Settings (lazy)
+│   ├── CelebrationPage.tsx          # Celebration video (lazy)
+│   ├── VictoryPage.tsx              # Victory screen (lazy)
+│   ├── AdminDashboard.tsx           # Dashboard (stats + cloud + debug)
+│   ├── ReferencePage.tsx            # Security reference
+│   └── shared.ts                    # Shared styles
+│
+├── challenges/                      # 7 mini-games + shuffle
+│   ├── ChallengeRenderer.tsx        # Route by type (lazy via GameplayPage)
+│   ├── CardChallenge.tsx
+│   ├── BuildChallenge.tsx
+│   ├── MazeChallenge.tsx
+│   ├── DragDropChallenge.tsx
+│   ├── DecryptChallenge.tsx
+│   ├── CodeFixChallenge.tsx
+│   └── ResponseChallenge.tsx
+│
+├── components/
+│   ├── ErrorBoundary.tsx            # React error capture + retry button
+│   ├── LoadingSkeleton.tsx          # ScreenSkeleton + ChallengeSkeleton (shimmer)
+│   ├── ScreenTransition.tsx         # CSS fade-in/fade-out between screens
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Modal.tsx
+│   │   ├── ProgressBar.tsx
+│   │   ├── DialogueBox.tsx
+│   │   ├── BackgroundVideo.tsx
+│   │   ├── CelebrationVideo.tsx
+│   │   ├── SettingsPanel.tsx
+│   │   ├── KeyboardShortcuts.tsx
+│   │   ├── MenuScreen.tsx
+│   │   ├── XPBar.tsx
+│   │   ├── RankBadge.tsx
+│   │   ├── LevelUpOverlay.tsx
+│   │   ├── BadgeGrid.tsx
+│   │   ├── BadgeUnlockToast.tsx
+│   │   ├── Leaderboard.tsx
+│   │   ├── DailyRewardOverlay.tsx
+│   │   ├── DailyMissions.tsx
+│   │   ├── WeeklyChallengeBanner.tsx
+│   │   ├── TimerBar.tsx
+│   │   ├── HeartsDisplay.tsx
+│   │   ├── ComboDisplay.tsx
+│   │   ├── EnergyMeter.tsx
+│   │   ├── HintButton.tsx
+│   │   ├── GameOverOverlay.tsx
+│   │   ├── ScorePopup.tsx
+│   │   ├── Confetti.tsx
+│   │   ├── ShareModal.tsx
+│   │   ├── ResetConfirmModal.tsx
+│   │   ├── PlayerNameInput.tsx
+│   │   ├── Shop.tsx
+│   │   ├── ChallengeIntro.tsx
+│   │   ├── ChallengeSummary.tsx
+│   │   ├── EncourageToast.tsx
+│   │   ├── DifficultySelect.tsx
+│   │   ├── PreAssessment.tsx
+│   │   ├── PostAssessment.tsx
+│   │   ├── TeacherReport.tsx
+│   │   └── VoiceButton.tsx          # Voice search + Web Speech API
+│   └── three/
+│       ├── GameCanvas.tsx
+│       ├── CharacterModel.tsx
+│       └── Environment.tsx
+│
+├── store/                           # 20 Zustand stores
+│   ├── gameStore.ts                 # XP, rank, badges, daily, missions, combo + NaN guards
+│   ├── settingsStore.ts
+│   ├── contentStore.ts              # Level/character overrides + modifiedFiles
+│   ├── aiStore.ts                   # AI sessions + streaming + faculty PIN
+│   ├── skillStore.ts                # CRUD skills + IndexedDB
+│   ├── pluginStore.ts               # CRUD plugins + execute + IndexedDB
+│   ├── connectorStore.ts            # CRUD connectors + test + IndexedDB
+│   ├── projectStore.ts              # Knowledge + instructions + shared chats
+│   ├── versionHistoryStore.ts       # Change history + snapshots + restore
+│   ├── analyticsStore.ts            # Usage log + stats
+│   ├── backupStore.ts               # Backup + sync + IndexedDB
+│   ├── advancedSearchStore.ts       # Smart search + operations + save
+│   ├── aiAssistantStore.ts          # Summarize + sentiment + smart search
+│   ├── collaborationStore.ts        # Share + export + shared links
+│   ├── securityStore.ts             # AES-GCM encryption + hashing + activity log
+│   ├── uiStore.ts                   # Themes + modes + language + font size
+│   ├── calendarStore.ts             # Calendar + tasks + reminders
+│   ├── reportsStore.ts              # Custom reports + analytics
+│   ├── voiceStore.ts                # Voice search + Web Speech API
+│   ├── localAgentStore.ts           # WebSocket client + Agent integration
+│   └── index.ts                     # Exports
+│
+├── i18n/
+│   ├── context.tsx
+│   ├── ar.ts
+│   └── en.ts
+│
+├── systems/
+│   ├── ProceduralAudio.ts
+│   ├── AnalyticsSystem.ts
+│   ├── AutoSaveSystem.ts            # Pauses when tab hidden
+│   ├── CloudSaveSystem.ts
+│   └── LoggingSystem.ts
+│
+├── hooks/
+│   ├── useResponsive.ts
+│   └── useTimer.ts
+│
+├── data/
+│   ├── characters.ts
+│   ├── dialogue.ts                  # Intro + summary per level
+│   ├── ranks.ts                     # 5 rank levels
+│   ├── badges.ts                    # 15 badges
+│   ├── missions.ts                  # 5 daily mission templates
+│   ├── quizQuestions.ts             # Quiz question bank
+│   ├── assessmentQuestions.ts       # Pre/post assessment questions
+│   ├── referenceContent.ts          # Security reference content
+│   ├── challengeMeta.ts             # Challenge metadata
+│   └── gameData.ts                  # getLevels, getCharacters, getGameMeta
+│
+├── types/
+│   ├── index.ts
+│   ├── settings.ts
+│   ├── ai.ts                        # 12 tools sub-tabs + 6 project sub-tabs
+│   ├── game.ts                      # Gamification types
+│   ├── quiz.ts
+│   ├── learning.ts
+│   ├── skills.ts                    # 12 skill templates
+│   ├── plugins.ts                   # 10 plugin templates
+│   ├── connectors.ts                # 13 connector templates
+│   ├── project.ts
+│   ├── versionHistory.ts
+│   ├── analytics.ts
+│   ├── backup.ts
+│   ├── search.ts
+│   ├── aiAssistant.ts
+│   ├── collaboration.ts
+│   ├── security.ts
+│   ├── ui.ts
+│   ├── calendar.ts
+│   ├── reports.ts
+│   ├── voice.ts
+│   └── localAgent.ts               # Agent types (Tool, Skill, ScanResult, Finding)
+│
+├── utils/
+│   ├── constants.ts
+│   ├── indexedDBStorage.ts
+│   ├── apiKeyCrypto.ts              # XOR encryption (works over HTTP)
+│   ├── pinCrypto.ts                 # SHA-256 pure JS
+│   ├── helpers.ts
+│   ├── scoreCalculator.ts
+│   └── missionGenerator.ts
+│
+└── __tests__/                       # 70 tests
+```
+
+---
+
+## [FEATURES]
+
+### AI System
+
+| Feature | Details |
+|---|---|
+| Providers | OpenAI, OpenRouter, Google Gemini (default), Ollama, Custom |
+| Models | ~16 models total |
+| Default Model | Gemini 3.5 Flash (free, 1500 req/day) |
+| Deepthink | 3-step reasoning with streaming (think → review → answer) |
+| Image Generation | Pollinations.ai integration |
+| Faculty Mode | PIN-protected, file editor, content management |
+
+### Main Tabs (6)
+
+| Tab | Arabic | Purpose |
+|---|---|---|
+| Student | طالب | Student interaction |
+| Faculty | هيئة تدريس | Faculty editor + admin |
+| Tools | 🛠️ أدوات | Skills, plugins, connectors, marketplace, analytics, etc. |
+| Project | 📁 مشروع | Knowledge, instructions, shared chats, history |
+| Settings | ⚙ | Sound, display, fonts, video, general |
+| UI | 🎨 | Themes, language, font size, compact mode |
+
+### Tools Sub-tabs (13)
+
+| # | Tab | Arabic | Purpose |
+|---|---|---|---|
+| 1 | Skills | قدرات | CRUD + drag-drop + import/export |
+| 2 | Plugins | أدوات | CRUD + execute + endpoint selector + params |
+| 3 | Connectors | اتصالات | CRUD + provider-specific auth + test |
+| 4 | Marketplace | سوق | 35 templates (12 skills + 10 plugins + 13 connectors) |
+| 5 | Local Agent | وكيل | WebSocket agent interface |
+| 6 | Analytics | إحصائيات | Daily/weekly/monthly stats + charts |
+| 7 | Version History | نسخ | Snapshots + comparison + restore |
+| 8 | Advanced Search | بحث | Search across 7 stores + instructions |
+| 9 | AI Assistant | مساعد | Summarize + sentiment + smart search |
+| 10 | Collaboration | تعاون | Share links + export JSON/MD/HTML/CSV |
+| 11 | Security | أمان | AES-GCM/AES-CBC + PBKDF2 + activity log |
+| 12 | Calendar | تقويم | Local dates + priorities + categories + reminders |
+| 13 | Reports | تقارير | 6 report types + 3 formats + trend analysis |
+
+### Project Sub-tabs (4)
+
+| # | Tab | Arabic | Purpose |
+|---|---|---|---|
+| 1 | Knowledge | معرفة | File upload + project context |
+| 2 | Instructions | تعليمات | Custom instructions for AI |
+| 3 | Shared Chats | محادثات | Shared conversation history |
+| 4 | History | تاريخ | Change log + version tracking |
+
+### Skill Templates (12)
+
+translator, code_analyzer, summarizer, math_solver, email_writer, researcher, creative_writer, data_analyst, cybersecurity_expert, teacher, content_writer, software_engineer
+
+### Plugin Templates (10)
+
+calculator, database, chart_generator, web_scraper, file_manager, api_caller, stats_analyzer, image_generator, text_editor, search_engine
+
+### Connector Templates (13)
+
+OpenAI, Anthropic, Google, Meta, Mistral, GitHub Copilot, Cursor, Codeium, AWS Bedrock, Azure OpenAI, Google Cloud AI, Ollama, LM Studio
+
+### Gamification System
+
+| System | Details |
+|---|---|
+| XP | Earn from challenges (+20-50), lessons (+15), quizzes (+30-80), daily rewards (+50+) |
+| Ranks | 5 cyberpunk ranks (0 → 1000+ XP) |
+| Badges | 15 unlockable achievements |
+| Daily Rewards | Base 50 XP + 10 XP per consecutive day |
+| Daily Missions | 5 templates, 3 random per day |
+| Weekly Challenge | Complete hard challenge without hints (+200 XP) |
+| Combo | Streak multiplier (combo × 5 × multiplier) |
+| Hearts | 3 (beginner), 2 (hard), ∞ (speed rush) |
+| Timer | 45s/30s/20s/10s per difficulty |
+| Hints | 3 per quiz, eliminates 2 wrong answers, costs 5 pts |
+| Energy | 0-100%, bonus XP at 100% |
+| Pre/Post Assessment | 8 fixed questions, improvement percentage |
+
+### Security
+
+| Feature | Implementation |
+|---|---|
+| Encryption | AES-GCM + AES-CBC (Web Crypto API) |
+| Key Derivation | PBKDF2 with salt |
+| Hashing | SHA-256 |
+| Password Check | Constant-time comparison |
+| Activity Log | Encrypted audit trail |
+
+### Collaboration
+
+| Feature | Details |
+|---|---|
+| Share | Shareable links, export to JSON/MD/HTML/CSV |
+| Backup | GitHub sync with SHA-256 checksum, auto-sync |
+| Cloud | Upload/download/sync via localStorage + IndexedDB |
+
+### UI
+
+| Feature | Details |
+|---|---|
+| Themes | 5 UI themes |
+| Language | Arabic/English |
+| Font Size | Configurable |
+| Compact Mode | Toggle |
+| Voice Search | Web Speech API (Arabic/English) |
+
+### Level Map (7 Levels)
+
+| # | Name | Vulnerability | Challenge | Notes |
+|---|---|---|---|---|
+| 1 | Suspicious Message | Phishing | Email classification cards | Shuffle + retry |
+| 2 | Open Door | Password | Build password to standard | Retry |
+| 3 | Unwanted Guest | Malware | Sokoban maze (push enemies) | 7×7 grid, 4 malware files |
+| 4 | Wall Vulnerability | Network | Configure firewall | 6 ports, retry |
+| 5 | Encrypted Message | Encryption | Caesar Cipher | Shift 1-10, retry |
+| 6 | Compromised Site | Web Security | Fix code (SQLi + XSS) | Shuffle + retry |
+| 7 | Final Attack | Incident Response | Multiple choice | 3 steps, celebration video |
+
+---
+
+## [STORES]
+
+| # | Store | Purpose | Persistence |
+|---|---|---|---|
+| 1 | gameStore | XP, rank, badges, daily, missions, combo + NaN guards | IndexedDB |
+| 2 | settingsStore | Audio, display, fonts, video, general settings | IndexedDB |
+| 3 | contentStore | Level/character overrides + modifiedFiles | IndexedDB |
+| 4 | aiStore | AI sessions + streaming + faculty PIN | IndexedDB |
+| 5 | skillStore | CRUD skills + IndexedDB | IndexedDB |
+| 6 | pluginStore | CRUD plugins + execute + IndexedDB | IndexedDB |
+| 7 | connectorStore | CRUD connectors + test + IndexedDB | IndexedDB |
+| 8 | projectStore | Knowledge + instructions + shared chats | IndexedDB |
+| 9 | versionHistoryStore | Change history + snapshots + restore | IndexedDB |
+| 10 | analyticsStore | Usage log + stats | IndexedDB |
+| 11 | backupStore | Backup + sync + IndexedDB | IndexedDB |
+| 12 | advancedSearchStore | Smart search + operations + save | IndexedDB |
+| 13 | aiAssistantStore | Summarize + sentiment + smart search | IndexedDB |
+| 14 | collaborationStore | Share + export + shared links | IndexedDB |
+| 15 | securityStore | AES-GCM encryption + hashing + activity log | IndexedDB |
+| 16 | uiStore | Themes + modes + language + font size | IndexedDB |
+| 17 | calendarStore | Calendar + tasks + reminders | IndexedDB |
+| 18 | reportsStore | Custom reports + analytics | IndexedDB |
+| 19 | voiceStore | Voice search + Web Speech API | IndexedDB |
+| 20 | localAgentStore | WebSocket client + Agent integration | IndexedDB |
+
+---
+
+## [LOCAL_AGENT]
+
+### Overview
+Local Agent = a server running on the user's machine that connects the browser to external tools.
+
+### Compatibility
+
+| OS | Shell | Package Managers |
+|----|-------|------------------|
 | Windows | cmd, powershell | choco, winget, scoop, npm, pip |
 | macOS | bash, zsh | brew, pip, npm |
 | Linux | bash, fish | apt, yum, pacman, pip, npm, cargo |
 
-### المكونات
-| الملف | الوظيفة |
+### Components
+
+| File | Function |
 |---|---|
 | `cyberguard-agent/src/server.ts` | WebSocket + HTTP server |
-| `cyberguard-agent/src/platform/detector.ts` | كشف النظام + Package managers |
-| `cyberguard-agent/src/platform/commandTranslator.ts` | ترجمة الأوامر بين الأنظمة |
-| `cyberguard-agent/src/platform/pathResolver.ts` | حل المسارات + temp dirs |
-| `cyberguard-agent/src/parser/skillParser.ts` | محلل SKILL.md (frontmatter + commands) |
-| `cyberguard-agent/src/parser/pluginParser.ts` | محلل plugin.json |
+| `cyberguard-agent/src/platform/detector.ts` | OS + package manager detection |
+| `cyberguard-agent/src/platform/commandTranslator.ts` | Cross-platform command translation |
+| `cyberguard-agent/src/platform/pathResolver.ts` | Path + temp dir resolution |
+| `cyberguard-agent/src/parser/skillParser.ts` | SKILL.md parser (frontmatter + commands) |
+| `cyberguard-agent/src/parser/pluginParser.ts` | plugin.json parser |
 | `cyberguard-agent/src/parser/manifestParser.ts` | Makefile, Dockerfile, requirements.txt |
-| `cyberguard-agent/src/executor/commandExecutor.ts` | تنفيذ أوامر مع alternatives |
-| `cyberguard-agent/src/executor/toolChecker.ts` | تحقق من وجود الأدوات |
-| `cyberguard-agent/src/executor/packageInstaller.ts` | تثبيت تلقائي (pip, npm, apt, brew, choco) |
-| `cyberguard-agent/src/executor/alternativesResolver.ts` | إيجاد بديل للأداة المفقودة |
-| `cyberguard-agent/src/executor/modelResolver.ts` | حل model (لا يُقيد بأي نموذج) |
-| `cyberguard-agent/src/sandbox/sandbox.ts` | عزل الكود (Docker + process isolation) |
-| `cyberguard-agent/src/docker/dockerFallback.ts` | Docker fallback للأدوات الثقيلة |
-| `cyberguard-agent/src/cache/smartCache.ts` | تخزين مؤقت ذكي |
-| `cyberguard-agent/src/marketplace/marketplace.ts` | سوق المهارات |
+| `cyberguard-agent/src/executor/commandExecutor.ts` | Command execution with alternatives |
+| `cyberguard-agent/src/executor/toolChecker.ts` | Tool availability checker |
+| `cyberguard-agent/src/executor/packageInstaller.ts` | Auto-install (pip, npm, apt, brew, choco) |
+| `cyberguard-agent/src/executor/alternativesResolver.ts` | Find missing tool alternatives |
+| `cyberguard-agent/src/executor/modelResolver.ts` | Model resolution (unrestricted) |
+| `cyberguard-agent/src/sandbox/sandbox.ts` | Code isolation (Docker + process) |
+| `cyberguard-agent/src/docker/dockerFallback.ts` | Docker fallback for heavy tools |
+| `cyberguard-agent/src/cache/smartCache.ts` | Smart caching |
+| `cyberguard-agent/src/marketplace/marketplace.ts` | Skills marketplace |
 | `cyberguard-agent/src/plugins/semgrep.ts` | Semgrep integration |
 | `cyberguard-agent/src/plugins/codeql.ts` | CodeQL integration |
 | `cyberguard-agent/src/plugins/slither.ts` | Slither (Solidity) integration |
@@ -89,10 +500,11 @@ Local Agent = خادم محلي يعمل على جهاز المستخدم ويو
 | `src/types/localAgent.ts` | Types |
 | `src/ai/localAgent.ts` | WebSocket client |
 | `src/store/localAgentStore.ts` | Zustand store |
-| `src/ai/LocalAgentTab.tsx` | واجهة المستخدم |
+| `src/ai/LocalAgentTab.tsx` | UI |
 
-### Plugins المدعومة
-| Plugin | الأداة | المدخلات | المخرجات |
+### Supported Plugins
+
+| Plugin | Tool | Inputs | Outputs |
 |---|---|---|---|
 | semgrep | Semgrep CLI | code + language | SARIF findings |
 | codeql | CodeQL CLI | code + language | SARIF findings |
@@ -100,25 +512,35 @@ Local Agent = خادم محلي يعمل على جهاز المستخدم ويو
 | libfuzzer | Clang + LLVM | C/C++ code | Crashes + coverage |
 | skills-discovery | npx skills | query | Skill list |
 
-### الميزات
-- **Universal Executor** — يقرأ أي ملف تعليمات (SKILL.md, plugin.json, Makefile, Dockerfile) وينفذ كل شيء
+### Features
+- **Universal Executor** — reads any instruction file (SKILL.md, plugin.json, Makefile, Dockerfile) and executes everything
 - **Cross-platform** — Windows / macOS / Linux
-- **Auto-install** — يثبت المكتبات المفقودة تلقائياً
-- **Alternatives** — يجد بديل للأداة المفقودة
-- **Model flexibility** — لا يُقيد بأي نموذج، يستخدم المتاح
-- **Sandboxing** — عزل الكود غير الموثوق
-- **Docker fallback** — تشغيل في حاوية معزولة
-- **Smart caching** — تخزين مؤقت للنتائج
-- **Skills marketplace** — بحث + تثبيت من الإنترنت
+- **Auto-install** — installs missing libraries automatically
+- **Alternatives** — finds alternatives for missing tools
+- **Model flexibility** — no model restrictions, uses whatever is available
+- **Sandboxing** — isolates untrusted code
+- **Docker fallback** — runs in isolated container
+- **Smart caching** — caches results
+- **Skills marketplace** — search + install from the internet
 
-### التثبيت
+### Installation
+
 ```bash
 npm install -g @cyberguard/agent
 cyberguard-agent start --port 3001 --profile full
 ```
 
-### البروتوكول
-Game ↔ Agent عبر WebSocket (`ws://localhost:3001`)
+### Profiles
+
+| Profile | Description |
+|---|---|
+| minimal | Basic scanning only |
+| full | All tools and plugins |
+| education | Education-focused configuration |
+
+### Protocol
+
+Game ↔ Agent via WebSocket (`ws://localhost:3001`)
 
 ```typescript
 // Game → Agent
@@ -130,1074 +552,149 @@ Game ↔ Agent عبر WebSocket (`ws://localhost:3001`)
 
 ---
 
-## [SYSTEM_FLOW]
-
-```
-[Boot]
-  │
-  ├─→ Daily Reward Check (إن كان هناك مكافأة يومية)
-  │     └─→ DailyRewardOverlay (إذا كان اليوم جديد)
-  │
-  ├─→ Main Menu (video with sound, no BGM) ←──────┐
-  │     ├─→ Start Game → Level Select              │
-  │     ├─→ Security Reference (مرجع أمني)         │
-  │     ├─→ Quiz (اختبارات)                         │
-  │     ├─→ Badges (إنجازات)                        │
-  │     ├─→ Leaderboard (لوحة صدارة)                │
-  │     ├─→ Daily Missions (مهام يومية)              │
-  │     └─→ Settings (6 tabs)                      │
-  │                                    │
-  ├─→ Level Select (BGM starts) ←─────────┐  │
-  │     ├─→ Difficulty Select (4 أوضاع)     │  │
-  │     │     ├─→ Level[N] (جديد/مكرر)     │  │
-  │     │     │     ├─→ Story Dialogue     │  │         ← lazy
-  │     │     │     ├─→ Challenge Intro    │  │         ← جديد
-  │     │     │     ├─→ Challenge          │  │         ← lazy (ChallengeRenderer)
-  │     │     │     │     ├─→ Timer ⏱️     │  │         ← جديد
-  │     │     │     │     ├─→ Hearts ❤️    │  │         ← جديد
-  │     │     │     │     ├─→ Combo 🔥     │  │         ← جديد
-  │     │     │     │     ├─→ Energy ⚡     │  │         ← جديد
-  │     │     │     │     ├─→ Hints 💡      │  │         ← جديد
-  │     │     │     │     ├─→ Score Popups  │  │         ← جديد
-  │     │     │     │     ├─→ Game Over     │  │         ← جديد
-  │     │     │     │     └─→ Result        │  │
-  │     │     │     │           ├─→ XP Earned │  │       ← جديد
-  │     │     │     │           ├─→ Badge Check│ │       ← جديد
-  │     │     │     │           ├─→ Summary   │  │       ← جديد
-  │     │     │     │           └─→ Continue  │  │
-  │     │     │     ├─→ Outro Dialogue       │  │
-  │     │     │     └─→ Back to Level Select ┘  │
-  │     │     └─→ جميع المستويات قابلة لإعادة   ┘
-  │     └─→ Speed Rush Mode (⚡ سرعة البرق)     ┘
-  │
-  ├─→ Security Reference (مرجع أمني) ←─────────┐
-  │     ├─→ 7 مواضيع أساسية                     │
-  │     ├─→ نصوص قصيرة + أمثلة عملية           │
-  │     └─→ قائمة جانبية للتنقل                │
-  │
-  ├─→ Quiz (اختبار متعدد) ←──────────────┐
-  │     ├─→ Difficulty Selection          │
-  │     ├─→ Timer ⏱️                      │
-  │     ├─→ Hints 💡                      │
-  │     ├─→ Combo 🔥                      │
-  │     ├─→ Energy ⚡                      │
-  │     ├─→ Hearts ❤️                     │
-  │     └─→ Results + Score Breakdown     │
-  │
-  ├─→ Settings (6 tabs: الصوت, العرض, الخطوط, الفيديو, عام + لوحة تحكم)
-  │
-  ├─→ Celebration Video (BGM stops, فيديو بصوت, المستوى 7 فقط) ← lazy
-  │
-  └─→ Victory (إعادة تعيين → Main Menu) ← lazy
-
-Keyboard Shortcuts: M (mute), B (BGM mute), Esc (back)
-
-UI Layout (top-right corner):
-- 🤖 AI FAB button: y = 16px (أعلى الزاوية اليمنى) ← lazy
-- 🔊 BGM toggle button: y = 72px (أسفل زر AI)
-- AI Panel: centered on screen when opened ← lazy
-   - 6 تبويبات رئيسية: طالب, هيئة تدريس, 🛠️ أدوات, 📁 مشروع, ⚙, 🎨
-   - تبويب Tools يدعم تنفيذ القدرات والأدوات المخصصة مع query string و records
-   - تبويب Tools: 12 تبويب فرعية (قدرات, أدوات, اتصالات, سوق, إحصائيات, نسخ, بحث, مساعد, تعاون, أمان, تقويم, تقارير)
-   - تبويب Project: 4 تبويبات فرعية (معرفة, تعليمات, محادثات, تاريخ)
-   - Skills/Plugins integration مع AI chat — اكتشاف تلقائي لطلبات القدرات/الأدوات
-   - System prompt injection مع معرفة المشروع وسجل التغييرات
-   - تسجيل الاستخدام (recordUsage) بعد كل رد AI
-- Panel closes: زر ✕ / النافذة المعتمة / زر AI (toggle)
-
-Auto-save: كل 30 ثانية (localStorage)
-Cloud save: رفع/تحميل/مزامنة يدوية عبر لوحة التحكم
-Analytics: تتبع level_start, level_complete, challenge_retry, error
-```
-
----
-
-## [GAMIFICATION_SYSTEMS] — ★ جديد (v2.0.0)
-
-###نظرة عامة
-نظام Gamification شامل يضيف 28 ميزة تفاعلية مُعاد تصميمها لتناسب طبيعة لعبة Cyber Guardians Mobile.
-
-### البنية التحتية
-
-```
-src/
-├── store/
-│   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo + NaN guards
-│   ├── settingsStore.ts            # موجود
-│   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
-│   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
-│   ├── skillStore.ts               # ★ جديد — CRUD قدرات + IndexedDB
-│   ├── pluginStore.ts              # ★ جديد — CRUD أدوات + تنفيذ + IndexedDB
-│   ├── connectorStore.ts           # ★ جديد — CRUD اتصالات + اختبار + IndexedDB
-│   ├── projectStore.ts             # ★ جديد — معرفة + تعليمات + محادثات مشتركة
-│   ├── versionHistoryStore.ts      # ★ جديد — سجل التغييرات + لقطات + استعادة
-│   ├── analyticsStore.ts           # ★ جديد — سجل الاستخدام + إحصائيات
-│   ├── backupStore.ts              # ★ جديد — نسخ احتياطي + مزامنة + IndexedDB
-│   ├── advancedSearchStore.ts      # ★ جديد — بحث ذكي + عمليات + حفظ
-│   ├── aiAssistantStore.ts         # ★ جديد — تلخيص + مشاعر + بحث ذكي
-│   ├── collaborationStore.ts       # ★ جديد — مشاركة + تصدير + روابط مشتركة
-│   ├── securityStore.ts            # ★ جديد — تشفير AES-GCM + تجزئة + سجل نشاط
-│   ├── uiStore.ts                  # ★ جديد — سمات + أوضاع + لغة + حجم خط
-│   ├── calendarStore.ts            # ★ جديد — تقويم + مهام + تذكيرات
-│   ├── reportsStore.ts             # ★ جديد — تقارير مخصصة + تحليلات
-│   ├── voiceStore.ts               # ★ جديد — بحث صوتي + Web Speech API
-│   └── index.ts                    # موجود — exports
-│
-├── data/
-│   ├── ranks.ts                     # ★ جديد — 5 مستويات ranks
-│   ├── badges.ts                    # ★ جديد — 15 شارة
-│   ├── missions.ts                  # ★ جديد — 5 قوالب مهام يومية
-│   ├── quizQuestions.ts             # ★ جديد — بنك أسئلة الاختبار
-│   ├── assessmentQuestions.ts       # ★ جديد — أسئلة التقييم
-│   ├── referenceContent.ts          # ★ جديد — محتوى المرجع الأمني
-│   ├── challengeMeta.ts             # ★ جديد — معلومات التحديات
-│   ├── characters.ts               # موجود
-│   ├── dialogue.ts                  # موجود
-│   ├── gameMeta.ts                  # موجود
-│   └── gameData.ts                  # موجود — getLevels, getCharacters, getGameMeta
-│
-├── components/ui/
-│   ├── XPBar.tsx                    # ★ جديد — شريط خبرة
-│   ├── RankBadge.tsx                # ★ جديد — شارة الرتبة
-│   ├── LevelUpOverlay.tsx           # ★ جديد — نافذة ترقية
-│   ├── BadgeGrid.tsx                # ★ جديد — شبكة الشارات
-│   ├── BadgeUnlockToast.tsx         # ★ جديد — إشعار فتح شارة
-│   ├── Leaderboard.tsx              # ★ جديد — لوحة الصدارة
-│   ├── DailyRewardOverlay.tsx       # ★ جديد — مكافأة يومية
-│   ├── DailyMissions.tsx            # ★ جديد — مهام يومية
-│   ├── WeeklyChallengeBanner.tsx    # ★ جديد — تحدي أسبوعي
-│   ├── TimerBar.tsx                 # ★ جديد — شريط مؤقت
-│   ├── HeartsDisplay.tsx            # ★ جديد — عرض القلوب
-│   ├── ComboDisplay.tsx             # ★ جديد — عرض الكومبو
-│   ├── EnergyMeter.tsx              # ★ جديد — عرض الطاقة
-│   ├── HintButton.tsx               # ★ جديد — زر التلميح
-│   ├── GameOverOverlay.tsx          # ★ جديد — شاشة انتهاء اللعبة
-│   ├── ScorePopup.tsx               # ★ جديد — نافذة النقاط العائمة
-│   ├── Confetti.tsx                 # ★ جديد — تأثير الاحتفال
-│   ├── ShareModal.tsx               # ★ جديد — مشاركة النتائج
-│   ├── ResetConfirmModal.tsx        # ★ جديد — تأكيد إعادة التعيين
-│   ├── PlayerNameInput.tsx          # ★ جديد — إدخال اسم اللاعب
-│   ├── PathMap.tsx                  # ★ جديد — خريطة التعلم
-│   ├── LessonRecap.tsx              # ★ جديد — ملخص الدروس
-│   ├── EncourageToast.tsx           # ★ جديد — رسائل الحماس
-│   ├── DifficultySelect.tsx         # ★ جديد — اختيار الصعوبة
-│   ├── PreAssessment.tsx            # ★ جديد — تقييم قبل التعلم
-│   ├── PostAssessment.tsx           # ★ جديد — تقييم بعد التعلم
-│   └── TeacherReport.tsx           # ★ جديد — تقرير المعلم
-│
-├── pages/
-│   ├── MenuPage.tsx                 # شاشة البداية
-│   ├── LevelSelectPage.tsx          # اختيار المستوى
-│   ├── DialoguePage.tsx             # الحوارات
-│   ├── GameplayPage.tsx             # التحديات
-│   ├── SettingsPage.tsx             # الإعدادات
-│   ├── CelebrationPage.tsx          # فيديو احتفال
-│   ├── VictoryPage.tsx              # شاشة النصر
-│   ├── AdminDashboard.tsx           # لوحة تحكم
-│   ├── ReferencePage.tsx            # ★ جديد — المرجع الأمني
-│   └── shared.ts                    # أنماط مشتركة
-│
-├── hooks/
-│   ├── useTimer.ts                  # ★ جديد — مؤقت التحدي
-│   └── useResponsive.ts            # موجود
-│
-└── utils/
-    ├── scoreCalculator.ts           # ★ جديد — حساب النقاط
-    └── helpers.ts                   # موجود
-```
-
----
-
-### [PHASE_1] — النظم الأساسية (Critical)
-
-#### 1.1 XP System (نظام النقاط)
-**الملف:** `src/store/gameStore.ts` + `src/components/ui/XPBar.tsx`
-
-**التصميم المُعاد:**
-- يُضاف `xp: number` و `xpLevel: number` إلى `gameStore`
-- XP يُكسب من: التحديات (+20-50)، الدروس (+15)، الاختبارات (+30-80)، المكافآت اليومية (+50+)
-- شريط XP مع تقدم متحرك في أعلى الشاشة
-- يُخزّن في IndexedDB عبر gameStore
-
-**التكامل:**
-- `addXP(amount)` action في gameStore
-- يُعرض في `GameplayPage.tsx` و `MenuPage.tsx`
-- يُستخدم لحساب الرتبة
-
-#### 1.2 Rank System (نظام الرتب)
-**الملف:** `src/data/ranks.ts` + `src/components/ui/RankBadge.tsx`
-
-**التصميم المُعاد:**
-5 رتب بأسماء سايبربانك:
-
-| الرتبة | العنوان | XP المطلوب | اللون |
-|--------|---------|------------|-------|
-| 1 | طالب أمن | 0 | #888888 |
-| 2 | محلل بيانات | 100 | #4FC3F7 |
-| 3 | خبير حماية | 300 | #FFB74D |
-| 4 | فارس الشبكة | 600 | #CE93D8 |
-| 5 | أسطورة الأمن | 1000 | #FFD700 |
-
-**التكامل:**
-- `rank: number` في gameStore (محسوب من XP)
-- `RankBadge` يُعرض في أعلى الشاشة
-- `LevelUpOverlay` يظهر عند ترقية الرتبة
-- صوت levelUp من ProceduralAudio
-
-#### 1.3 Badge System (نظام الشارات)
-**الملف:** `src/data/badges.ts` + `src/components/ui/BadgeGrid.tsx`
-
-**التصميم المُعاد:**
-15 شارة بتصميم سايبربانك:
-
-| الشارة | الرمز | الشرط | الوصف |
-|--------|-------|-------|-------|
-| المبتدئ | 📖 | إكمال درس واحد | أول خطوة في عالم الأمن |
-| المتعلم النشيط | 📚 | إكمال 6 دروس | نصف الطريق إلى الخبرة |
-| خبير الأمن | 🎓 | إكمال 12 درس | أتقنت أساسيات الأمن |
-| المتفوق | 💎 | نتيجة 100% في الاختبار | إجابة مثالية |
-| سريع | ⚡ | إجابة صحيحة في 5 ثوانٍ | سرعة البرق |
-| ملك السلسلة | 🔥 | 3 إجابات متتالية | سلسلة لا تُقهر |
-| المواظب | 📅 | 3 أيام متتالية | ولاء للتعلم |
-| بطل النقاط | 🏆 | 500 نقطة إجمالي | صاعد نحو القمة |
-| صائد السرعة | 🎯 | 10 إجابات سريعة | ماهر في الضغط على الوقت |
-| العلّامة | 🧠 | إكمال اختبار بدون تلميحات | ذكاء خالص |
-| الصابر | 🛡️ | إكمال صعب بقلب واحد | صبر وقوة |
-| المكافح | 💪 | إعادة الاختبار 3 مرات | لا يستسلم |
-| المواظب الأسبوعي | 🟟 | 7 أيام متتالية | التزام استثنائي |
-| المحترف الرقمي | 👑 | الوصول لأعلى رتبة | قمة المحترفين |
-| المقيّم | 📊 | إكمال تقييم قبل/بعد | قياس التطور |
-
-**التكامل:**
-- `unlockedBadges: string[]` في gameStore
-- `checkBadges()` تُنفّذ بعد كل פעולה
-- `BadgeGrid` في `MenuPage.tsx` (نافذة منبثقة)
-- `BadgeUnlockToast` يظهر عند فتح شارة جديدة
-
----
-
-### [PHASE_2] — أنظمة التفاعل (High)
-
-#### 2.1 Daily Reward (مكافأة يومية)
-**الملف:** `src/components/ui/DailyRewardOverlay.tsx`
-
-**التصميم:**
-- يُفحص عند بدء التطبيق
-- مكافأة أساسية: 50 XP + 10 XP لكل يوم متتالي
-- 7 أيام تتبع بصري (✅/أرقام)
-- `lastLoginDate` و `dailyStreakDays` في gameStore
-- يربط بـ `GameMeta.dailyRewardEnabled` و `dailyRewardPoints` الموجودة مسبقاً
-
-#### 2.2 Daily Missions (مهام يومية)
-**الملف:** `src/data/missions.ts` + `src/components/ui/DailyMissions.tsx`
-
-**التصميم:**
-5 قوالب مهام، 3 تُختار عشوائياً كل يوم:
-
-| المهمة | الشرط | المكافأة |
-|--------|-------|---------|
-| 📖 إكمال درسين | lessonsCompleted >= 2 | +50 XP |
-| ✅ 5 إجابات صحيحة | correctAnswers >= 5 | +60 XP |
-| 🎯 إكمال اختبار | quizCompleted | +80 XP |
-| ⚡ 3 إجابات سريعة | speedAnswers >= 3 | +70 XP |
-| 🧠 الإجابة على 8 أسئلة | questionsAnswered >= 8 | +45 XP |
-
-**التكامل:**
-- `missions` و `missionsDate` و `missionsProgress` في gameStore
-- `useMissionProgress` hook
-- `DailyMissions` widget في MenuPage
-- `updateMissionProgress()` في challenge completion
-
-#### 2.3 Weekly Challenge (تحدي أسبوعي)
-**الملف:** `src/components/ui/WeeklyChallengeBanner.tsx`
-
-**التصميم:**
-- تحدي: إكمال التحدي الصعب بدون تلميحات
-- مكافأة: +200 XP
-- تتبع by ISO week string
-- يُعرض في MenuPage كبانر
-
-#### 2.4 Combo System (نظام الكومبو)
-**الملف:** `src/components/ui/ComboDisplay.tsx`
-
-**التصميم:**
-- `combo: number` و `maxCombo: number` في quizStore
-- زيادة عند إجابة صحيحة، إعادة تعيين عند خاطئة
-- مكافأة الكومبو: `combo * 5 * multiplier`
-- عرض بصري: "🔥 3x streak!"
-- يُستخدم في حساب النقاط
-
-#### 2.5 Hearts/Lives (القلوب/الأرواح)
-**الملف:** `src/components/ui/HeartsDisplay.tsx`
-
-**التصميم:**
-- 3 قلوب (مبتدئ/متوسط)، 2 قلوب (صعب)، ∞ (سرعة البرق)
-- فقدان القلب عند إجابة خاطئة أو انتهاء الوقت
-- Game Over عند 0 قلوب
-- عرض: ❤️❤️❤️
-
-#### 2.6 Per-Question Timer (مؤقت لكل سؤال)
-**الملف:** `src/hooks/useTimer.ts` + `src/components/ui/TimerBar.tsx`
-
-**التصميم:**
-- عد تنازلي: 45s (مبتدئ)، 30s (متوسط)، 20s (صعب)، 10s (سرعة البرق)
-- شريط بصري: أخضر → برتقالي → أحمر
-- انتهاء الوقت = إجابة خاطئة + فقدان قلب
-
-#### 2.7 Pre/Post Assessment (تقييم قبل/بعد)
-**الملف:** `src/data/assessmentQuestions.ts` + `src/components/ui/PreAssessment.tsx`
-
-**التصميم:**
-- 8 أسئلة ثابتة (مختلفة عن بنك الاختبار)
-- تقييم قبل التعلم + تقييم بعد 12 درس
-- حساب نسبة التحسن
-- يُعرض في MenuPage كبانر
-
----
-
-### [PHASE_3] — أنظمة التعلم والاختبار (High)
-
-#### 3.1 Challenge Intros (مقدمات التحديات)
-**الملف:** `src/components/ui/ChallengeIntro.tsx`
-
-**التصميم:**
-- نص قصير (30 ثانية قراءة) يظهر قبل كل تحدي
-- يشرح المفهوم الأساسي الذي يتعلمه اللاعب
-- مثال: "اليوم ستتعلم كيف تكشف الرسائل المشبوهة..."
-- مدمج في `DialoguePage.tsx` كجزء من الحوار introductions
-- يُخزّن في `dialogue.ts` كسطر إضافي لكل مستوى
-
-**التكامل:**
-- يظهر تلقائياً قبل بدء التحدي
-- يمكن تخطيه مثل الحوار العادي
-- يُعطي سياق بدون كسر تدفق اللعب
-
-#### 3.2 Post-Challenge Summary (ملخص بعد التحدي)
-**الملف:** `src/components/ui/ChallengeSummary.tsx`
-
-**التصميم:**
-- يظهر بعد إكمال كل تحدي (في صفحة النتائج)
-- معلومة إضافية تُثّبت التعلم
-- مثال: "تذكّر: الرسائل المشبوهة غالبًا ما تحتوي على روابط مزيفة..."
-- تصميم: بطاقة ملونة مع أيقونة + نص مختصر
-- يُختفي بعد 5 ثوانٍ أو بالنقر
-
-**التكامل:**
-- يظهر في `GameplayPage.tsx` بعد Result
-- يُخزّن في `dialogue.ts` كـ `summary` لكل مستوى
-- مكافأة +5 XP للمشاهدة
-
-#### 3.3 Security Reference (مرجع الأمن)
-**الملف:** `src/pages/ReferencePage.tsx` + `src/data/referenceContent.ts`
-
-**التصميم:**
-- صفحة مرجعية واحدة تغطي 7 مواضيع أساسية
-- محتوى: نصوص قصيرة + أمثلة عملية + نصائح
-- قائمة جانبية للتنقل بين المواضيع
-- تصميم: بطاقة لكل موضوع مع أيقونة الشخصية المناسبة
-
-| الموضوع | الشخصية | المحتوى |
-|---------|---------|---------|
-| احتيال البريد الإلكتروني | زين | أنواع الاحتيال + علامات التعرف |
-| كلمات المرور | نورا | قواعد كلمة المرور القوية |
-| البرمجيات الخبيثة | طارق | أنواع الفيروسات + الحماية |
-| أمن الشبكات | عمر | الجدران النارية + VPN |
-| التشفير | نورا | مفاهيم التشفير الأساسية |
-| أمن الويب | ليلى | SQLi + XSS + HTTPS |
-| الاستجابة للحوادث | زين | خطوات التعامل مع الاختراق |
-
-**التكامل:**
-- يُعرض من `MenuPage.tsx` كزر "مرجع أمني"
-- يُخزّن المحتوى في `referenceContent.ts`
-- يُتابع قراءة المستخدم (اختياري)
-
-#### 3.4 Quiz System (نظام الاختبار)
-**الملف:** `src/data/quizQuestions.ts` + `src/components/ui/DifficultySelect.tsx`
-
-**التصميم:**
-- بنك أسئلة متعدد (20+ سؤال)
-- 4 أوضاع صعوبة (مبتدئ/متوسط/صعب/سرعة البرق)
-- نظام توقيت + تلميحات + كومبو + طاقة
-- صفحة نتائج مع تفاصيل النقاط
-
-#### 3.5 Hints System (نظام التلميحات)
-**الملف:** `src/components/ui/HintButton.tsx`
-
-**التصميم:**
-- 3 تلميحات لكل اختبار (0 في وضع السرعة)
-- كل تلميح يحذف خيارين خاطئين
-- يكلف 5 نقاط
-- عداد التلميحات المتبقي
-
-#### 3.6 Energy Meter (مقياس الطاقة)
-**الملف:** `src/components/ui/EnergyMeter.tsx`
-
-**التصميم:**
-- 0-100% أثناء الاختبار
-- صحيح: +12 (أو +20 إذا كومبو >= 2)
-- خاطئ/منتهي الوقت: -15
-- عند 100%: +30 XP مكافأة + إعادة تعيين
-
----
-
-### [PHASE_4] — مكونات الواجهة (Medium)
-
-#### 4.1 Difficulty Selection (اختيار الصعوبة)
-**الملف:** `src/components/ui/DifficultySelect.tsx`
-
-| الوضع | الأسئلة | الوقت/سؤال | القلوب | المضاعف |
-|--------|---------|------------|--------|---------|
-| 🟢 مبتدئ | 5 | 45s | 3 | x1 |
-| 🟡 متوسط | 7 | 30s | 3 | x1.5 |
-| 🔴 محترف | 10 | 20s | 2 | x2 |
-| ⚡ سرعة البرق | 10 | 10s | ∞ | x3 |
-
-#### 4.2 Game Over Overlay (شاشة انتهاء اللعبة)
-**الملف:** `src/components/ui/GameOverOverlay.tsx`
-
-- نافذة كاملة عند 0 قلوب
-- خيار إعادة المحاولة أو العودة للقائمة
-
-#### 4.3 Score Breakdown Popups (نافذة النقاط)
-**الملف:** `src/components/ui/ScorePopup.tsx`
-
-- نقاط أساسية: `20 * multiplier`
-- مكافأة السرعة: `timeRemaining * 0.5 * multiplier`
-- مكافأة الكومبو: `combo * 5 * multiplier`
-- نوافذ عائمة متحركة
-
-#### 4.4 Player Name (اسم اللاعب)
-**الملف:** `src/components/ui/PlayerNameInput.tsx`
-
-- إدخال نصي في الصفحة الرئيسية
-- يُخزّن في gameStore
-- يُستخدم في لوحة الصدارة
-
----
-
-### [PHASE_5] — الاجتماعي والتجهيز (Low)
-
-#### 5.1 Share System (نظام المشاركة)
-**الملف:** `src/components/ui/ShareModal.tsx`
-
-- مشاركة عبر Twitter, Facebook, WhatsApp
-- نسخ إلى الحافظة
-- نص مُنسّق مع emojis و hashtags
-
-#### 5.2 Confetti (تأثير الاحتفال)
-**الملف:** `src/components/ui/Confetti.tsx`
-
-- Canvas-based: 120 جسيم، 6 ألوان
-- يظهر عند نتيجة 80%+ في الاختبار
-
-#### 5.3 Teacher Report (تقرير المعلم)
-**الملف:** `src/components/ui/TeacherReport.tsx`
-
-- تصدير CSV: اسم اللاعب، أفضل نتيجة، إجمالي النقاط، الدروس المكتملة، عدد الشارات، تقييم قبل/بعد، نسبة التحسن
-
-#### 5.4 Encouragement Toast (رسائل الحماس)
-**الملف:** `src/components/ui/EncourageToast.tsx`
-
-- رسائل سياقية أثناء اللعب:
-  - كومبو 3: "🔥 ثلاثية رائعة! استمر!"
-  - كومبو 5: "⚡ خمسة متتالية! أنت خارق!"
-  - سؤال أخير: "💎 سؤال أخير للكمال!"
-  - آخر قلب: "⚠️ آخر قلب! تمسّك!"
-
-#### 5.5 Reset Confirmation (تأكيد إعادة التعيين)
-**الملف:** `src/components/ui/ResetConfirmModal.tsx`
-
-- تحذير: "ستفقد جميع بياناتك"
-- خيار تأكيد/إلغاء
-
----
-
-## [LEVEL_MAP]
-
-| # | الاسم | الثغرة | التحدي | عدد الأسئلة/الخطوات | ملاحظات |
-|---|---|---|---|---|---|
-| 1 | رسالة مشبوهة | Phishing | بطاقات تصنيف إيميلات | 6 إيميلات | خلط عشوائي + إعادة محاولة |
-| 2 | الباب المفتوح | Password | بناء كلمة مرور بالمعايير | 4 قواعد | إعادة محاولة |
-| 3 | الضيف غير المرغوب | Malware | متاهة سوكوبان (ادفع العدو) | 7×7 Grid — 4 ملفات خبيثة | إعادة تعيين/محاولة |
-| 4 | الثغرة في الجدار | Network | إعداد جدار ناري | 6 منافذ | إعادة محاولة |
-| 5 | الرسالة المشفرة | Encryption | Caesar Cipher | Shift 1-10 | إعادة محاولة |
-| 6 | الموقع المخترق | Web Security | إصلاح كود (SQLi + XSS) | 2 قطع كود | خلط عشوائي + إعادة محاولة |
-| 7 | الهجوم الأخير | Incident Response | اختيار متعدد | 3 خطوات | خلط عشوائي + إعادة محاولة + فيديو احتفال |
-
----
-
-## [ARCHITECTURE]
-
-```
-src/
-├── App.tsx                          # 7 شاشات lazy-loaded — React.lazy + Suspense + ErrorBoundary + ScreenTransition
-├── main.tsx                         # Entry point + I18nProvider + Service Worker registration
-│
-├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel (lazy-loaded) — 6 تبويبات رئيسية
-│   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
-│   ├── search.ts                    # ★ جديد — بحث في الويب (DuckDuckGo API + HTML + Worker) + بحث حقيقي في Skills/Plugins/Knowledge
-│   ├── deepthink.ts                 # ★ جديد — تفكير عميق متعدد الخطوات
-│   ├── skillIntegration.ts          # ★ جديد — اكتشاف تلقائي لطلبات Skills/Plugins + system prompt injection
-│   ├── github.ts                    # GitHub API + token encryption + Vite proxy + sync to existing repo
-│   ├── googleDrive.ts               # Google Drive API + proxy support
-│   ├── prompts.ts                   # System prompts (Student, Faculty, Search, Deepthink)
-│   ├── SkillsTab.tsx                # ★ جديد — CRUD قدرات + سحب/إفلات + تأثيرات
-│   ├── PluginsTab.tsx               # ★ جديد — CRUD أدوات + تنفيذ
-│   ├── ConnectorsTab.tsx            # ★ جديد — CRUD اتصالات + اختبار + مسح بيانات عند قطع الاتصال
-│   ├── MarketplacePanel.tsx         # ★ جديد — سوق (35 قالب) + فلترة + بحث
-│   ├── AnalyticsTab.tsx             # ★ جديد — إحصائيات استخدام + رسوم بيانية + timezone محلي
-│   ├── BackupTab.tsx                # ★ جديد — نسخ احتياطي + مزامنة + SHA-256 checksum
-│   ├── AdvancedSearchTab.tsx        # ★ جديد — بحث ذكي + حفظ + تاريخ + بحث تعليمات
-│   ├── AIAssistantTab.tsx           # ★ جديد — تلخيص + مشاعر + بحث
-│   ├── CollaborationTab.tsx         # ★ جديد — مشاركة + تصدير + روابط
-│   ├── SecurityTab.tsx              # ★ جديد — تشفير + تجزئة + نشاط (بدون RSA-OAEP)
-│   ├── SettingsTab.tsx              # ★ جديد — سمات + إعدادات UI
-│   ├── CalendarTab.tsx              # ★ جديد — تقويم + مهام + تذكيرات
-│   ├── ReportsTab.tsx               # ★ جديد — تقارير مخصصة + تحليلات + منع القسم على صفر
-│   ├── ToolsTab.tsx                 # ★ جديد — 12 تبويب فرعية
-│   ├── ProjectTab.tsx               # ★ جديد — معرفة + تعليمات + محادثات
-│   └── LocalAgentTab.tsx            # ★ جديد — واجهة Local Agent (Scan + Skills + Execute)
-│
-├── pages/                           # ★ محدث — صفحات lazy-loaded
-│   ├── MenuPage.tsx                 # شاشة البداية (lazy)
-│   ├── LevelSelectPage.tsx          # اختيار المستوى (lazy)
-│   ├── DialoguePage.tsx             # الحوارات (lazy)
-│   ├── GameplayPage.tsx             # التحديات (lazy — يحمل ChallengeRenderer متأخراً)
-│   ├── SettingsPage.tsx             # الإعدادات (lazy)
-│   ├── CelebrationPage.tsx          # فيديو احتفال (lazy)
-│   ├── VictoryPage.tsx              # شاشة النصر (lazy)
-│   ├── AdminDashboard.tsx           # لوحة تحكم (إحصائيات + سحابي + تصحيح)
-│   ├── ReferencePage.tsx            # ★ جديد — المرجع الأمني
-│   └── shared.ts                    # أنماط مشتركة
-│
-├── challenges/                      # 7 mini-games كاملة + shuffle
-│   ├── ChallengeRenderer.tsx        # Router حسب type (lazy-loaded عبر GameplayPage)
-│   ├── CardChallenge.tsx
-│   ├── BuildChallenge.tsx
-│   ├── MazeChallenge.tsx
-│   ├── DragDropChallenge.tsx
-│   ├── DecryptChallenge.tsx
-│   ├── CodeFixChallenge.tsx
-│   └── ResponseChallenge.tsx
-│
-├── components/
-│   ├── ErrorBoundary.tsx            # التقاط أخطاء React + زر إعادة محاولة
-│   ├── LoadingSkeleton.tsx          # ScreenSkeleton + ChallengeSkeleton (shimmer animation)
-│   ├── ScreenTransition.tsx         # CSS fade-in/fade-out بين الشاشات
-│   ├── ui/
-│   │   ├── Button.tsx
-│   │   ├── Modal.tsx
-│   │   ├── ProgressBar.tsx
-│   │   ├── DialogueBox.tsx
-│   │   ├── BackgroundVideo.tsx
-│   │   ├── CelebrationVideo.tsx
-│   │   ├── SettingsPanel.tsx
-│   │   ├── KeyboardShortcuts.tsx
-│   │   ├── MenuScreen.tsx
-│   │   ├── XPBar.tsx                # ★ جديد
-│   │   ├── RankBadge.tsx            # ★ جديد
-│   │   ├── LevelUpOverlay.tsx       # ★ جديد
-│   │   ├── BadgeGrid.tsx            # ★ جديد
-│   │   ├── BadgeUnlockToast.tsx     # ★ جديد
-│   │   ├── Leaderboard.tsx          # ★ جديد
-│   │   ├── DailyRewardOverlay.tsx   # ★ جديد
-│   │   ├── DailyMissions.tsx        # ★ جديد
-│   │   ├── WeeklyChallengeBanner.tsx# ★ جديد
-│   │   ├── TimerBar.tsx             # ★ جديد
-│   │   ├── HeartsDisplay.tsx        # ★ جديد
-│   │   ├── ComboDisplay.tsx         # ★ جديد
-│   │   ├── EnergyMeter.tsx          # ★ جديد
-│   │   ├── HintButton.tsx           # ★ جديد
-│   │   ├── GameOverOverlay.tsx      # ★ جديد
-│   │   ├── ScorePopup.tsx           # ★ جديد
-│   │   ├── Confetti.tsx             # ★ جديد
-│   │   ├── ShareModal.tsx           # ★ جديد
-│   │   ├── ResetConfirmModal.tsx    # ★ جديد
-│   │   ├── PlayerNameInput.tsx      # ★ جديد
-│   │   ├── Shop.tsx                 # ★ جديد — نظام المتجر
-│   │   ├── ChallengeIntro.tsx       # ★ جديد — مقدمة التحدي
-│   │   ├── ChallengeSummary.tsx     # ★ جديد — ملخص بعد التحدي
-│   │   ├── EncourageToast.tsx       # ★ جديد
-│   │   ├── DifficultySelect.tsx     # ★ جديد
-│   │   ├── PreAssessment.tsx        # ★ جديد
-│   │   ├── PostAssessment.tsx       # ★ جديد
-│   │   ├── TeacherReport.tsx        # ★ جديد
-│   │   └── VoiceButton.tsx          # ★ جديد — بحث صوتي + Web Speech API
-│   └── three/
-│       ├── GameCanvas.tsx
-│       ├── CharacterModel.tsx
-│       └── Environment.tsx
-│
-├── store/                          # ★ 20 store مع persist + تأثيرات بصرية
-│   ├── gameStore.ts                 # ★ محدث — XP, rank, badges, daily, missions, combo
-│   ├── settingsStore.ts            # موجود
-│   ├── contentStore.ts             # موجود — level/character overrides + modifiedFiles
-│   ├── aiStore.ts                  # موجود — AI sessions + streaming + faculty PIN
-│   ├── skillStore.ts               # ★ جديد — CRUD قدرات + IndexedDB
-│   ├── pluginStore.ts              # ★ جديد — CRUD أدوات + تنفيذ + IndexedDB
-│   ├── connectorStore.ts           # ★ جديد — CRUD اتصالات + اختبار + IndexedDB
-│   ├── projectStore.ts             # ★ جديد — معرفة + تعليمات + محادثات مشتركة
-│   ├── versionHistoryStore.ts      # ★ جديد — سجل التغييرات + لقطات + استعادة
-│   ├── analyticsStore.ts           # ★ جديد — سجل الاستخدام + إحصائيات
-│   ├── backupStore.ts              # ★ جديد — نسخ احتياطي + مزامنة + IndexedDB
-│   ├── advancedSearchStore.ts      # ★ جديد — بحث ذكي + عمليات + حفظ
-│   ├── aiAssistantStore.ts         # ★ جديد — تلخيص + مشاعر + بحث ذكي
-│   ├── collaborationStore.ts       # ★ جديد — مشاركة + تصدير + روابط مشتركة
-│   ├── securityStore.ts            # ★ جديد — تشفير AES-GCM + تجزئة + سجل نشاط
-│   ├── uiStore.ts                  # ★ جديد — سمات + أوضاع + لغة + حجم خط
-│   ├── calendarStore.ts            # ★ جديد — تقويم + مهام + تذكيرات
-│   ├── reportsStore.ts             # ★ جديد — تقارير مخصصة + تحليلات
-│   ├── voiceStore.ts               # ★ جديد — بحث صوتي + Web Speech API
-│   ├── localAgentStore.ts          # ★ جديد — WebSocket client + Agent integration
-│   └── index.ts                    # موجود — exports
-│
-├── i18n/
-│   ├── context.tsx
-│   ├── ar.ts                        # ★ محدث — ترجمات Gamification
-│   └── en.ts
-│
-├── systems/
-│   ├── ProceduralAudio.ts         # ✅ مُصلح — cleanup leak
-│   ├── AnalyticsSystem.ts
-│   ├── AutoSaveSystem.ts          # ✅ مُحدّث — يتوقف عند إخفاء التبويب
-│   ├── CloudSaveSystem.ts         # ✅ مُصلح — this binding + try/catch
-│   └── LoggingSystem.ts
-│
-├── hooks/
-│   ├── useResponsive.ts
-│   └── useTimer.ts                  # ★ جديد
-│
-├── data/
-│   ├── characters.ts
-│   ├── dialogue.ts                  # ★ محدث — إضافة intro + summary لكل مستوى
-│   ├── ranks.ts                     # ★ جديد
-│   ├── badges.ts                    # ★ جديد
-│   ├── missions.ts                  # ★ جديد
-│   ├── quizQuestions.ts             # ★ جديد
-│   ├── assessmentQuestions.ts       # ★ جديد
-│   └── referenceContent.ts          # ★ جديد — محتوى المرجع الأمني
-│
-├── types/
-│   ├── index.ts
-│   ├── settings.ts
-│   ├── ai.ts                         # ★ محدث — 12 تبويب tools + 6 تبويبات project
-│   ├── game.ts                      # ★ محدث — إضافة أنواع Gamification
-│   ├── quiz.ts                      # ★ جديد
-│   ├── learning.ts                  # ★ جديد
-│   ├── skills.ts                    # ★ جديد — 12 قالب قدرة
-│   ├── plugins.ts                   # ★ جديد — 10 قالب أداة
-│   ├── connectors.ts                # ★ جديد — 13 قالب اتصال
-│   ├── project.ts                   # ★ جديد — معرفة + تعليمات + محادثات
-│   ├── versionHistory.ts            # ★ جديد — سجل التغييرات + لقطات
-│   ├── analytics.ts                 # ★ جديد — سجل الاستخدام + إحصائيات
-│   ├── backup.ts                    # ★ جديد — نسخ احتياطي + مزامنة
-│   ├── search.ts                    # ★ جديد — بحث ذكي + عمليات
-│   ├── aiAssistant.ts               # ★ جديد — تلخيص + مشاعر + بحث
-│   ├── collaboration.ts             # ★ جديد — مشاركة + تصدير + روابط
-│   ├── security.ts                  # ★ جديد — تشفير + تجزئة + نشاط
-│   ├── ui.ts                        # ★ جديد — سمات + أوضاع + لغة
-│   ├── calendar.ts                  # ★ جديد — تقويم + مهام + تذكيرات
-│   ├── reports.ts                   # ★ جديد — تقارير مخصصة
-│   ├── voice.ts                     # ★ جديد — بحث صوتي
-│   └── localAgent.ts                # ★ جديد — Agent types (Tool, Skill, ScanResult, Finding)
-│
-├── utils/
-│   ├── constants.ts
-│   ├── indexedDBStorage.ts
-│   ├── apiKeyCrypto.ts              # ✅ مُحدّث — تشفير XOR (يعمل على HTTP)
-│   ├── pinCrypto.ts                 # ✅ مُحدّث — SHA-256 pure JS (بدلاً من crypto.subtle)
-│   ├── helpers.ts
-│   ├── scoreCalculator.ts           # ★ جديد
-│   └── missionGenerator.ts          # ★ جديد
-│
-└── __tests__/                       # 70 اختبار ✅
-```
-
----
-
-## [SETTINGS] — 29 حقل
-
-### تبويب الصوت
-| الميزة | الحالة | التخزين |
-|---|---|---|
-| BGM Volume (0–200%) | ✅ | IndexedDB |
-| SFX Volume (0–200%) | ✅ | IndexedDB |
-| Mute Toggle | ✅ | IndexedDB |
-| Custom BGM Upload (audio/*) | ✅ | IndexedDB (data URL) |
-
-### تبويب العرض
-| الميزة | الحالة | التخزين |
-|---|---|---|
-| Background Color | ✅ | IndexedDB |
-| Background Brightness (0.1–2) | ✅ | IndexedDB |
-| Background Animation (image/video/GIF) | ✅ | IndexedDB |
-| Background Animation Brightness | ✅ | IndexedDB |
-| Border Radius (0–32px) | ✅ | IndexedDB |
-| Border Width (0–6px) | ✅ | IndexedDB |
-| Border Color | ✅ | IndexedDB |
-
-### تبويب الخطوط
-| الميزة | النطاق | الافتراضي | التخزين |
-|---|---|---|---|
-| خط النص الأساسي | 5 خيارات | Orbitron | IndexedDB |
-| خط العناوين | 6 خيارات | Orbitron | IndexedDB |
-| خط الكود | 5 خيارات | Courier New | IndexedDB |
-| حجم النص الأساسي | 12–28px | 16px | IndexedDB |
-| حجم العناوين | 14–40px | 24px | IndexedDB |
-| حجم الكود | 10–24px | 14px | IndexedDB |
-| حجم النص الثانوي | 10–20px | 13px | IndexedDB |
-| لون النص الأساسي | color picker | أبيض | IndexedDB |
-| لون العناوين | color picker | أزرق | IndexedDB |
-| لون التمييز | color picker | أزرق | IndexedDB |
-| لون النص الثانوي | color picker | رمادي | IndexedDB |
-| معاينة حية | — | — | — |
-
-### تبويب الفيديو
-| الميزة | الحالة | التخزين |
-|---|---|---|
-| فيديو زين (محلل أمني) | ✅ | IndexedDB |
-| فيديو د. نورا (خبيرة تشفير) | ✅ | IndexedDB |
-| فيديو عمر (خبير شبكات) | ✅ | IndexedDB |
-| فيديو ليلى (خبيرة أمن ويب) | ✅ | IndexedDB |
-| فيديو طارق (محلل برمجيات خبيثة) | ✅ | IndexedDB |
-| فيديو النظام (إشعارات وأهداف) | ✅ | IndexedDB |
-| فيديو الاحتفال (نهاية اللعبة) | ✅ | IndexedDB |
-| خلفية القائمة الرئيسية | ✅ | IndexedDB |
-
-### تبويب عام — ★ محدث
-| الميزة | الحالة | التخزين |
-|---|---|---|
-| Quality Preset (low/medium/high) | ✅ | IndexedDB |
-| Accessibility Mode | ✅ | IndexedDB |
-| **Dark Mode (الوضع الليلي)** | ✅ | IndexedDB |
-| Keyboard Shortcuts | ✅ | — |
-| **Admin Dashboard (لوحة التحكم)** | ✅ | — |
-| Reset All Defaults | ✅ | IndexedDB |
-
----
-
-## [CSS_ANIMATIONS] — ★ محدث
-
-| الكلمة المفتاحية | الوظيفة | المدة |
-|---|---|---|
-| `cg-particle-rise` | جسيمات متصاعدة | 10–20s |
-| `cg-orb-float` | كرات ضبابية عائمة | 12s |
-| `cg-grid-move` | شبكة منظور 3D متحركة | 20s |
-| `cg-title-glow` | توهج متغير للعنوان | 3s |
-| `cg-notification-pulse` | نبض نقطة الإشعار | 2.5s |
-| `cg-fade-in` | ظهور الشاشات (fade + scale) | 0.25s |
-| `cg-fade-out` | اختفاء الشاشات (fade + scale) | 0.15s |
-| `cg-shimmer` | تأثير تحميل متحرك (skeleton) | 1.5s |
-| `cg-xp-fill` | تعبئة شريط XP | 0.5s |
-| `cg-badge-unlock` | فتح شارة | 0.8s |
-| `cg-level-up` | ترقية رتبة | 2.5s |
-| `cg-combo-pop` | ظهور الكومبو | 0.3s |
-| `cg-confetti-fall` | سقوط الاحتفال | 3s |
-| `cg-float-up` | صعود النقاط العائمة | 1.5s |
-| `cg-heart-beat` | نبض القلب | 1s |
-| `cg-heart-pulse` | **★ جديد** — نبض القلب الأخير | 1.5s |
-| `cg-heart-glow` | **★ جديد** — توهج القلب | 2s |
-| `cg-rank-glow` | **★ جديد** — توهج الرتبة | 3s |
-| `cg-rank-spin` | **★ جديد** — دوران أيقونة الرتبة | 4s |
-| `cg-xp-icon-pulse` | **★ جديد** — نبض أيقونة الخبرة | 2s |
-| `cg-xp-shimmer` | **★ جديد** — تأثير لمعان شريط الخبرة | 2s |
-| `cg-shake` | **★ جديد** — اهتزاز عند إجابة خاطئة | 0.3s |
-
----
-
-## [CSS_VARIABLES] — ★ محدث
-
-| المتغير | الاستخدام | القيمة الافتراضية (داكن) | القيمة الافتراضية (فاتح) |
-|---|---|---|---|
-| `--custom-brightness` | سطوع الخلفية | 1.0 | 1.0 |
-| `--custom-border-radius` | نصف قطر الحدود | 12px | 12px |
-| `--custom-border-color` | لون الحدود | rgba(255,255,255,0.2) | rgba(0,0,0,0.15) |
-| `--custom-border-width` | سماكة الحدود | 1px | 1px |
-| `--heading-font` | خط العناوين | Cairo | Cairo |
-| `--heading-font-size` | حجم العناوين | 24px | 24px |
-| `--heading-color` | لون العناوين | #4FC3F7 | #1565C0 |
-| `--accent-color` | لون التمييز | #4FC3F7 | #1976D2 |
-| `--muted-color` | لون النص الثانوي | #888888 | #666666 |
-| `--mono-font` | خط الكود | Courier New | Courier New |
-| `--mono-font-size` | حجم الكود | 14px | 14px |
-| `--border-color-subtle` | حدود عامة | rgba(255,255,255,0.2) | rgba(0,0,0,0.15) |
-| `--border-color-muted` | حدود خافتة | rgba(255,255,255,0.1) | rgba(0,0,0,0.08) |
-| `--border-color-faint` | حدود شبه مخفية | rgba(255,255,255,0.06) | rgba(0,0,0,0.04) |
-| `--xp-color` | **★ جديد** — لون شريط XP | #FFD700 | #F57F17 |
-| `--rank-color` | **★ جديد** — لون الرتبة | #4FC3F7 | #1565C0 |
-| `--combo-color` | **★ جديد** — لون الكومبو | #FF6B35 | #E65100 |
-| `--energy-color` | **★ جديد** — لون الطاقة | #76FF03 | #33691E |
-| `--heart-color` | **★ جديد** — لون القلوب | #FF1744 | #C62828 |
-
----
-
-## [IMPLEMENTATION_PLAN] — ★ جديد
-
-### المرحلة 1: النظم الأساسية (Critical) — 3-5 أيام
-| الميزة | الملفات | التعقيد | الحالة |
-|--------|---------|---------|--------|
-| XP System | gameStore, XPBar, scoreCalculator | متوسط | ✅ مكتمل |
-| Rank System | ranks.ts, RankBadge, LevelUpOverlay | متوسط | ✅ مكتمل |
-| Badge System | badges.ts, BadgeGrid, BadgeUnlockToast | عالي | ✅ مكتمل |
-| Player Name | PlayerNameInput, gameStore | سهل | ✅ مكتمل |
-
-### المرحلة 2: أنظمة التفاعل (High) — 4-6 أيام
-| الميزة | الملفات | التعقيد | الحالة |
-|--------|---------|---------|--------|
-| Daily Reward | DailyRewardOverlay, gameStore | متوسط | ✅ مكتمل |
-| Daily Missions | missions.ts, DailyMissions | عالي | ✅ مكتمل |
-| Weekly Challenge | WeeklyChallengeBanner, gameStore | متوسط | ✅ مكتمل |
-| Combo System | ComboDisplay, gameStore, scoreCalculator | متوسط | ✅ مكتمل |
-| Hearts System | HeartsDisplay, GameOverOverlay, gameStore | متوسط | ✅ مكتمل |
-| Timer | TimerBar, useTimer, gameStore | متوسط | ✅ مكتمل |
-| Pre/Post Assessment | assessmentQuestions, PreAssessment, PostAssessment | عالي | ✅ مكتمل |
-
-### المرحلة 3: أنظمة التعلم والاختبار (High) — 4-6 أيام
-| الميزة | الملفات | التعقيد | الحالة |
-|--------|---------|---------|--------|
-| Challenge Intros | ChallengeIntro, challengeMeta | سهل | ✅ مكتمل |
-| Challenge Summary | ChallengeSummary, challengeMeta | سهل | ✅ مكتمل |
-| Security Reference | ReferencePage, referenceContent | متوسط | ✅ مكتمل |
-| Quiz System | quizQuestions, DifficultySelect | عالي | ✅ مكتمل |
-| Score Popup | ScorePopup | سهل | ✅ مكتمل |
-| Confetti | Confetti | سهل | ✅ مكتمل |
-
-### المرحلة 4: مكونات الواجهة (Medium) — 3-4 أيام
-| الميزة | الملفات | التعقيد |
-|--------|---------|---------|
-| Difficulty Selection | DifficultySelect, gameStore | متوسط |
-| Game Over Screen | GameOverOverlay, quizStore | سهل |
-| Score Breakdown | ScorePopup, scoreCalculator | سهل |
-| Encouragement Toast | EncourageToast, useEncouragement | سهل |
-
-### المرحلة 5: الاجتماعي والتجهيز (Low) — 2-3 أيام
-| الميزة | الملفات | التعقيد |
-|--------|---------|---------|
-| Share System | ShareModal | سهل |
-| Confetti | Confetti | سهل |
-| Teacher Report | TeacherReport, exportReport | سهل |
-| Reset Confirmation | ResetConfirmModal | سهل |
-
-### إجمالي الوقت المقدر: 16-23 يوم عمل
-
----
-
 ## [ORPHANS & PENDING]
 
-### مكتمل — الإضافات الجديدة (v3.0.0)
-- [x] **Security Tab** — تشفير AES-GCM + تجزئة SHA + سجل نشاط + قفل تلقائي
-- [x] **XP/Score NaN Fix** — Number.isFinite guards في completeLevel/addXp + VictoryPage
-- [x] **Task Calendar** — إنشاء/تعديل/حذف مهام + أولويات + فئات + تذكيرات + عرض شهري
-- [x] **Custom Reports** — 6 أنواع تقارير + جداول/رسوم بيانية/ملخصات + تحليل الاتجاهات
-- [x] **Voice Search** — Web Speech API + عربي/إنجليزي + تأثير نبض + معالجة أخطاء
-- [x] **Web Search** — بحث في الويب عبر DuckDuckGo (API + HTML)
-- [x] **Search Worker** — Cloudflare Worker للبحث (يتجاوز CORS)
-- [x] **Multi-layer Search** — بحث متعدد الطبقات (Worker → HTML → Direct API)
-- [x] **Search by Default** — البحث مفعّل تلقائياً (searchEnabled: true)
-- [x] **Deepthink** — تفكير عميق متعدد الخطوات (think → review → answer)
-- [x] **Direct API Mode** — وضع الاتصال المباشر بالـ API (بدون Worker)
-- [x] **Google Gemini Provider** — مزود Gemini المجاني (1500 طلب/يوم)
-- [x] **Gemini 3.x Models** — Gemini 3.5 Flash / 3.1 Flash Lite / 3 Flash
-- [x] **Sync to Existing Repo** — مزامنة مع مستودع موجود (ليس فقط جديد)
-- [x] **Improved Auto-upload** — رفع جميع التعديلات (ليس فقط modifiedFiles)
+### Completed — v8.0.0
+- [ ] (current release — no new orphans listed)
+
+### Completed — v7.0.0 (Local Agent)
+- [x] **@cyberguard/agent** — npm package with WebSocket server
+- [x] **Cross-platform** — Windows, macOS, Linux support
+- [x] **Tool plugins** — semgrep, codeql, slither, libfuzzer, skills-discovery
+- [x] **Universal executor** — reads SKILL.md, plugin.json, Makefile, Dockerfile
+- [x] **Auto-install** — pip, npm, apt, brew, choco
+- [x] **Alternatives resolver** — finds substitute tools
+- [x] **Model resolver** — unrestricted model selection
+- [x] **Docker fallback** — isolated container execution
+- [x] **Smart caching** — result caching
+- [x] **Skills marketplace** — search and install
+
+### Completed — v6.0.0
+- [x] **computeDailyStats** — peakHour + avgDuration
+- [x] **computeWeeklyStats** — dailyBreakdown + topItems + topTypes
+- [x] **computeMonthlyStats** — growth + mostActiveDay + weeklyBreakdown
+- [x] **AnalyticsTab selectedItemType filter**
+- [x] **recordChange** — updateSkill/updatePlugin/updateConnector
+- [x] **connectorStore recordUsage** — connect/disconnect/testConnection
+- [x] **smartSearch** — deterministic scoring
+- [x] **SkillsTab drag-and-drop** — real reorder logic
+- [x] **Backup GitHub sync** — syncToGitHub/syncFromGitHub via GitHub API
+- [x] **Auto-sync** — startAutoSync/stopAutoSync with setInterval
+- [x] **SettingsTab disk usage** — navigator.storage.estimate()
+
+### Completed — v5.0.0
+- [x] **Remove RSA-OAEP** — removed from security UI (was causing runtime error)
+- [x] **Fix Analytics** — computeDailyStats/WeeklyStats/MonthlyStats
+- [x] **Fix AI Smart Search** — real search in Skills/Plugins/Knowledge
+- [x] **Fix Advanced Search** — instructions branch
+- [x] **Fix Connector toggle** — clear credentials on disconnect
+- [x] **Fix recordUsage** — Deepthink + Faculty chat
+- [x] **Fix downloadPdf** — renamed downloadHtml for UI
+- [x] **Fix Backup checksum** — SHA-256 via crypto.subtle
+- [x] **Fix AnalyticsTab timezone** — local dates instead of UTC
+- [x] **Fix reportsStore trend** — prevent division by zero
+
+### Completed — v4.0.0
+- [x] **Plugin executePlugin** — GET query string with URLSearchParams
+- [x] **Version History wiring** — recordChange for skillStore, pluginStore, connectorStore
+- [x] **Project System Prompt** — buildProjectSystemPrompt via skillIntegration
+- [x] **Skill recordUsage** — call after AI reply completion
+- [x] **detectSkillRequest fix** — match by name + description
+- [x] **detectPluginRequest fix** — match by name + description + stats_analyzer, api_caller
+- [x] **Backup expansion** — gameStore, calendarStore, reportsStore, securityStore, uiStore
+- [x] **Security algorithm** — AES-GCM/AES-CBC in encrypt/decrypt
+- [x] **Reports date filtering** — applied to all report types
+- [x] **Plugin execute button** — added to plugin UI
+- [x] **AnalyticsTab labels** — fixed truncated Arabic text
+- [x] **Plugin template text** — fixed corrupted Arabic
+- [x] **Security password hashing** — PBKDF2 with salt
+- [x] **Analytics aggregation** — gameStore, skillStore, pluginStore recordUsage
+- [x] **BackupData expansion** — game, calendar, reports, security, ui
+- [x] **BackupType Language** — type from ui.ts instead of string
+
+### Completed — v3.0.0
+- [x] **Security Tab** — AES-GCM + SHA hashing + activity log + auto-lock
+- [x] **XP/Score NaN Fix** — Number.isFinite guards
+- [x] **Task Calendar** — create/edit/delete + priorities + categories + reminders
+- [x] **Custom Reports** — 6 types + tables/charts/summaries + trend analysis
+- [x] **Voice Search** — Web Speech API + Arabic/English + pulse effect
+- [x] **Web Search** — DuckDuckGo (API + HTML)
+- [x] **Search Worker** — Cloudflare Worker (CORS bypass)
+- [x] **Multi-layer Search** — Worker → HTML → Direct API
+- [x] **Search by Default** — searchEnabled: true
+- [x] **Deepthink** — multi-step reasoning (think → review → answer)
+- [x] **Direct API Mode** — no Worker
+- [x] **Google Gemini Provider** — free 1500 req/day
+- [x] **Gemini 3.x Models** — 3.5 Flash / 3.1 Flash Lite / 3 Flash
+- [x] **Sync to Existing Repo** — not just new repos
+- [x] **Improved Auto-upload** — all modified files
 - [x] **compatibility_date 2026-06-01** — Cloudflare API v4 + Workflows API
-- [x] **Expanded AI Knowledge** — AI يغطي جميع المواضيع (ليس فقط الأمن السيبراني)
-- [x] **Search Worker Setup Guide** — دليل إعداد Worker البحث للمعلمين
+- [x] **Expanded AI Knowledge** — all subjects, not just cybersecurity
+- [x] **Search Worker Setup Guide** — teacher setup guide
 
-### مكتمل — الإصلاحات الشاملة (v4.0.0)
-- [x] **Plugin executePlugin** — إضافة query string لطلبات GET مع URLSearchParams
-- [x] **Version History wiring** — ربط recordChange بـ skillStore, pluginStore, connectorStore
-- [x] **Project System Prompt** — ربط buildProjectSystemPrompt بمحادثة AI عبر skillIntegration.ts
-- [x] **Skill recordUsage** — استدعاء recordUsage بعد اكتمال رد AI
-- [x] **detectSkillRequest fix** — مطابقة بالاسم والوصف للقدرات المخصصة
-- [x] **detectPluginRequest fix** — مطابقة بالاسم والوصف + إضافة stats_analyzer و api_caller
-- [x] **Backup expansion** — إضافة gameStore, calendarStore, reportsStore, securityStore, uiStore للنسخ الاحتياطي
-- [x] **Security algorithm** — استخدام الخوارزمية المحددة (AES-GCM/AES-CBC) في encrypt/decrypt
-- [x] **Reports date filtering** — تطبيق فلترة التاريخ على جميع أنواع التقارير
-- [x] **Plugin execute button** — إضافة زر "▶ تنفيذ" في واجهة الأدوات
-- [x] **AnalyticsTab labels** — إصلاح النصوص المقطوعة "التوزيع.H" و "التوزيع.D"
-- [x] **Plugin template text** — إصلاح النص العربي المشوّه "م祈vy API" → "مُنادي API"
-- [x] **Security password hashing** — إضافة PBKDF2 hashing مع salt للتحقق من كلمة المرور
-- [x] **Analytics aggregation** — ربط gameStore, skillStore, pluginStore بـ recordUsage
-- [x] **BackupData expansion** — إضافة game, calendar, reports, security, ui للـ BackupData type
-- [x] **BackupType Language** — استخدام نوع Language من ui.ts بدلاً من string
+### Completed — Earlier (v1.8.1-v2.1.0)
+- [x] GitHub repo existence check before push
+- [x] Clear error messages for missing repos
+- [x] GitHub Integration fix — copyEntireRepo uses Contents API
+- [x] Binary file support — .mp4, .mp3, .wav, .ttf
+- [x] Large file timeout — 120s for media
+- [x] Local playback instructions — Windows/macOS/Linux
+- [x] GitHub status indicator — persistent bar during upload
+- [x] PIN Changer — uses hashPin()
+- [x] Connection test — clearer error messages
+- [x] Throttle streaming — 80ms store updates
+- [x] Code Splitting — 7 lazy-loaded pages
+- [x] PWA — manifest.json + Service Worker
+- [x] Screen Transitions — CSS fade-in/fade-out
+- [x] Loading Skeletons — ScreenSkeleton + ChallengeSkeleton
+- [x] Error Boundaries — per screen
+- [x] i18n — Arabic/English
+- [x] Admin Dashboard
+- [x] Analytics — event tracking
+- [x] Windows-style title bar — ─ □ ✕ buttons
+- [x] Three window sizes — small (30%) | medium (50%) | full (100%)
+- [x] Right-click context menu — theme, font, sound, size
+- [x] Manual resize — drag edges
+- [x] Drag move — drag title bar
+- [x] Minimize — hide window (AI FAB only)
+- [x] ContextMenuProvider — full page context menu
+- [x] Custom Events — panel-size-change
 
-### مكتمل — الفحص والإصلاحات الشاملة (v5.0.0)
-- [x] **إزالة RSA-OAEP** — إزالته من واجهة الأمان (كان يسبب خطأ runtime)
-- [x] **إصلاح Analytics** — إضافة computeDailyStats/WeeklyStats/MonthlyStats لملء الإحصائيات تلقائياً
-- [x] **إصلاح AI Smart Search** — استبدال البيانات المحاكاة ببحث حقيقي في Skills/Plugins/Knowledge
-- [x] **إصلاح Advanced Search** — إضافة فرع بحث للتعليمات (instructions)
-- [x] **إصلاح Connector toggle** — مسح بيانات الاعتماد عند قطع الاتصال
-- [x] **إصلاح recordUsage** — إضافة التسجيل في Deepthink وFaculty chat
-- [x] **إصلاح downloadPdf** — تسمية صحيحة downloadHtml لعرض الواجهة الأمانة
-- [x] **إصلاح Backup checksum** — استخدام SHA-256 عبر crypto.subtle بدلاً من polynomial hash
-- [x] **إصلاح AnalyticsTab timezone** — استخدام التاريخ المحلي بدلاً من UTC
-- [x] **إصلاح reportsStore trend** — منع القسم على صفر
-
-### مكتمل — الإصلاحات الشاملة (v6.0.0)
-- [x] **إصلاح computeDailyStats** — إضافة حساب peakHour و avgDuration
-- [x] **إصلاح computeWeeklyStats** — ملء dailyBreakdown و topItems و topTypes
-- [x] **إصلاح computeMonthlyStats** — حساب growth و mostActiveDay و weeklyBreakdown
-- [x] **إصلاح AnalyticsTab** — تطبيق فلتر selectedItemType على العناصر
-- [x] **إصلاح recordChange** — إضافة التسجيل في updateSkill/updatePlugin/updateConnector
-- [x] **إصلاح connectorStore** — إضافة recordUsage في connect/disconnect/testConnection
-- [x] **إصلاح smartSearch** — استبدال Math.random بحساب deterministic
-- [x] **إصلاح SkillsTab drag-and-drop** — منطق إعادة ترتيب حقيقي
-- [x] **إصلاح Backup GitHub sync** — تنفيذ syncToGitHub/syncFromGitHub بـ GitHub API
-- [x] **إصلاح Auto-sync** — إضافة startAutoSync/stopAutoSync مع setInterval
-- [x] **إصلاح SettingsTab disk usage** — استخدام navigator.storage.estimate()
-
-### مكتمل — الإضافات السابقة (v2.1.0)
-- [x] **XP System** — نظام النقاط
-- [x] **Rank System** — نظام الرتب (5 رتب)
-- [x] **Badge System** — نظام الشارات (15 شارة) — مُصلح: checkAndUnlockBadges الآن يُنفّذ بعد completeLevel و addXp
-- [x] **Player Name** — اسم اللاعب — مُصلح: زر تعديل الاسم في القائمة الرئيسية
-- [x] **Daily Reward** — مكافأة يومية
-- [x] **Daily Missions** — مهام يومية
-- [x] **Weekly Challenge** — تحدي أسبوعي — مُصلح: زر "ابدأ التحدي" الآن يعمل
-- [x] **Combo System** — نظام الكومبو
-- [x] **Hearts System** — نظام القلوب
-- [x] **Timer** — مؤقت لكل سؤال — مُصلح: لا يعرض NaN بعد الآن
-- [x] **Hints System** — نظام التلميحات — مُصلح: يعرض محتوى التلميح الفعلي الآن
-- [x] **Energy Meter** — مقياس الطاقة
-- [x] **Pre/Post Assessment** — تقييم قبل/بعد
-- [x] **Challenge Intros** — مقدمات التحديات
-- [x] **Challenge Summary** — ملخص بعد التحدي
-- [x] **Security Reference** — المرجع الأمني
-- [x] **Quiz System** — نظام الاختبارات
-- [x] **Difficulty Selection** — اختيار الصعوبة
-- [x] **Score Popup** — نافذة النقاط العائمة
-- [x] **Confetti** — تأثير الاحتفال
-- [x] **Game Over Screen** — شاشة انتهاء اللعبة
-- [x] **Share System** — نظام المشاركة
-- [x] **Teacher Report** — تقرير المعلم
-- [x] **Encouragement Toast** — رسائل الحماس
-- [x] **Reset Confirmation** — تأكيد إعادة التعيين
-- [x] **Badge Grid** — شبكة الشارات
-- [x] **Leaderboard** — لوحة الصدارة
-- [x] **Level-Up Overlay** — نافذة الترقية
-- [x] **Notification Badge** — شارة الإشعارات
-- [x] **Shop System** — نظام المتجر لشراء القلوب والتلميحات والسمات — مُصلح: استخدام xp بدل totalScore
-- [x] **Visual Effects** — تأثيرات بصرية للإجابات الصحيحة/الخاطئة (وميض + اهتزاز)
-- [x] **Audio Effects** — تأثيرات صوتية محسّنة في جميع التحديات
-- [x] **Hearts UI** — تأثيرات نبض وتوهج للقلوب
-- [x] **Rank UI** — تأثيرات دوران وتوهج للرتبة
-- [x] **XP Bar UI** — تأثير shimmer لشريط الخبرة
-
-### مكتمل — الدمج في اللعبة
-- [x] **App.tsx** — دمج DailyRewardOverlay, DailyMissions, WeeklyChallengeBanner, HeartsDisplay, ComboDisplay, Leaderboard, ShareModal, EncourageToast
-- [x] **GameplayPage.tsx** — دمج TimerBar, HintButton, EnergyMeter
-- [x] **LevelSelectPage.tsx** — دمج DifficultySelect
-- [x] **DialoguePage.tsx** — دمج ChallengeIntro, ChallengeSummary
-- [x] **gameStore.ts** — إضافة hearts, currentCombo, lastDailyClaimDate
-- [x] **contentStore.ts** — إضافة modifiedFiles لتخزين التعديلات على أي ملف
-- [x] **github.ts** — إضافة pushSourceFilesToGitHub() لرفع أي ملف إلى GitHub
-- [x] **googleDrive.ts** — تعديل uploadContentToDrive() لرفع ملفات .ts بدلاً من JSON
-- [x] **AIPanel.tsx** — تعديل زري "رفع إلى GitHub" و"رفع المحتوى فقط" لدعم جميع الملفات
-- [x] **contentStore.ts** — إضافة getModifiedFiles() لاسترجاع التعديلات المحفوظة
-- [x] **prompts.ts** — إضافة قسم "ط — تعديل ملف مصدر" مع JSON type "file"
-- [x] **AIPanel.tsx** — تبويب "📁 ملفات" في FacultyDataEditor لتعديل أي ملف يدوياً
-- [x] **AIPanel.tsx** — زر AI "نوع: file" يدعم تعديل الملفات عبر المحادثة
-- [x] **AIPanel.tsx** — خيار "🔄 رفع تلقائي عند التعديل" مع subscriber على contentStore
-
-### مكتمل — الإضافات السابقة (v1.8.1)
-- [x] **فحص وجود المستودع** — `pushContentToGitHub` يتحقق من وجود المستودع قبل الرفع
-- [x] **رسالة خطأ واضحة** — `المستودع X/Y غير موجود. أنشئ مستودعاً جديداً أولاً.`
-- [x] **إصلاح GitHub Integration** — `copyEntireRepo` يستخدم Contents API
-- [x] **ملفات ثنائية** — دعم رفع .mp4, .mp3, .wav, .ttf
-- [x] **ملفات كبيرة** — مهلة 120 ثانية للوسائط
-- [x] **تشغيل محلي** — إضافة قسم تشغيل اللعبة على Windows/macOS/Linux
-- [x] **مؤشر حالة GitHub** — شريط دائم أثناء الرفع/الإنشاء
-- [x] **PIN Changer** — يستخدم `hashPin()` مباشرة
-- [x] **اختبار الاتصال** — رسائل خطأ أوضح
-- [x] **Throttle التدفق** — تحديث store كل 80ms أثناء streaming AI
-
-### مكتمل (سابق)
-- [x] **Code Splitting** — 7 صفحات lazy-loaded
-- [x] **PWA** — manifest.json + Service Worker
-- [x] **Screen Transitions** — CSS fade-in/fade-out
-- [x] **Loading Skeletons** — ScreenSkeleton + ChallengeSkeleton
-- [x] **Error Boundaries** — ErrorBoundary لكل شاشة
-- [x] **i18n** — I18nProvider + ترجمة عربية/إنجليزية
-- [x] **Admin Dashboard** — لوحة تحكم
-- [x] **Analytics** — نظام تتبع الأحداث
-
-### تحديثات UI الأخيرة (v2.1.0)
-- [x] **شريط عنوان Windows-style** — أزرار ─ □ ✕ مثل نظام Windows
-- [x] **أحجام نوافذ ثلاثية** — صغير (30%) | متوسط (50%) | ملء (100%)
-- [x] **قائمة زر أيمن** — التحكم في السمة، حجم الخط، الصوت، حجم النافذة
-- [x] **Resize يدوي** — سحب الحواف لتغيير حجم النافذة
-- [x] **Move** — سحب الشريط العلوي لتحريك النافذة
-- [x] **Minimize** — إخفاء النافذة (تظهر فقط زر AI العائم)
-- [x] **ContextMenuProvider** — قائمة سياق شاملة للتحكم في الصفحة
-- [x] **Custom Events** — `panel-size-change` لتغيير حجم النافذة
-
-### التوثيق والمخططات
-- [x] **cyber-guardians-diagram.excalidraw** — مخطط شامل مع Gamification + File Editor
-- [x] **خريطة اللعبة الشامة محدثة.excalidraw.png** — تصدير PNG للمخطط
-- [x] **AI_ADVANCED_SETTINGS_DIAGRAM.excalidraw** — مخطط AI & Advanced Settings (64 عنصر)
-- [x] **🤖 AI & Advanced Settings — الدليل التفصيلي الشامل.png** — تصدير PNG للمخطط
-- [x] **AI_ADVANCED_SETTINGS_GUIDE.md** — دليل تفصيلي لـ AI & Advanced Settings (9 أقسام)
-- [x] **Cloud Save** — رفع/تحميل/مزامنة
-- [x] **Light Theme** — darkMode toggle
-- [x] **Tablet Layout** — isTablet/isMobile
-- [x] **Auto-save** — حفظ تلقائي كل 30 ثانية
-- [x] **إعادة المحاولة في كل التحديات** — تم
-- [x] **خلط الأسئلة عشوائياً** — تم
-- [x] **فيديو احتفال نهاية اللعبة** — تم
-- [x] **فيديو مستقل لكل شخصية** — تم
-- [x] **إعدادات خطوط شاملة** — تم
-- [x] **توحيد الحدود** — تم
-- [x] **AI Assistant مدمج** — تم
-- [x] **GitHub Integration** — تم
-- [x] **Google Drive Backup** — تم
-- [x] **Security Scans** — تم
-
----
-
-## [GITHUB_INTEGRATION]
-
-### المكونات
-| الملف | الوظيفة |
-|---|---|
-| `src/ai/github.ts` | خدمة GitHub API: Fork + Pages + Push + Test connection + Contents API |
-| `src/ai/googleDrive.ts` | Google Drive API: OAuth 2.0 + رفع محتوى JSON + رفع مشروع كامل |
-| `src/ai/AIPanel.tsx` | واجهة المستخدم: إعدادات GitHub + Google Drive |
-
-### المستودع الرئيسي
-- **Owner**: `YoussefAhamedKamal`
-- **Repo**: `cyber-guardians-mobile`
-
-### طريقة العمل
-| الزر | الوظيفة | API المستخدم |
-|---|---|---|
-| **🔄 رفع إلى GitHub** | رفع جميع الملفات المعدّلة (characters, dialogue, gameMeta + أي ملفات أخرى من modifiedFiles) | Contents API |
-| **📄 رفع المحتوى فقط** | رفع الملفات الأصلية .ts إلى Google Drive (وليس JSON) | Google Drive API |
-| **📦 رفع المشروع كامل** | نسخ المشروع الكامل من GitHub الرئيسي إلى Google Drive | GitHub + Drive API |
-| **🟡 إنشاء مستودع جديد** | نسخ كل الملفات في مستودع جديد | Contents API |
-
-### مهلات الطلبات
-| نوع الملف | المهلة |
-|---|---|
-| ملفات نصية (.ts, .tsx, .json) | 30 ثانية |
-| ملفات وسائط (.mp4, .mp3, .wav, .ttf) | 120 ثانية |
+### Documentation & Diagrams
+- [x] cyber-guardians-diagram.excalidraw — full architecture diagram
+- [x] AI_ADVANCED_SETTINGS_DIAGRAM.excalidraw — AI & settings (64 elements)
+- [x] AI_ADVANCED_SETTINGS_GUIDE.md — detailed guide (9 sections)
+- [x] Cloud Save — upload/download/sync
+- [x] Light Theme — darkMode toggle
+- [x] Tablet Layout — isTablet/isMobile
+- [x] Auto-save — every 30 seconds
+- [x] Retry in all challenges
+- [x] Random question shuffle
+- [x] Celebration video — end of game
+- [x] Per-character video
+- [x] Comprehensive font settings
+- [x] Unified borders
+- [x] AI Assistant built-in
+- [x] GitHub Integration
+- [x] Google Drive Backup
+- [x] Security Scans
 
 ---
 
 ## [HOSTING]
 
-### المنصة الحالية: Cloudflare Pages
-| الخاصية | الوصف |
-|---------|-------|
-| **الرابط** | `https://cyber-guardians-mobile.pages.dev` |
-| **طريقة النشر** | Auto-deploy via Git (كل push على `main`) |
-| **Bandwidth** | غير محدود |
-| **HTTPS** | مجاني وتلقائي |
-| **Build** | `npm run build` ← مجلد `dist` |
-| **SPA support** | `public/_redirects` (`/* /index.html 200`) |
+| Property | Value |
+|---|---|
+| Platform | Cloudflare Pages |
+| URL | `https://cyber-guardians-mobile.pages.dev` |
+| Deploy | Auto-deploy via Git push to `main` |
+| Bandwidth | Unlimited |
+| HTTPS | Free + automatic |
+| Build | `npm run build` → `dist/` |
+| SPA | `public/_redirects` (`/* /index.html 200`) |
 
-### ملاحظة مهمة: base path + proxy (ديناميكي)
+### Base Path + Proxy (Dynamic)
+
 ```ts
 // vite.config.ts
 base: process.env.BASE_URL || '/',
@@ -1209,57 +706,44 @@ server: {
   },
 }
 ```
-- **Cloudflare Pages**: BASE_URL غير مضبوط ← `base: '/'` ✅
-- **GitHub Actions**: BASE_URL = `/cyber-guardians-mobile/` ✅
-- **محلياً (npm run dev)**: base = '/' + proxy يحل مشكلة CORS ✅
+- Cloudflare Pages: BASE_URL unset → `base: '/'`
+- GitHub Actions: BASE_URL = `/cyber-guardians-mobile/`
+- Local (npm run dev): base = '/' + proxy handles CORS
 
 ---
 
 ## [SECURITY_SCAN]
 
-**تاريخ الفحص:** 2026-06-13
-**الأدوات:** Semgrep 1.166.0 (OSS) + Supply Chain Risk Audit
-**الوضع:** Run all (جميع المستويات)
+**Scan date:** 2026-06-13
+**Tools:** Semgrep 1.166.0 (OSS) + Supply Chain Risk Audit
 
-### نتائج Semgrep (SAST) — 0 ثغرات
-| القاعدة | التصنيف | النتائج |
+### Semgrep Results (SAST) — 0 vulnerabilities
+
+| Rule Set | Category | Results |
 |---|---|---|
-| `p/security-audit` | ثغرات عامة | 0 |
-| `p/secrets` | مفاتيح سرية | 0 |
-| `p/typescript` | TypeScript | 0 |
-| `p/javascript` | JavaScript | 0 |
-| `p/react` | React | 0 |
-| `p/github-actions` | CI/CD | 0 |
+| p/security-audit | General | 0 |
+| p/secrets | Secrets | 0 |
+| p/typescript | TypeScript | 0 |
+| p/javascript | JavaScript | 0 |
+| p/react | React | 0 |
+| p/github-actions | CI/CD | 0 |
 | Trail of Bits | Third-party | 0 |
 | elttam | Third-party | 0 |
-| Apiiro | Malicious code | 7 INFO (إرشادات عامة، ليست ثغرات) |
+| Apiiro | Malicious code | 7 INFO (general guidance, not vulnerabilities) |
 
-### ملاحظات الفحص
-- 3 أخطاء Timeout في قواعد معينة (غير حرجة)
-- خطأ Syntax في `dialogue.ts:80` — `import('@/types')` نوع TypeScript (ليس runtime)
-- إجمالي القواعد المشغلة: **433 قاعدة**
-- 224 ملف ممسوح ضوئياً
+### Manual Review — ✅ All closed
 
-### نتائج Supply Chain — 0 عالية المخاطر
-| الحزمة | الإصدار | المخاطر |
-|---|---|---|
-| react | ^19.1.0 | منخفض |
-| react-dom | ^19.1.0 | منخفض |
-| react-markdown | ^10.1.0 | منخفض |
-| remark-gfm | ^4.0.1 | منخفض |
-| zustand | ^5.0.13 | منخفض |
-
-### فحص يدوي — ✅ جميعها مُغلقة
-| # | التصنيف | Severity | الحالة | الإجراء |
+| # | Category | Severity | Status | Action |
 |---|---|---|---|---|
-| 1 | **GitHub Token plaintext** | LOW | 🔄 مُعاد فتحه | التشفير تسبب في مشاكل |
-| 2 | **Faculty PIN plaintext** | LOW | ✅ مُصلح | تجزئة SHA-256 |
-| 3 | **MFA/2FA** | INFO | ✅ مُطبق | قفل مؤقت 30 ثانية |
-| 4 | **Rate limiting** | INFO | ✅ مُطبق | حد 5 محاولات |
+| 1 | GitHub Token plaintext | LOW | 🔄 Reopened | Encryption caused issues |
+| 2 | Faculty PIN plaintext | LOW | ✅ Fixed | SHA-256 hashing |
+| 3 | MFA/2FA | INFO | ✅ Implemented | 30s lockout |
+| 4 | Rate limiting | INFO | ✅ Implemented | 5 attempt limit |
 
-### الاختبارات
-| النوع | الحالة |
+### Tests
+
+| Type | Status |
 |---|---|
-| 70 اختبار وحدة | ✅ 70/70 نجاح |
-| TypeScript compilation | ✅ بدون أخطاء |
-| Vite build | ✅ بدون أخطاء |
+| 70 unit tests | ✅ 70/70 pass |
+| TypeScript compilation | ✅ No errors |
+| Vite build | ✅ No errors |

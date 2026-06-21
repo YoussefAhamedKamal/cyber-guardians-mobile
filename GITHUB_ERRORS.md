@@ -1,436 +1,616 @@
-# 🐛 دليل أخطاء GitHub وحلولها
+# دليل أخطاء GitHub وحلولها
 
-## ملخص الأخطاء والحلول
-
-| # | الخطأ | السبب | الحل | الحالة |
-|---|-------|-------|------|--------|
-| 1 | 403 Resource not accessible by integration | التوكن lacks صلاحيات الكتابة | استخدام توكن كلاسيك بصلاحية `repo` كاملة | ✅ |
-| 2 | 404 Not Found (Fork) | المالك غير صحيح (`old-owner` بدلاً من `project-owner`) | تصحيح `MAIN_REPO.owner` في `src/ai/github.ts` | ✅ |
-| 3 | 404 Not Found (Owner) | المستخدم يكتب اسم المستخدم الكامل أو الإيميل | إضافة دالة `resolveGithubOwner()` + كشف تلقائي من التوكن | ✅ |
-| 4 | المستودع فارغ بعد النسخ (قديم) | ~`auto_init: false`~ **تم الإصلاح** | يُنشئ أول commit عبر `copyEntireRepo` مباشرة | ✅ |
-| 5 | الصفحة البيضاء | `vite.config.ts` يحتوي على `base` غير صحيح | تحديث `base` تلقائياً | ✅ |
-| 6 | الملفات لم تُرفع (قديم) | ~Contents API~ **تم الإصلاح** | تُقرأ الشجرة أولاً ثم تُرفع الملفات | ✅ |
-| 7 | أخطاء رفع الوسائط الكبيرة | ملفات >50MB تفشل | **تم — تخطي تلقائي مع تحذير** | ✅ |
-| 8 | اختصارات M/B تعمل أثناء الكتابة | `keydown` handler لا يتحقق من focus | إضافة فحص `INPUT/TEXTAREA/contentEditable` | ✅ |
-| 9 | Deploy يُلغى (Canceling) | `auto_init: true` + push = deploy مكرر | **تم — `auto_init: false`** | ✅ |
-| 10 | النتائج مبتظهرش كلها | الـ status box مكنش scrollable | **تم — إضافة `overflow: auto` + `maxHeight`** | ✅ |
-| 11 | CORS يمنع طلبات GitHub من localhost | المتصفح يحجب طلبات cross-origin | **تم — Vite proxy** (`/github-api` → `api.github.com`) | ✅ |
-| 12 | GitHub token plaintext في localStorage | التوكن كان كنص عادي | **تم — تشفير AES-256-GCM** | ✅ |
-| 13 | API keys encryption لا يعمل على HTTP | `crypto.subtle` يحتاج HTTPS | **تم — تشفير AES-256-GCM** | ✅ |
-| 14 | لا يوجد Rate Limiting | لا تقييد على عدد الطلبات | **تم — Cloudflare Worker proxy** | ✅ |
-| 15 | مفتاح تشفير في sessionStorage | XSS يمكنه فك التشفير | **تم — Cloudflare Worker proxy** | ✅ |
-| 16 | CORS يمنع headers مخصصة | `HTTP-Referer` و `X-Title` غير مسموحة | **تم — إضافة `Access-Control-Allow-Headers`** | ✅ |
-| 17 | خطأ 429 Rate limit (OpenRouter) | تجاوز الحد المجاني (50 طلب/يوم) | **تم — إضافة Gemini المجاني كبديل** | ✅ |
-| 18 | خطأ 404 Gemini model not found | نموذج Gemini غير متاح (أُغلق) | **تم — تحديث النماذج إلى Gemini 3.x** | ✅ |
+دليل شامل لجميع الأخطاء المتعلقة بـ GitHub والـ Workers والـ API وحلولها.
 
 ---
 
-## تفاصيل كل خطأ
+## جدول المحتويات
 
-### الخطأ 1: 403 Resource not accessible by integration
+1. [أخطاء إعداد Worker](#أخطاء-إعداد-worker)
+2. [أخطاء مزامنة GitHub](#أخطاء-مزامنة-github)
+3. [أخطاء النسخ الاحتياطي](#أخطاء-النسخ-الاحتياطي)
+4. [أخطاء API](#أخطاء-api)
+5. [أخطاء وضع API المباشر](#أخطاء-وضع-api-المباشر)
+6. [إعداد Worker Proxy](#إعداد-worker-proxy)
+7. [خطوات استكشاف الأخطاء وإصلاحها](#خطوات-استكشاف-الأخطاء-وإصلاحها)
+
+---
+
+## أخطاء إعداد Worker
+
+### 1. Worker URL غير مُعد
 
 **الرسالة:**
 ```
-GitHub API خطأ 403: Resource not accessible by integration
+Worker URL not configured. Please set the Worker URL in Settings.
 ```
 
 **السبب:**
-التوكن لا يملك صلاحيات كافية لكتابة الملفات. عادةً يحدث مع:
-- توكنات Fine-grained بدون صلاحيات `Contents: Read and Write`
-- توكنات محدودة بمستودع معين
+لم يتم إدخال رابط الـ Worker في إعدادات التطبيق.
+
+**الحل:**
+1. افتح `Settings` → `Worker Configuration`
+2. أدخل رابط Worker الصحيح (مثال: `https://my-worker.username.workers.dev`)
+3. احفظ الإعدادات
+
+---
+
+### 2. Worker URL غير صالح
+
+**الرسالة:**
+```
+Invalid Worker URL format. Expected: https://*.workers.dev
+```
+
+**السبب:**
+الرابط المُدخل لا يتوافق مع الصيغة المطلوبة.
+
+**الحل:**
+- تأكد من أن الرابط يبدأ بـ `https://`
+- تأكد من أن الرابط يحتوي على `.workers.dev`
+- مثال صحيح: `https://my-worker.username.workers.dev`
+- مثال خاطئ: `http://my-worker.workers.dev` (بدون s)
+
+---
+
+### 3. Worker غير مُنشر
+
+**الرسالة:**
+```
+Worker not found. The Worker may not be deployed yet.
+```
+
+**السبب:**
+الـ Worker غير مُنشر على Cloudflare أو تم حذفه.
+
+**الحل:**
+1. تحقق من نشر الـ Worker:
+   ```bash
+   cd worker && npx wrangler deploy
+   ```
+2. تحقق من حالة النشر:
+   ```bash
+   npx wrangler tail
+   ```
+3. راجع [قسم إعداد Worker Proxy](#إعداد-worker-proxy) للتفاصيل
+
+---
+
+### 4. فشل المصادقة
+
+**الرسالة:**
+```
+Authentication failed. Invalid or missing auth token.
+```
+
+**السبب:**
+ـ Auth Token غير مُتطابق أو غير موجود.
+
+**الحل:**
+1. تأكد من تطابق `AUTH_TOKEN` في الـ Worker مع التطبيق
+2. أعد توليد التوكن:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+3. حدّث المتغير في `wrangler.toml`:
+   ```toml
+   AUTH_TOKEN = "التوكن-الجديد"
+   ```
+
+---
+
+## أخطاء مزامنة GitHub
+
+### 1. انتهاء صلاحية التوكن
+
+**الرسالة:**
+```
+401 Unauthorized: Bad credentials
+```
+
+**السبب:**
+توكن GitHub انتهت صلاحيته أو تم إلغاؤه.
 
 **الحل:**
 1. اذهب إلى `github.com → Settings → Developer settings → Tokens`
-2. أنشئ توكن جديد بصلاحية **كلاسيك** (وليس Fine-grained)
-3. فعّل:
-   - ☑️ `repo` —(full control of private repositories)
-   - ☑️ `workflow` —(Update GitHub Action workflows)
+2. أنشئ توكن جديد بصلاحيات `repo` + `workflow`
+3. حدّث التوكن في التطبيق
 
 ---
 
-### الخطأ 2: 404 Not Found (Fork)
+### 2. توكن غير صالح
 
 **الرسالة:**
 ```
-❌ فشل: GitHub API خطأ 404: Not Found
+401 Unauthorized: Must include at least one email or organization
 ```
 
 **السبب:**
-`MAIN_REPO.owner` كان خاطئاً.
+التوكن المُدخل غير صالح أو بهرو.
 
 **الحل:**
-```typescript
-// src/ai/github.ts
-export const MAIN_REPO = { owner: 'project-owner', repo: 'cyber-guardians-mobile' }
-```
-
-**ملاحظة:** المالك هو **اسم المستخدم** على GitHub، وليس الاسم الكامل.
+- تأكد من نسخ التوكن بالكامل
+- تأكد من استخدام **توكن كلاسيك** (وليس Fine-grained)
+- لا تضع مسافات أو أسطر جديدة في التوكن
 
 ---
 
-### الخطأ 3: 404 Not Found (Owner)
+### 3. المستودع غير موجود
 
 **الرسالة:**
 ```
-❌ لم يتم العثور على حساب GitHub لهذا الإيميل: yousefekamal22@gmail.com
+404 Not Found: Not Found
 ```
 
 **السبب:**
-- المستخدم يكتب الاسم الكامل بدلاً من اسم المستخدم
-- البحث بالإيميل لا يعمل دائماً لأن GitHub لا يظهر كل الإيميلات العامة
+اسم المستودع أو المالك غير صحيح.
 
 **الحل:**
-1. كشف تلقائي لاسم المستخدم من التوكن عبر `GET /user`
-2. لا حاجة لكتابة Owner — يملأ تلقائياً
-
-```typescript
-export async function getGitHubUsername(): Promise<string> {
-  const data = await apiFetch('/user', 'GET')
-  return data.login
-}
-```
+- تأكد من أن `owner` هو **اسم المستخدم** على GitHub (وليس الاسم الكامل)
+- تأكد من أن اسم المستودع صحيح ولا يحتوي على مسافات
+- مثال: `project-owner/cyber-guardians-mobile`
 
 ---
 
-### الخطأ 4 (مُصلح): المستودع فارغ بعد النسخ
-
-**الحالة:** مُصلح — أصبح متعمداً
-
-**التصميم الجديد:**
-```typescript
-auto_init: false  // متعمد — لا commit أول → لا deploy مكرر
-```
-- `copyEntireRepo` يُنشئ أول commit (orphan) مباشرة
-- commit واحد فقط → deploy واحد فقط → لا "Canceling since a higher priority..."
-
-**لماذا:**
-- `auto_init: true` كان يُنشئ commit README → deploy #1
-- `copyEntireRepo` يُنشئ commit files → deploy #2 يُلغي #1
-- `auto_init: false` يحل المشكلة بالكامل
-
----
-
-### الخطأ 5: الصفحة البيضاء
+### 4. تجاوز حد الطلبات
 
 **الرسالة:**
-- الصفحة زرقاء فقط (الـ CSS يعمل)
-- لكن المحتوى لا يظهر (الـ JS لا يعمل)
+```
+403 Rate limit exceeded for user with ID: 12345678
+```
 
 **السبب:**
-`vite.config.ts` يحتوي على `base` يشير لمسار المستودع القديم:
-```typescript
-base: '/cyber-guardians-mobile/'
-```
-لكن المستودع الجديد اسمه مختلف. الحل القديم استخدم regex بسيط لا يغطي جميع الحالات.
+تجاوزت الحد المسموح به من طلبات GitHub API (5000 طلب/ساعة).
 
-**الحل الجديد — دالة `updateViteBasePath`:**
-```typescript
-function updateViteBasePath(content: string, repoName: string): string {
-  // الحالة 1: base موجود بأي نوع اقتباس (' أو " أو `)
-  const baseRegex = /base\s*[:=]\s*['"`][^'"`]*['"`]/
-  if (baseRegex.test(content)) {
-    return content.replace(/(base\s*[:=]\s*)['"`][^'"`]*['"`]/, `$1'/${repoName}/'`)
+**الحل:**
+1. انتظر حتى يتجدد العدد (كل ساعة)
+2. استخدم Worker proxy لتقليل الطلبات المباشرة
+3. تحقق من العدد المتبقي:
+   ```bash
+   curl -I https://api.github.com/rate_limit -H "Authorization: token YOUR_TOKEN"
+   ```
+
+---
+
+### 5. ملف كبير جداً
+
+**الرسالة:**
+```
+413 Payload Too Large: Must push a file under 100 MB
+```
+
+**السبب:**
+حجم الملف يتجاوز 100 ميجا.
+
+**الحل:**
+- استخدم Git بدلاً من Contents API للملفات الكبيرة
+- قسّم الملفات الكبيرة إلى أجزاء أصغر
+- استخدم `.gitignore` لاستبعاد الملفات الكبيرة غير الضرورية
+
+---
+
+## أخطاء النسخ الاحتياطي
+
+### 1. عدم تطابق Checksum (ملف تالف)
+
+**الرسالة:**
+```
+Checksum mismatch: backup file may be corrupted. Expected: abc123, Got: def456
+```
+
+**السبب:**
+الملف تالف أثناء النقل أو الحفظ.
+
+**الحل:**
+1. أعد تصدير النسخة الاحتياطية
+2. تأكد من اكتمال التنزيل (لا يُقطع الاتصال أثناء التنزيل)
+3. جرّب متصفح آخر
+
+---
+
+### 2. صيغة JSON غير صالحة
+
+**الرسالة:**
+```
+Invalid JSON format: unexpected token at position 1234
+```
+
+**السبب:**
+الملف تالف أو غير متوافق مع الصيغة المطلوبة.
+
+**الحل:**
+- تأكد من أن الملف من تصدير التطبيق
+- لا تعدّل يدوياً في الملف
+- جرّب تصدير نسخة جديدة
+
+---
+
+### 3. تجاوز حجم التخزين
+
+**الرسالة:**
+```
+Storage quota exceeded. Maximum backup size: 50 MB
+```
+
+**السبب:**
+حجم النسخة الاحتياطية يتجاوز الحد المسموح.
+
+**الحل:**
+1. حذف نسخ احتياطية قديمة
+2. تصدير فقط البيانات الأساسية (وليس الوسائط)
+3. استخدام Google Drive للمساحة الإضافية
+
+---
+
+### 4. فشل الاستيراد
+
+**الرسالة:**
+```
+Import failed: Invalid backup version. Expected v2+, Got v1
+```
+
+**السبب:**
+نسخة احتياطية من إصدار قديم لا تتوافق.
+
+**الحل:**
+- تأكد من استخدام أحدث إصدار من التطبيق
+- أعد التصدير من التطبيق القديم قبل التحديث
+
+---
+
+## أخطاء API
+
+### 1. 429 Too Many Requests (حد الطلبات)
+
+**الرسالة:**
+```
+429: Rate limit exceeded. Please wait before making another request.
+```
+
+**السبب:**
+تجاوزت الحد المسموح به من الطلبات.
+
+**الحل:**
+1. انتظر 30-60 ثانية ثم أعد المحاولة
+2. استخدم Worker proxy لتوزيع الطلبات
+3. للـ OpenRouter المجاني: 50 طلب/يوم فقط — انتظر التجديد أو اشحن الحساب
+
+---
+
+### 2. 401 Unauthorized (غير مصرح)
+
+**الرسالة:**
+```
+401 Unauthorized: Invalid authentication credentials
+```
+
+**السبب:**
+المصادقة فشلت.
+
+**الحل:**
+- تحقق من صحة التوكن أو مفتاح API
+- تأكد من إرسال الـ Header بشكل صحيح:
+  ```
+  Authorization: Bearer YOUR_TOKEN
+  ```
+
+---
+
+### 3. 403 Forbidden (ممنوع)
+
+**الرسالة:**
+```
+403 Forbidden: Resource not accessible by integration
+```
+
+**السبب:**
+التوكن لا يملك صلاحيات كافية.
+
+**الحل:**
+- استخدم توكن **كلاسيك** (وليس Fine-grained)
+- فعّل صلاحيات:
+  - ☑️ `repo` — تحكم كامل بالمستودعات الخاصة
+  - ☑️ `workflow` — تحديث GitHub Actions
+
+---
+
+### 4. 404 Not Found (غير موجود)
+
+**الرسالة:**
+```
+404 Not Found: The requested resource does not exist
+```
+
+**السبب:**
+المورد المطلوب غير موجود.
+
+**الحل:**
+- تحقق من صحة الرابط
+- تأكد من أن المستودع/الملف موجود فعلاً
+- تحقق من صلاحيات الوصول
+
+---
+
+### 5. 500 Server Error (خطأ في الخادم)
+
+**الرسالة:**
+```
+500 Internal Server Error: An unexpected error occurred
+```
+
+**السبب:**
+خطأ من جهه الخادم (GitHub أو Worker).
+
+**الحل:**
+1. أعد المحاولة بعد بضع ثوانٍ
+2. تحقق من حالة GitHub: https://www.githubstatus.com
+3. تحقق من حالة Cloudflare Worker: `npx wrangler tail`
+
+---
+
+## أخطاء وضع API المباشر
+
+### 1. أخطاء CORS
+
+**الرسالة:**
+```
+Access to fetch at 'https://api.github.com/...' from origin 'http://localhost:5173' has been blocked by CORS policy
+```
+
+**السبب:**
+المتصفح يحجب طلبات cross-origin مباشرة من localhost.
+
+**الحل:**
+- استخدم Worker proxy بدلاً من الاتصال المباشر
+- أو استخدم Vite proxy في وضع التطوير:
+  ```typescript
+  // vite.config.ts
+  proxy: {
+    '/github-api': {
+      target: 'https://api.github.com',
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/github-api/, '')
+    }
   }
-  // الحالة 2: base غير موجود — نضيفه بعد defineConfig({
-  const withConfig = content.replace(/(defineConfig\s*\(\s*\{)/, `$1\n  base: '/${repoName}/',`)
-  if (withConfig !== content) return withConfig
-  // الحالة 3: fallback — نضيف const BASE_PATH
-  return content.replace(/(export\s+default\s+)/, `const BASE_PATH = '/${repoName}/';\n\n$1`)
-}
-```
-
-**مزايا الحل:**
-- ✅ يدعم `'`, `"`, `` ` `` (single, double, backtick)
-- ✅ يضيف `base` تلقائياً إذا لم يكن موجوداً
-- ✅ fallback آمن لأي صيغة Vite config
+  ```
 
 ---
 
-### الخطأ 6: الملفات لم تُرفع
+### 2. أخطاء الشبكة
 
 **الرسالة:**
-- المستودع يحتوي فقط على `README.md`
-- لا يوجد `src/`, `.github/workflows/`, `scripts/`
-- أو: بعض الملفات مفقودة
+```
+Network Error: Failed to fetch
+```
 
 **السبب:**
-Contents API (الحل القديم) كان يرفع كل ملف بطلب PUT منفصل — بطيء، محدود بـ 1MB لكل ملف، وعرضة لأخطاء منتصف العملية.
-
-**الحل الحالي — `copyEntireRepo`:**
-```
-1. GET شجرة المصدر (Git Data API) ← request واحد
-2. لكل blob في الشجرة:
-   a. GET محتوى الـ blob
-   b. إذا كان نصي: تعديل المحتوى (vite.config, package.json, etc.)
-   c. PUT الملف عبر Contents API ← request واحد لكل ملف
-```
-
-**ملاحظات مهمة:**
-- ✅ يقرأ الشجرة بشكل متكرر عبر Git Data API
-- ✅ يرفع كل ملف عبر Contents API (PUT منفصل)
-- ⚠️ الملفات الثنائية الكبيرة (>50MB) قد تفشل بسبب حدود Contents API
-- ⚠️ كل ملف = request منفصل — أبطأ من Git Data API للعدد الكبير من الملفات
-
----
-
-### ⚠️ الخطأ 7: أخطاء رفع الملفات الكبيرة — مُحسّن
-
-**الحالة:** مُحسّن (ليست مُصلحة بالكامل)
-
-**التصميم الحالي:**
-```typescript
-// في copyEntireRepo:
-const BINARY_EXTS = ['.mp4', '.mp3', '.wav', '.webm', '.ogg', '.avi', '.mov', '.mkv', '.flac', 
-                     '.ttf', '.woff', '.woff2', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.pdf']
-// الملفات الثنائية تُرفع عبر Contents API
-// الملفات الكبيرة جداً (>50MB) قد تفشل بسبب حدود GitHub API
-```
-
-**الحالة:**
-- ✅ الملفات الصغيرة/المتوسطة تُرفع بنجاح
-- ✅ ملفات الوسائط الصغيرة (<10MB) تعمل بشكل جيد
-- ⚠️ الملفات الكبيرة (>50MB) قد تفشل — محدودية Contents API
-- ⚠️ لا يوجد تخطي تلقائي — يحاول الرفع ثم يفشل برسالة خطأ
-
----
-
-### الخطأ 8: اختصارات M/B تعمل أثناء الكتابة
-
-**الرسالة:**
-- عند كتابة الإيميل في حقل Owner
-- الضغط على `m` يكتم الصوت بدلاً من كتابة الحرف
-- الضغط على `b` يكتم الموسيقى بدلاً من كتابة الحرف
-
-**السبب:**
-`keydown` handler في `App.tsx` لا يتحقق من أن المستخدم يكتب في حقل إدخال.
+انقطاع الاتصال أو الـ Worker غير متاح.
 
 **الحل:**
-```typescript
-const handleKey = (e: KeyboardEvent) => {
-  const tag = (e.target as HTMLElement).tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
-  // باقي الاختصارات...
-}
-```
+1. تحقق من اتصال الإنترنت
+2. تحقق من حالة Worker:
+   ```bash
+   curl https://my-worker.username.workers.dev/health
+   ```
+3. تحقق من إعدادات الـ Proxy
 
 ---
 
-## ⚠️ المشاكل غير المُحللة أو الحلول الضعيفة
-
-_لا توجد مشاكل غير مُحللة حالياً. جميع المشاكل الرئيسية لها حل._
-
----
-
-## ✅ المشاكل المُحللة
-
-### CORS يمنع طلبات GitHub من localhost
-**الحالة: ✅ مُحلل**
-
----
-
-### GitHub token plaintext في localStorage
-**الحالة: ✅ مُحلل** — تشفير AES-256-GCM
-
----
-
-### API keys encryption لا يعمل على HTTP
-**الحالة: ✅ مُحلل** — تشفير AES-256-GCM
-
----
-
-### لا يوجد Rate Limiting + XSS يسرق API keys
-**الحالة: ✅ مُحلل** — Cloudflare Worker proxy
-
-**الحل:** Cloudflare Worker proxy يُمرّر طلبات AI عبر الخادم:
-```
-المتصفح → Worker (يضيف API key) → OpenAI/Gemini/etc
-```
-- API keys مخزنة كـ environment variables في Worker — لا تصل للمتصفح
-- XSS لا يستطيع سرقة أي مفاتيح
-- Worker يحدد المواقع المسموحة (ALLOWED_ORIGINS)
-- auth token للحماية من الوصول غير المصرح به
-
-**الإعداد:** راجع `worker/README.md`
-
----
-
-### أخطاء رفع الملفات الكبيرة >50MB
-**الحالة: ✅ مُحلل** — تخطي تلقائي مع تحذير
-
-**الحل:** الملفات >90MB تُتخطى تلقائياً مع رسالة تحذير بدلاً من فشل كامل.
-
----
-
-## قائمة الملفات المُعدّلة
-
-| الملف | التغيير | الحالة |
-|-------|---------|--------|
-| `worker/index.js` | AI Worker proxy — يُمرّر طلبات AI | ✅ جديد |
-| `worker/wrangler.toml` | إعدادات AI Worker | ✅ جديد |
-| `worker-github/index.js` | GitHub Worker proxy — يُخفي GitHub token | ✅ جديد |
-| `worker-github/wrangler.toml` | إعدادات GitHub Worker | ✅ جديد |
-| `.github/workflows/deploy-worker.yml` | نشر AI Worker تلقائياً | ✅ جديد |
-| `.github/workflows/deploy-worker-github.yml` | نشر GitHub Worker تلقائياً | ✅ جديد |
-| `src/utils/workerCrypto.ts` | تشفير AUTH_TOKEN بـ AES-256-GCM | ✅ جديد |
-| `src/ai/api.ts` | دعم AI Worker proxy | ✅ مُحدّث |
-| `src/ai/github.ts` | دعم GitHub Worker proxy + تشفير | ✅ مُحدّث |
-| `src/ai/AIPanel.tsx` | إعدادات Workers + دليل الاستخدام | ✅ مُحدّث |
-| `src/utils/apiKeyCrypto.ts` | تشفير AES-256-GCM | ✅ مُحدّث |
-| `src/utils/pinCrypto.ts` | salt + verifyPin | ✅ مُحدّث |
-| `src/store/aiStore.ts` | verifyPin + loadEncryptedKeys async | ✅ مُحدّث |
-| `src/systems/AutoSaveSystem.ts` | توقف عند إخفاء التبويب | ✅ مُحدّث |
-
----
-
----
-
-## 🔍 دليل أخطاء البحث والبحث في الويب
-
-### الخطأ 17: خطأ 429 Rate limit (OpenRouter)
+### 3. مفتاح API غير صالح
 
 **الرسالة:**
 ```
-⚠️ خطأ 429: {"error":{"message":"Rate limit exceeded: free-models-per-day..."}}
+Invalid API key: Please check your API key configuration
 ```
 
 **السبب:**
-- OpenRouter المجاني يسمح بـ 50 طلب/يوم فقط
-- تجاوزت الحد اليومي
+مفتاح API غير صحيح أو منتهي الصلاحية.
 
 **الحل:**
-```
-1. شحن حساب OpenRouter بـ $10 (1000 طلب/يوم)
-2. أو استخدام Gemini المجاني (1500 طلب/يوم) — مُوصى به
-3. أو الانتظار حتى يتجدد العدد (كل 24 ساعة)
+1. تحقق من صحة المفتاح في صفحة المزود
+2. تأكد من عدم وجود مسافات أو أحرف إضافية
+3. أعد توليد المفتاح إذا لزم الأمر
+
+---
+
+## إعداد Worker Proxy
+
+### إنشاء Cloudflare Worker
+
+#### الخطوة 1: إنشاء حساب Cloudflare
+
+1. اذهب إلى https://dash.cloudflare.com
+2. أنشئ حساب مجاني
+
+#### الخطوة 2: تثبيت Wrangler
+
+```bash
+npm install -g wrangler
 ```
 
-**لتفعيل Gemini:**
+#### الخطوة 3: تسجيل الدخول
+
+```bash
+npx wrangler login
 ```
-1. احصل على مفتاح من: https://aistudio.google.com/app/apikey
-2. افتح اللعبة → AI Settings
-3. اختر "Google Gemini (مجاني)"
-4. أضف المفتاح
+
+#### الخطوة 4: إنشاء Worker جديد
+
+```bash
+# Worker للـ AI
+mkdir worker && cd worker
+npx wrangler init
+
+# Worker لـ GitHub
+mkdir worker-github && cd worker-github
+npx wrangler init
 ```
 
 ---
 
-### الخطأ 18: خطأ 404 Gemini model not found
+### المتغيرات البيئية
 
-**الرسالة:**
-```
-⚠️ خطأ 404: models/gemini-1.5-pro is not found for API version v1main
-```
+#### Worker (AI):
 
-**السبب:**
-- نماذج Gemini 2.0 أُغلقت (يونيو 2026)
-- نماذج Gemini 1.5 غير متاحة
+```toml
+# worker/wrangler.toml
+name = "ai-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
 
-**الحل:**
-```
-النماذج المتاحة حالياً:
-✅ gemini-3.5-flash (مجاني)
-✅ gemini-3.1-flash-lite (مجاني)
-✅ gemini-3-flash (مجاني)
-
-النماذج المُغلقة:
-❌ gemini-2.0-flash (أُغلق يونيو 2026)
-❌ gemini-1.5-pro (غير متاح)
-❌ gemini-1.5-flash (غير متاح)
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173,https://project-owner.github.io"
 ```
 
----
-
-### الخطأ 19: البحث لا يُرجع نتائج
-
-**الرسالة:**
-```
-لم يتم العثور على نتائج لـ "..."
+```bash
+# متغيرات سرية (أضفها عبر Wrangler)
+npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put GEMINI_API_KEY
+npx wrangler secret put AUTH_TOKEN
 ```
 
-**السبب:**
-- DuckDuckGo لا يُرجع نتائج للاستعلام
-- الاستعلام بالعربية (DuckDuckGo أفضل بالإنجليزية)
+#### Worker (GitHub):
 
-**الحل:**
+```toml
+# worker-github/wrangler.toml
+name = "github-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173,https://project-owner.github.io"
 ```
-1. جرّب استعلاماً بالإنجليزية
-2. تأكد من أن زر 🔍 مفعّل
-3. جرّب كلمات مختلفة
-4. استخدم البحث المتقدم (multi-layer search)
+
+```bash
+# متغيرات سرية
+npx wrangler secret put AUTH_TOKEN
 ```
 
 ---
 
-## ☁️ Google Drive Integration
+### خطوات النشر
 
-### الإعداد
-1. افتح [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. اعمل مشروع جديد ← فعّل **Google Drive API**
-3. **OAuth consent screen**: User data → Testing mode → ضيف إيميلك في Test users
-4. **Credentials**: Create Credentials → OAuth Client ID → Web application
-5. حط URLs في **Authorized JavaScript origins**: `http://localhost:5173`, `https://project-owner.github.io`
-6. انسخ **Client ID** وحطه في التطبيق
+#### نشر Worker واحد:
 
-### المميزات
-- **رفع المحتوى فقط** (JSON): gameMeta.json, levels.json, characters.json
-- **رفع المشروع كامل**: كل الملفات من GitHub → Drive مع هيكل المجلدات
-- حدود: 100 مستخدم تجريبي كحد أقصى
+```bash
+cd worker
+npx wrangler deploy
+```
+
+#### نشر كلا الـ Workers:
+
+```bash
+cd worker && npx wrangler deploy
+cd ../worker-github && npx wrangler deploy
+```
+
+#### نشر عبر GitHub Actions:
+
+يتم تلقائياً عند الدفع إلى `main`:
+- `.github/workflows/deploy-worker.yml` — نشر AI Worker
+- `.github/workflows/deploy-worker-github.yml` — نشر GitHub Worker
 
 ---
 
-## اختبار التكامل
+### اختبار Worker
 
-1. **اختبار الاتصال:** يجلب اسم المستخدم تلقائياً ✅
-2. **التعديل المباشر:** يعدّل في المستودع الرئيسي ✅
-3. **إنشاء مستودع جديد:** ينسخ كل الملفات عبر Git Data API + يحدث base path ✅
-4. **رفع التعديلات:** يرفع characters.ts + dialogue.ts + gameMeta.ts ✅
-5. **70 اختبار ✅** — TypeScript + Build + Tests
+```bash
+# اختبار الاتصال
+curl https://my-worker.username.workers.dev/health
+
+# اختبار مع Auth Token
+curl -H "X-Auth-Token: YOUR_TOKEN" https://my-worker.username.workers.dev/health
+```
+
+---
+
+## خطوات استكشاف الأخطاء وإصلاحها
+
+### 1. التحقق من حالة Worker
+
+```bash
+# عرض السجلات المباشرة
+npx wrangler tail
+
+# عرض الـ Workers المُنشرة
+npx wrangler list
+```
+
+### 2. التحقق من صحة مفتاح API
+
+```bash
+# اختبار GitHub token
+curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
+
+# اختبار OpenRouter
+curl -H "Authorization: Bearer YOUR_KEY" https://openrouter.ai/api/v1/models
+```
+
+### 3. اختبار الاتصال
+
+```bash
+# اختبار Worker
+curl -I https://my-worker.username.workers.dev
+
+# اختبار GitHub API مباشرة
+curl -I https://api.github.com
+```
+
+### 4. التحقق من وحدة تحكم المتصفح
+
+1. افتح المتصفح → `F12` → `Console`
+2. ابحث عن أخطاء حمراء
+3. راجع تبويب `Network` ل查看详情 الطلبات
+4. تحقق من:
+   - هل الطلب يذهب للـ Worker أم مباشرة لـ GitHub؟
+   - ما هو كود الحالة (200, 401, 403, 404, 500)؟
+   - هل يوجد خطأ CORS؟
+
+### 5. فحص إعدادات التطبيق
+
+1. افتح `Settings` → `Worker Configuration`
+2. تأكد من صحة:
+   - Worker URL
+   - Auth Token
+   - GitHub Token
+3. احفظ وأعد تحميل الصفحة
+
+### 6. إعادة تعيين الإعدادات
+
+إذا استمرت المشكلة:
+1. امسح بيانات التخزين المحلي:
+   - افتح `F12` → `Application` → `Local Storage`
+   - احذف المفاتيح المتعلقة بالـ Workers
+2. أعد إدخال الإعدادات يدوياً
+3. أعد تحميل الصفحة
 
 ---
 
 ## ملاحظات مهمة
 
-1. **التوكن:** استخدم توكن كلاسيك (وليس Fine-grained) بصلاحيات `repo` + `workflow`
-2. **المالك:** هو اسم المستخدم على GitHub (وليس الاسم الكامل أو الإيميل)
-3. **الاسم:** لا يحتوي على مسافات أو أحرف خاصة (استخدم `-` بدلاً من `_`)
-4. **Git Data API:** يستخدم Trees + Blobs + Commits — commit واحد لكل الملفات
-5. **حد الحجم:** الملفات الكبيرة جداً (>50MB) قد تفشل بسبب حدود Contents API
-6. **الوسائط:** ملفات `.mp4/.mp3/.wav` تُرفع عبر Contents API — قد تفشل إذا كانت كبيرة جداً
+1. **التوكن:** استخدم توكن **كلاسيك** (وليس Fine-grained) بصلاحيات `repo` + `workflow`
+2. **المالك:** هو **اسم المستخدم** على GitHub (وليس الاسم الكامل أو الإيميل)
+3. **حد الحجم:** الملفات فوق 100MB قد تفشل عبر Contents API
+4. **CORS:** لا تعمل الطلبات المباشرة من localhost — استخدم Worker proxy
+5. **التوقيع:** انتظر 30-60 ثانية قبل إعادة المحاولة عند أخطاء 429
+6. **التخزين:** المفاتيح السرية مخزنة في Worker (وليس في المتصفح) — آمنة من XSS
 
 ---
 
-## الخطأ 16: CORS يمنع headers مخصصة
+## الملفات الرئيسية
 
-**الرسالة:**
-```
-Access to fetch at 'https://api.github.com/...' from origin '...' has been blocked by CORS policy: 
-Request header field http-referer is not allowed by Access-Control-Allow-Headers in preflight response.
-```
+| الملف | الوظيفة |
+|-------|---------|
+| `worker/index.js` | AI Worker proxy — يُمرّر طلبات AI عبر الخادم |
+| `worker/wrangler.toml` | إعدادات AI Worker |
+| `worker-github/index.js` | GitHub Worker proxy — يُخفي GitHub token |
+| `worker-github/wrangler.toml` | إعدادات GitHub Worker |
+| `.github/workflows/deploy-worker.yml` | نشر AI Worker تلقائياً |
+| `.github/workflows/deploy-worker-github.yml` | نشر GitHub Worker تلقائياً |
+| `src/ai/api.ts` | دعم AI Worker proxy |
+| `src/ai/github.ts` | دعم GitHub Worker proxy + تشفير |
+| `src/ai/AIPanel.tsx` | إعدادات Workers + دليل الاستخدام |
 
-**السبب:**
-طلب GitHub يتضمن headers مخصصة مثل `HTTP-Referer` و `X-Title` لكن `Access-Control-Allow-Headers` في Worker لا تسمح بها.
+---
 
-**الحل:**
-إضافة `HTTP-Referer` و `X-Title` إلى `Access-Control-Allow-Headers` في كلا Worker:
-
-```javascript
-// worker/index.js (AI Worker)
-const corsHeaders = {
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token, HTTP-Referer, X-Title',
-  'Access-Control-Max-Age': '86400',
-}
-
-// worker-github/index.js (GitHub Worker)
-const corsHeaders = {
-  'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token, X-GitHub-Api-Version, HTTP-Referer, X-Title',
-  'Access-Control-Max-Age': '86400',
-}
-```
-
-**ملاحظة:** يجب نشر Worker بعد التحديث:
-```bash
-cd worker && npx wrangler deploy
-cd worker-github && npx wrangler deploy
-```
+> آخر تحديث: يونيو 2026

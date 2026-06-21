@@ -1,1434 +1,1042 @@
-# 📚 دليل المعلم — إعداد اللعبة على مستودعك الخاص
+# دليل إعداد هيئة التدريس — Cyber Guardians Mobile
 
-> دليل شامل للمعلم غير التقني: كيف تنسخ لعبة Cyber Guardians على حسابك الشخصي وتعملها بشكل صحيح
-
----
-
-## ⚠️ تنبيه مهم قبل البدء
-
-> **أنت ستنشئ حسابات وخدمات خاصة بك — لاستخدام حسابات المطور الأصلي!**
-
-- ✅ أنت تنشئ **Worker Proxy خاص بك** على Cloudflare
-- ✅ أنت تحصل على **API Key خاص بك** من OpenAI/Google
-- ✅ أنت تحصل على **GitHub Token خاص بك**
-- ✅ أنت تنشئ **مستودع GitHub خاص بك**
-- ❌ لا تعدّل أي ملفات في المستودع الأصلي
-- ❌ لا تستخدم حسابات أو مفاتيح المطور الأصلي
+> دليل عملي تفصيلي لكيفية إعداد وتعديل لعبة Cyber Guardians باستخدام الذكاء الاصطناعي
 
 ---
 
-## 📋 جدول المحتويات
+## جدول المحتويات
 
-1. [نظرة عامة — ماذا ستفعل؟](#overview)
-2. [القسم الأول: إعداد AI (مزود الذكاء الاصطناعي)](#ai-setup)
-3. [القسم الثاني: إعداد GitHub (استضافة المشروع)](#github-setup)
-4. [القسم الثالث: نسخ اللعبة وتشغيلها](#clone-game)
-5. [القسم الرابع: تعديل المحتوى التعليمي](#customize)
-6. [القسم الخامس: حل المشاكل الشائعة](#troubleshooting)
+1. [المقدمة](#mukaddima)
+2. [الاتصال بالـ AI](#ai-connection)
+3. [تعديل المحتوى عبر AI](#ai-editing)
+4. [الأوامر JSON](#json-commands)
+5. [الملفات القابلة للتعديل](#editable-files)
+6. [الإعدادات المتقدمة](#advanced-settings)
+7. [أفضل الممارسات](#best-practices)
 
 ---
 
-## 1. نظرة عامة — ماذا ستفعل؟ {#overview}
+## 1. المقدمة {#mukaddima}
 
-### الهدف
-ستقوم بنسخ لعبة Cyber Guardians على حسابك الشخصي بحيث:
-1. ✅ اللعبة تعمل على رابط خاص بك (مثل: `your-username.github.io/cyber-guardians-mobile`)
-2. ✅ AI Assistant يعمل ويساعدك في تعديل المحتوى
-3. ✅ يمكنك تعديل الرسائل والشخصيات والمستويات
-4. ✅ التغييرات تظهر فوراً على اللعبة
+### دور هيئة التدريس
 
-### المطلوب منك
-- حساب GitHub مجاني
+أنت كعضو في هيئة التدريس تملك القدرة على:
+
+- تعديل محتوى המשחק التعليمي (المستويات، الشخصيات، الأسئلة)
+- إضافة مستويات وتحديات جديدة
+- تخصيص تجربة التعلم لطلابك
+- مراقبة تقدم الطلاب وتقييمهم
+- إدارة مخزون المكافآت والمهارات
+
+### الصلاحيات
+
+| الصلاحية | الوصف |
+|----------|-------|
+| تعديل المحتوى | تغيير نصوص المستويات والشخصيات والحوار |
+| إضافة محتوى | إنشاء مستويات وأسئلة وتحديات جديدة |
+| حذف محتوى | إزالة مستويات أو محتوى غير مرغوب |
+| إدارة التقييم | تعديل أسئلة التقييم والدرجات |
+| إعدادات اللعبة | تغيير العنوان والألوان والإعدادات العامة |
+| النسخ الاحتياطي | حفظ واستعادة النسخ الاحتياطية |
+
+---
+
+## 2. الاتصال بالـ AI {#ai-connection}
+
+### إدخال Gemini API Key
+
+1. احصل على مفتاح API من Google AI Studio:
+   - اذهب إلى: https://aistudio.google.com/app/apikey
+   - سجّل الدخول بحساب Google
+   - اضغط "Create API Key"
+   - اختر مشروع أو أنشئ مشروع جديد
+   - انسخ المفتاح (يبدأ بـ `AIza...`)
+
+2. أدخل المفتاح في اللعبة:
+   - افتح اللعبة واضغط الزر العائم **🤖**
+   - اذهب إلى تبويب **"AI Settings"**
+   - الصق المفتاح في حقل **"API Key"**
+   - اضغط **"حفظ"**
+
+### اختيار النموذج
+
+| النموذج | الشركة | السعر | الحد الأقصى للرموز | ملاحظات |
+|---------|--------|-------|---------------------|---------|
+| `gemini-2.0-flash` | Google | مجاني | 1,048,576 | الأفضل للمبتدئين - أسرع استجابة |
+| `gemini-2.5-flash` | Google | مجاني | 1,048,576 | أحدث إصدار - أداء محسّن |
+| `gemini-2.5-pro` | Google | مجاني | 1,048,576 | الأقوى - للمهام المعقدة |
+| `gpt-4o-mini` | OpenAI | مدفوع | 128,000 | أسرع وأرخص من OpenAI |
+| `gpt-4o` | OpenAI | مدفوع | 128,000 | الأقوى من OpenAI |
+
+**كيفية تغيير النموذج:**
+1. افتح إعدادات AI
+2. ابحث عن حقل **"Model"**
+3. اختر النموذج من القائمة المنسدلة
+4. اضغط **"حفظ"**
+
+### Worker Proxy vs Direct API
+
+#### Worker Proxy (الموصى به)
+
+```
+اللعبة ──→ Worker (خادمك على Cloudflare) ──→ Google/OpenAI
+              ↑
+         المفتاح مخفي هنا
+```
+
+**المزايا:**
+- المفتاح السري مخفي ولا يظهر في المتصفح
+- يتجاوز مشاكل CORS
+- أمان أعلى
+
+**المطلوب:**
 - حساب Cloudflare مجاني
-- معرفة 기본ية بالحاسوب (لا تحتاج خبرة برمجية)
+- إنشاء Worker Proxy (يُشرح في الأقسام المتقدمة)
+
+#### Direct API (الاتصال المباشر)
+
+```
+اللعبة ──→ Google/OpenAI مباشرة
+         ↑
+    المفتاح يظهر في المتصفح!
+```
+
+**المزايا:**
+- لا يحتاج حساب Cloudflare
+- أسرع في الإعداد
+
+**المخاطر:**
+- المفتاح السري يظهر في DevTools
+- قد يواجه مشاكل CORS
+
+**متى تستخدم Direct API؟**
+
+| الحالة | التوصية |
+|--------|---------|
+| تجربة اللعبة شخصياً | Direct API مقبول |
+| استخدام مع طلاب | Worker Proxy موصى به |
+| مسابقة رسمية | Worker Proxy إلزامي |
 
 ---
 
-## 2. القسم الأول: إعداد AI (مزود الذكاء الاصطناعي) {#ai-setup}
+## 3. تعديل المحتوى عبر AI {#ai-editing}
 
-### ما هو AI في هذه اللعبة؟
+### كيف تعدل مستويات
 
-AI Assistant هو مساعد ذكي مدمج في اللعبة يساعدك على:
-- تعديل الرسائل التعليمية (مثل: غيّر رسالة المستوى 3)
-- إضافة شخصيات جديدة
-- تعديل أي محتوى في اللعبة
+**مثال 1: تغيير رسالة المستوى**
 
-### ملاحظة: نظام المهارات والإضافات الجديد (الإصدار 4.0.0)
-
-في الإصدار الجديد، أصبح لدينا ميزتان رئييتان:
-
-#### 1. نظام المهارات (Skills)
-- يمكن للمعلم إنشاء **مهارات مخصصة** تُكتشف تلقائياً في محادثة AI
-- عند إرسال رسالة في AI Chat، النظام يبحث تلقائياً عن المهارات المفعلة التي تطابق رسالتك
-- **مثال:** إذا أنشأت مهارة اسمها "content-editor" بوصف "تعديل المحتوى التعليمي"، سيظهر تلقائياً عندما تطلب تعديل محتوى
-- **خطوات التفعيل:**
-  1. اضغط على **🤖** ثم **"⚙ AI Settings"**
-  2. اذهب إلى تبويب **"🛠️ Skills"**
-  3. أضف مهارة جديدة بالاسم والوصف
-  4. فعّل المهارة ✅
-
-#### 2. نظام الإضافات (Plugins)
-- الإضافات أصبحت لها **أزرار تنفيذ** و **نقاط نهاية API حقيقية**
-- يمكنها الاتصال بخدمات خارجية مباشرة من داخل AI Assistant
-- **ملاحظة أمنية:** تأكد من أن كل إضافة لها **baseUrl صحيح** ومؤمن
-
-#### 3. معرف المشروع والتعليمات
-- الآن يتم حقن **معرفة المشروع** و **التعليمات** في system prompts الخاص بـ AI Assistant
-- هذا يساعد AI على فهم سياق مشروعك بشكل أفضل
-- يمكنك تحميل معرف المشروع وتكوين التعليمات من تبويب **"⚙ AI Settings"**
-
-### لماذا نحتاج Worker Proxy؟
-
-#### المشكلة:
-عندما تستخدم AI Assistant في اللعبة، المتصفح يرسل طلب إلى خادم OpenAI أو Google مباشرة. لكن هناك مشكلتان:
-1. **المفتاح السري (API Key)** سيظهر في المتصفح → أي شخص يستطيع سرقته
-2. **CORS** — المتصفح يحجب الطلبات من مواقع مختلفة لأسباب أمنية
-
-#### الحل: Worker Proxy
 ```
-بدون Worker Proxy:
-اللعبة ──→ المتصفح ──→ OpenAI (المفتاح ظاهر! ⚠️)
-
-مع Worker Proxy:
-اللعبة ──→ Worker (خادمك على Cloudflare) ──→ OpenAI
-              ↑
-         المفتاح مخفي هنا 🔒
+غيّر رسالة المستوى 3 لتكون عن تأمين الشبكات
 ```
 
-**Worker** هو برنامج صغير يعمل على خوادم Cloudflare (شركة مشهورة وموثوقة). إنه مثل "شباك تذاكر" — اللعبة تطلب من Worker، وWorker يمرّر الطلب للـ AI ويعيد النتيجة.
+**مثال 2: تعديل وصف المستوى**
 
-### خيار بديل: الاتصال المباشر (بدون Worker Proxy)
+```
+عدّل وصف المستوى 5 ليشمل موضوع التشفير المتقدم
+```
 
-> ⚠️ **تحذير:** هذا الخيار أقل أماناً — استخدمه على مسؤوليتك الخاصة!
+**مثال 3: تغيير صعوبة المستوى**
 
-بمجرد ضبط إعدادات الـ AI، يمكنك اختيار **الاتصال المباشر** بدلاً من Worker Proxy. هذا يعني:
-- ✅ **لا تحتاج حساب Cloudflare** أو إعداد Worker
-- ✅ **أسرع في الإعداد** — فقط أضف API Key واختر "الاتصال المباشر"
-- ❌ **مفتاح API يظهر في المتصفح** — أي شخص يستطيع رؤيته في DevTools
-- ❌ **CORS** — بعض مزودي AI قد يحجبون الطلبات من المتصفح
+```
+اجعل المستوى 4 أسهل قليلاً - خفف الأسئلة
+```
 
-#### كيف تفعّل الاتصال المباشر:
+**خطوات التنفيذ:**
+1. اضغط على **🤖** ثم **"AI Chat"**
+2. اكتب الأمر بالعربي
+3. سيقوم AI بالتعديل تلقائياً
+4. اضغط **"رفع إلى GitHub"** لحفظ التغييرات
 
-1. افتح اللعبة
-2. اضغط على الزر العائم **🤖**
-3. اذهب إلى تبويب **"🤖 AI Settings"**
-4. ابحث عن خيار **"الاتصال المباشر (بدون Worker Proxy)"**
-5. فعّل الخيار ✅
-6. أضف API Key الخاص بك
-7. اضغط **"🔌 اختبار الاتصال"** للتأكد
+### كيف تضيف مستويات جديدة
 
-#### متى تستخدم الاتصال المباشر؟
+**مثال:**
 
-| الحالة | الاستخدام الموصى به |
-|--------|---------------------|
-| أنت معلم وتريد تجربة اللعبة فقط | ✅ الاتصال المباشر مناسب |
-| أنت معلم وتريد استخدام اللعبة مع طلابك | ⚠️ الاتصال المباشر مقبول مع تحفظات |
-| أنت تدير مسابقة رسمية | ❌ استخدم Worker Proxy |
+```
+أضف مستوى جديد رقم 11 عن حماية الخصوصية الرقمية
+- العنوان: حماية هويتك الرقمية
+- الوصف: تعلم كيف تحمي معلوماتك الشخصية على الإنترنت
+- 3 تحديات تعليمية
+- 5 أسئلة تقييم
+```
 
-#### ملاحظات مهمة:
+**النموذج المطلوب للlevel الجديد:**
 
-1. **OpenRouter** — يعمل بشكل جيد مع الاتصال المباشر (يدعم CORS)
-2. **OpenAI** — قد لا يعمل مع الاتصال المباشر (لا يدعم CORS من المتصفح)
-3. **Google Gemini** — قد لا يعمل مع الاتصال المباشر (لا يدعم CORS من المتصفح)
-4. **Ollama** — يعمل فقط إذا كنت تشغل الـ AI محلياً على جهازك
-
-### الخطوة 1: إنشاء حساب Cloudflare مجاني
-
-1. اذهب إلى: **https://dash.cloudflare.com/sign-up**
-2. أدخل إيميلك وكلمة مرور
-3. فعّل حسابك من الإيميل
-4. ستدخل لوحة التحكم الرئيسية
-
-### الخطوة 2: إنشاء Worker Proxy خاص بك
-
-> ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
-
-#### الخطوة 2.1: فتح لوحة تحكم Cloudflare
-
-1. اذهب إلى: **https://dash.cloudflare.com**
-2. سجّل الدخول بحسابك
-3. سترى لوحة التحكم الرئيسية
-
-#### الخطوة 2.2: الانتقال إلى Workers
-
-1. في القائمة左侧 (على اليسار)، ابحث عن **"Workers & Pages"**
-2. اضغط عليه
-3. سترى صفحة Workers
-
-#### الخطوة 2.3: إنشاء Worker جديد
-
-1. اضغط على زر **"Create"** (أزرق اللون في الأعلى)
-2. سترى صفحة **"Ship something new"** مع عدة خيارات:
-   - Continue with GitHub
-   - Connect GitLab
-   - **Start with Hello World!** ✅ ← اختر هذا
-   - Select a template
-   - Upload your static files
-
-3. اضغط على **"Start with Hello World!"**
-
-4. الآن سترى صفحة تسمية Worker:
-   - **"Worker Name"**: اكتب اسم الـ Worker
-     - مثال: `my-ai-proxy`
-     - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
-   - اضغط **"Deploy"**
-
-5. الآن سترى صفحة الكود (Editeur):
-   - هناك كود جاهز (Hello World)
-   - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
-
-#### الخطوة 2.4: وضع الكود الجديد
-
-1. في صفحة Editeur، سترى مربع كود
-2. **امسح كل الكود الموجود** (Ctrl+A ثم Delete)
-3. **انسخ الكود التالي والصقه**:
-
-```javascript
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get('Origin') || ''
-    const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim())
-    const corsHeaders = {
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token, HTTP-Referer, X-Title',
-      'Access-Control-Max-Age': '86400',
+```json
+{
+  "levelNumber": 11,
+  "title": "حماية هويتك الرقمية",
+  "description": "تعلم كيف تحمي معلوماتك الشخصية على الإنترنت",
+  "challenges": [
+    {
+      "id": "privacy_1",
+      "title": "اختبار كلمات المرور",
+      "description": "اختبر قوة كلمة المرور الخاصة بك",
+      "points": 100
     }
-    if (allowed.includes(origin)) {
-      corsHeaders['Access-Control-Allow-Origin'] = origin
-    }
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders })
-    }
-
-    const url = new URL(request.url)
-    if (url.pathname === '/health') {
-      return new Response('ok', { headers: { ...corsHeaders, 'Content-Type': 'text/plain' } })
-    }
-
-    const authToken = env.AUTH_TOKEN
-    if (authToken) {
-      const provided = request.headers.get('X-Auth-Token')
-      if (provided !== authToken) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
-    const target = url.searchParams.get('target')
-    if (!target) {
-      return new Response(JSON.stringify({ error: 'Missing ?target= parameter' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    let targetUrl
-    try {
-      targetUrl = new URL(target)
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid target URL' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const allowedHosts = ['api.openai.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'openrouter.ai']
-    if (!allowedHosts.includes(targetUrl.hostname)) {
-      return new Response(JSON.stringify({ error: 'Host not allowed: ' + targetUrl.hostname }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const headers = new Headers(request.headers)
-    headers.delete('Origin')
-    headers.delete('Referer')
-    headers.delete('X-Auth-Token')
-    headers.set('Host', targetUrl.host)
-
-    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined
-
-    const resp = await fetch(targetUrl.toString(), {
-      method: request.method,
-      headers,
-      body,
-    })
-
-    const respHeaders = new Response(resp.headers)
-    Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
-    respHeaders.delete('Content-Security-Policy')
-
-    return new Response(resp.body, {
-      status: resp.status,
-      statusText: resp.statusText,
-      headers: respHeaders,
-    })
-  },
+  ]
 }
 ```
 
-4. اضغط **"Deploy"** (زر أزرق في الأسفل)
+### كيف تعدل الشخصيات
 
-#### الخطوة 2.5: نسخ رابط Worker
+**مثال 1: تغيير اسم الشخصية**
 
-1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
-2. في الأعلى، سترى رابط الـ Worker مثل:
-   ```
-   https://my-ai-proxy.your-username.workers.dev
-   ```
-3. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
+```
+غيّر اسم الشخصية "rookie" إلى "المبتدئ"
+```
 
-> ✅ **الآن لديك AI Worker خاص بك!**
+**مثال 2: تعديل حوار الشخصية**
 
-### الخطوة 3: إعداد المتغيرات (Environment Variables)
+```
+عدّل حوار الشخصية "mentor" في المستوى 3 ليكون أكثر تشجيعاً
+```
 
-> هذه الخطوة مهمة جداً — بدونها لن يعمل Worker!
+**مثال 3: إضافة شخصية جديدة**
 
-#### الخطوة 3.1: الوصول إلى إعدادات المتغيرات
+```
+أضف شخصية جديدة اسمها "الخبير" - خبير في التشفير، يظهر في المستويات المتقدمة
+```
 
-1. من صفحة الـ Worker، اضغط على تبويب **"Settings"** (في الأعلى)
-2. ثم اضغط على **"Variables and Secrets"** (في القائمة左侧)
+### كيف تعدل الحوار
 
-#### الخطوة 3.2: إضافة المتغير الأول (AUTH_TOKEN)
+**مثال 1: تغيير رسالة ترحيب**
 
-1. اضغط **"Add variable"**
-2. املأ:
+```
+غيّر رسالة الترحيب في البداية لتكون: "مرحباً بك في رحلة الأمان السيبراني!"
+```
 
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `AUTH_TOKEN` |
-| **Value** | اكتب نصاً سرياً تختاره (مثل: `my-ai-secret-123`) |
-| **Encrypt** | ✅ فعّل هذا الخيار |
+**مثال 2: تعديل رسائل الخطأ**
 
-3. اضغط **"Save"**
+```
+عدّل رسالة الخطأ عند إدخال كلمة مرور خاطئة لتكون أكثر ودية
+```
 
-> **ما هو AUTH_TOKEN؟**
-> هذا مفتاح حماية — اللعبة سترسله مع كل طلب للتأكد أنه منك.
+**مثال 3: إضافة حوار جديد**
 
-#### الخطوة 3.3: إضافة المتغير الثاني (ALLOWED_ORIGINS)
+```
+أضف حواراً جديداً للشخصية "mentor" عند إكمال المستوى الأول
+```
 
-1. اضغط **"Add variable"** مرة أخرى
-2. املأ:
+### كيف تعدل التقييم
 
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `ALLOWED_ORIGINS` |
-| **Value** | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` |
-| **Encrypt** | ❌ لا تفعّل |
+**مثال 1: إضافة أسئلة جديدة**
 
-3. اضغط **"Save"**
+```
+أضف 3 أسئلة جديدة للاختبار في المستوى 2 عن التشفير
+```
 
-> **مهم:** استبدل `YOUR-USERNAME` باسم المستخدم الخاص بك على GitHub!
+**مثال 2: تعديل الدرجات**
 
-#### الخطوة 3.4: إضافة المتغير الثالث (API Key)
+```
+غيّر درجة النجاح في الاختبار من 70% إلى 80%
+```
 
-1. اضغط **"Add variable"** مرة أخرى
-2. املأ:
+**مثال 3: حذف أسئلة**
 
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `GEMINI_API_KEY` (إذا تستخدم Gemini) أو `OPENAI_API_KEY` (إذا تستخدم OpenAI) |
-| **Value** | المفتاح الذي حصلت عليه من Google أو OpenAI |
-| **Encrypt** | ✅ فعّل هذا الخيار |
-
-3. اضغط **"Save"**
-
-#### الخطوة 3.5: تأكيد الحفظ
-
-1. تأكد من أن لديك 3 متغيرات على الأقل:
-   - ✅ `AUTH_TOKEN`
-   - ✅ `ALLOWED_ORIGINS`
-   - ✅ `GEMINI_API_KEY` أو `OPENAI_API_KEY`
-
-2. اضغط **"Deploy"** مرة أخرى (في الأعلى) لتطبيق التغييرات
-
-### الخطوة 4: الحصول على مفتاح AI (API Key)
-
-#### خيار A: Google Gemini (مجاني ✅) — مُوصى به
-
-1. اذهب إلى: **https://aistudio.google.com/app/apikey**
-2. سجّل الدخول بحساب Google الخاص بك
-3. اضغط **"Create API Key"**
-4. اختر مشروع (أو أنشئ مشروع جديد)
-5. انسخ المفتاح (يبدأ بـ `AIza...`)
-6. أضفه في Cloudflare Worker كمتغير: `GEMINI_API_KEY`
-
-#### خيار B: OpenAI (مدفوع 💰)
-
-1. اذهب إلى: **https://platform.openai.com/api-keys**
-2. سجّل الدخول أو أنشئ حساباً
-3. اضغط **"Create new secret key"**
-4. انسخ المفتاح (يبدأ بـ `sk-...`)
-5. أضفه في Cloudflare Worker كمتغير: `OPENAI_API_KEY`
-
-### الخطوة 5: إعداد اللعبة للاتصال بالـ Worker
-
-1. افتح اللعبة
-2. اضغط على الزر العائم **🤖** (أسفل اليسار)
-3. اذهب إلى تبويب **"⚙ GitHub Settings"** أو **"🤖 AI Settings"**
-4. ابحث عن قسم **"AI Provider"** أو **"مزود الـ AI"**
-5. املأ الحقول:
-
-| الحقل | القيمة | مثال |
-|-------|--------|------|
-| **Base URL** | رابط Worker الخاص بك | `https://my-ai-proxy.your-username.workers.dev` |
-| **Model** | اسم النموذج | `gemini-2.0-flash` (لـ Gemini) أو `gpt-4o-mini` (لـ OpenAI) |
-| **API Key** | المفتاح الذي حصلت عليه | `AIza...` أو `sk-...` |
-| **AUTH Token** | الـ Token الذي أنشأته في Worker | `my-secret-token-123` |
-
-6. اضغط **"💾 حفظ"**
-7. اضغط **"🔍 اختبار الاتصال"** للتأكد من أن كل شيء يعمل
-
-### شرح الحقول بالتفصيل
-
-#### Base URL — ما هو؟
-هذا هو رابط Worker الخاص بك. إنه "العنوان" الذي سترسل إليه الطلبات.
-
-**كيف تحصل عليه:**
-- بعد إنشاء Worker في Cloudflare، ستحصل على رابط مثل:
-  `https://my-ai-proxy.your-username.workers.dev`
-- انسخ هذا الرابط وضعه في حقل Base URL
-
-**ملاحظة مهمة:**
-- إذا كنت تشغل اللعبة محلياً (`localhost`)، يمكنك استخدام:
-  `http://localhost:8787` (منافذ Worker المحلية)
-- أو استخدم الرابط العام كما هو
-
-#### Model (النموذج) — ما هو؟
-هذا هو "الذكاء" الذي ستستخدمه. كل نموذج له ميزاته:
-
-| النموذج | الشركة | السعر | ملاحظات |
-|---------|--------|-------|---------|
-| `gemini-2.0-flash` | Google | مجاني ✅ | الأفضل للمبتدئين |
-| `gemini-1.5-pro` | Google | مجاني ✅ | أقوى قليلاً |
-| `gpt-4o-mini` | OpenAI | مدفوع | أسرع وأرخص |
-| `gpt-4o` | OpenAI | مدفوع | الأقوى |
-| `claude-3-haiku` | Anthropic | مدفوع | بديل جيد |
-
-#### API Key — ما هو؟
-هذا هو "المفتاح السري" الذي يثبت أن لديك صلاحية استخدام الـ AI.
-
-**تحذير أمني:**
-- لا تشارك API Key مع أحد أبداً
-- لا ترفعه إلى GitHub أو أي موقع عام
-- Worker Proxy يخفيه تلقائياً — لهذا نستخدمه
+```
+احذف السؤال رقم 5 من اختبار المستوى 3 لأنه غير دقيق
+```
 
 ---
 
-## 3. القسم الثاني: إعداد GitHub {#github-setup}
+## 4. الأوامر JSON {#json-commands}
 
-### ما هو GitHub؟
-GitHub هو موقع لتخزين ومشاركة الملفات البرمجية. مثل "جوجل درايف" لكن للبرامج. سنستخدمه لنشر اللعبة على الإنترنت.
+### gameMeta — إعدادات اللعبة العامة
 
-### لماذا نحتاج GitHub Worker Proxy؟
+**لماذا تستخدم gameMeta؟**
+ gameMeta يتحكم في الإعدادات العامة للعبة مثل العنوان وال版本 والإعدادات.
 
-#### المشكلة:
-عندما ترفع ملفات إلى GitHub، التوكن (المفتاح) يظهر في المتصفح.
+**مثال: تغيير عنوان اللعبة**
 
-#### الحل:
-```
-بدون Worker Proxy:
-اللعبة ──→ المتصفح ──→ GitHub (التوكن ظاهر! ⚠️)
-
-مع Worker Proxy:
-اللعبة ──→ Worker (خادمك على Cloudflare) ──→ GitHub
-              ↑
-         التوكن مخفي هنا 🔒
-```
-
-### خيار بديل: الاتصال المباشر (بدون Worker Proxy)
-
-> ⚠️ **تحذير:** هذا الخيار أقل أماناً — استخدمه على مسؤوليتك الخاصة!
-
-بمجرد الحصول على GitHub Token، يمكنك استخدامه مباشرة بدون Worker Proxy. هذا يعني:
-- ✅ **لا تحتاج حساب Cloudflare** أو إعداد Worker
-- ✅ **أسرع في الإعداد** — فقط أضف GitHub Token
-- ❌ **التوكن يظهر في المتصفح** — أي شخص يستطيع رؤيته في DevTools
-- ❌ **CORS** — GitHub API قد يحجب الطلبات من المتصفح
-
-#### كيف تفعّل الاتصال المباشر لـ GitHub:
-
-1. احصل على GitHub Token (كما في الخطوة 2 أعلاه)
-2. افتح اللعبة
-3. اضغط على الزر العائم **🤖**
-4. اذهب إلى تبويب **"⚙ GitHub Settings"**
-5. أضف GitHub Token في حقل **"GitHub Token"**
-6. اضغط **"💾 حفظ"**
-7. اضغط **"🔍 اختبار الاتصال"** للتأكد
-
-#### متى تستخدم الاتصال المباشر لـ GitHub؟
-
-| الحالة | الاستخدام الموصى به |
-|--------|---------------------|
-| أنت معلم وتريد تجربة اللعبة فقط | ✅ الاتصال المباشر مناسب |
-| أنت معلم وتريد استخدام اللعبة مع طلابك | ⚠️ الاتصال المباشر مقبول مع تحفظات |
-| أنت تدير مسابقة رسمية | ❌ استخدم Worker Proxy |
-
-### الخطوة 1: إنشاء حساب GitHub مجاني
-
-1. اذهب إلى: **https://github.com/signup**
-2. أدخل إيميلك وكلمة المرور
-3. أكمل التحقق
-4. اختر الباقة المجانية (Free)
-
-### الخطوة 2: الحصول على GitHub Token
-
-1. اذهب إلى: **https://github.com/settings/tokens**
-2. اضغط **"Generate new token"** ثم **"Generate new token (classic)"**
-3. اكتب ملاحظة (مثل: `cyber-guardians-token`)
-4. حدد **تاريخ الانتهاء** (30 يوم أو 90 يوم)
-5. فعّل الصلاحيات التالية:
-
-| الصلاحية | لماذا تحتاجها |
-|----------|---------------|
-| ☑️ `repo` | إنشاء وتعديل المستودعات |
-| ☑️ `workflow` | تحديث GitHub Actions |
-
-6. اضغط **"Generate token"**
-7. انسخ التوكن فوراً (يبدأ بـ `ghp_...`) — لن تراه مرة أخرى!
-
-### الخطوة 3: إنشاء Worker Proxy لـ GitHub
-
-> ⚠️ **مهم:** أنت تنشئ Worker **جديد** خاص بك — لا تعدّل Worker المطور الأصلي!
-
-#### الخطوة 3.1: فتح لوحة تحكم Cloudflare
-
-1. اذهب إلى: **https://dash.cloudflare.com**
-2. سجّل الدخول بحسابك
-3. سترى لوحة التحكم الرئيسية
-
-#### الخطوة 3.2: الانتقال إلى Workers
-
-1. في القائمة左侧 (على اليسار)، ابحث عن **"Workers & Pages"**
-2. اضغط عليه
-3. سترى صفحة Workers
-
-#### الخطوة 3.3: إنشاء Worker جديد
-
-1. اضغط على زر **"Create"** (أزرق اللون في الأعلى)
-2. سترى صفحة **"Ship something new"** مع عدة خيارات:
-   - Continue with GitHub
-   - Connect GitLab
-   - **Start with Hello World!** ✅ ← اختر هذا
-   - Select a template
-   - Upload your static files
-
-3. اضغط على **"Start with Hello World!"**
-
-4. الآن سترى صفحة تسمية Worker:
-   - **"Worker Name"**: اكتب اسم الـ Worker
-     - مثال: `my-github-proxy`
-     - ملاحظة: الاسم يجب أن يكون بالإنجليزية، بدون مسافات، يمكن استخدام `-`
-   - اضغط **"Deploy"**
-
-5. الآن سترى صفحة الكود (Editeur):
-   - هناك كود جاهز (Hello World)
-   - **لا تقلق** — ستمسحه وتحط الكود الخاص بك
-
-#### الخطوة 3.4: وضع الكود الجديد
-
-1. في صفحة Editeur، سترى مربع كود
-2. **امسح كل الكود الموجود** (Ctrl+A ثم Delete)
-3. **انسخ الكود التالي والصقه**:
-
-```javascript
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get('Origin') || ''
-    const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim())
-    const corsHeaders = {
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Auth-Token, X-GitHub-Api-Version, HTTP-Referer, X-Title',
-      'Access-Control-Max-Age': '86400',
-    }
-    if (allowed.includes(origin)) {
-      corsHeaders['Access-Control-Allow-Origin'] = origin
-    }
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders })
-    }
-
-    const url = new URL(request.url)
-    if (url.pathname === '/health') {
-      return new Response('ok', { headers: { ...corsHeaders, 'Content-Type': 'text/plain' } })
-    }
-
-    const authToken = env.AUTH_TOKEN
-    if (authToken) {
-      const provided = request.headers.get('X-Auth-Token')
-      if (provided !== authToken) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
-    const githubToken = env.GITHUB_TOKEN
-    if (!githubToken) {
-      return new Response(JSON.stringify({ error: 'GITHUB_TOKEN not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const target = url.searchParams.get('target')
-    if (!target) {
-      return new Response(JSON.stringify({ error: 'Missing ?target= parameter' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    let targetUrl
-    try {
-      targetUrl = new URL(target)
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid target URL' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const allowedHosts = ['api.github.com', 'raw.githubusercontent.com']
-    if (!allowedHosts.includes(targetUrl.hostname)) {
-      return new Response(JSON.stringify({ error: 'Host not allowed: ' + targetUrl.hostname }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const headers = new Headers(request.headers)
-    headers.delete('Origin')
-    headers.delete('Referer')
-    headers.delete('X-Auth-Token')
-    headers.delete('Host')
-    headers.set('Authorization', `Bearer ${githubToken}`)
-    headers.set('Accept', headers.get('Accept') || 'application/vnd.github+json')
-    headers.set('X-GitHub-Api-Version', '2022-11-28')
-
-    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined
-
-    const resp = await fetch(targetUrl.toString(), {
-      method: request.method,
-      headers,
-      body,
-    })
-
-    const respHeaders = new Response(resp.headers)
-    Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
-    respHeaders.delete('Content-Security-Policy')
-
-    return new Response(resp.body, {
-      status: resp.status,
-      statusText: resp.statusText,
-      headers: respHeaders,
-    })
-  },
+```json
+{
+  "command": "modify",
+  "target": "gameMeta",
+  "data": {
+    "title": "حراس الأمن السيبراني - النسخة المحدثة",
+    "version": "2.0.0"
+  }
 }
 ```
 
-4. اضغط **"Deploy"** (زر أزرق في الأسفل)
-
-#### الخطوة 3.5: نسخ رابط Worker
-
-1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
-2. في الأعلى، سترى رابط الـ Worker مثل:
-   ```
-   https://my-github-proxy.your-username.workers.dev
-   ```
-3. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
-
-> ✅ **الآن لديك GitHub Worker خاص بك!**
-
----
-
-### الخطوة 4: إعداد المتغيرات (Environment Variables)
-
-> هذه الخطوة مهمة جداً — بدونها لن يعمل Worker!
-
-#### الخطوة 4.1: الوصول إلى إعدادات المتغيرات
-
-1. من صفحة الـ Worker، اضغط على تبويب **"Settings"** (في الأعلى)
-2. ثم اضغط على **"Variables and Secrets"** (في القائمة左侧)
-
-#### الخطوة 4.2: إضافة المتغير الأول (AUTH_TOKEN)
-
-1. اضغط **"Add variable"**
-2. املأ:
-
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `AUTH_TOKEN` |
-| **Value** | اكتب نصاً سرياً تختاره (مثل: `my-gh-secret-123`) |
-| **Encrypt** | ✅ فعّل هذا الخيار |
-
-3. اضغط **"Save"**
-
-> **ما هو AUTH_TOKEN؟**
-> هذا مفتاح حماية — اللعبة سترسله مع كل طلب للتأكد أنه منك.
-
-#### الخطوة 4.3: إضافة المتغير الثاني (ALLOWED_ORIGINS)
-
-1. اضغط **"Add variable"** مرة أخرى
-2. املأ:
-
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `ALLOWED_ORIGINS` |
-| **Value** | `http://localhost:3001,http://localhost:3002,http://localhost:5173,https://YOUR-USERNAME.github.io` |
-| **Encrypt** | ❌ لا تفعّل |
-
-3. اضغط **"Save"**
-
-> **مهم:** استبدل `YOUR-USERNAME` باسم المستخدم الخاص بك على GitHub!
-
-#### الخطوة 4.4: إضافة المتغير الثالث (GITHUB_TOKEN)
-
-1. اضغط **"Add variable"** مرة أخرى
-2. املأ:
-
-| الحقل | القيمة |
-|-------|--------|
-| **Variable name** | `GITHUB_TOKEN` |
-| **Value** | التوكن الذي حصلت عليه من GitHub (`ghp_...`) |
-| **Encrypt** | ✅ فعّل هذا الخيار |
-
-3. اضغط **"Save"**
-
-#### الخطوة 4.5: تأكيد الحفظ
-
-1. تأكد من أن لديك 3 متغيرات:
-   - ✅ `AUTH_TOKEN`
-   - ✅ `ALLOWED_ORIGINS`
-   - ✅ `GITHUB_TOKEN`
-
-2. اضغط **"Deploy"** مرة أخرى (في الأعلى) لتطبيق التغييرات
-
-### الخطوة 5: إعداد اللعبة للاتصال بـ GitHub Worker
-
-1. افتح اللعبة
-2. اضغط على الزر العائم **🤖**
-3. اذهب إلى تبويب **"⚙ GitHub Settings"**
-4. املأ الحقول:
-
-| الحقل | القيمة |
-|-------|--------|
-| **GitHub Worker URL** | رابط Worker الخاص بك (مثل: `https://my-github-proxy.your-username.workers.dev`) |
-| **AUTH Token** | الـ Token الذي أنشأته (`gh-my-secret-123`) |
-| **GitHub Token** | التوكن الأصلي (`ghp_...`) — اختياري إذا كنت تستخدم Worker |
-
-5. اضغط **"💾 حفظ"**
-
----
-
-## 4. القسم الثالث: نسخ اللعبة وتشغيلها {#clone-game}
-
-### الخطوة 1: إنشاء مستودع جديد من داخل اللعبة
-
-1. افتح اللعبة
-2. اضغط على الزر العائم **🤖**
-3. اذهب إلى تبويب **"⚙ GitHub Settings"**
-4. اضغط على زر **"📦 إنشاء مستودع جديد"** أو **"Create New Repository"**
-5. اكتب اسم المستودع (مثل: `my-cyber-guardians`)
-6. اضغط **"إنشاء"**
-
-**ماذا يحدث في الخلفية؟**
-- اللعبة تنسخ جميع الملفات من المستودع الأصلي إلى مستودعك الجديد
-- يحدث `vite.config.ts` تلقائياً ليعمل على رابطك الجديد
-- يُنشأ ملف `README.md` جديد
-- تفعّل GitHub Pages تلقائياً
-
-### الخطوة 2: انتظار النشر (Deploy)
-
-1. اذهب إلى: `https://github.com/YOUR-USERNAME/my-cyber-guardians`
-2. اذهب إلى تبويب **"Actions"**
-3. سترى workflow قيد التشغيل ⏳
-4. انتظر حتى يصبح أخضر ✅ (عادة 2-5 دقائق)
-
-### الخطوة 3: فتح اللعبة على الرابط الجديد
-
-1. اذهب إلى: `https://YOUR-USERNAME.github.io/my-cyber-guardians/`
-2. يجب أن تعمل اللعبة! 🎉
-
-### الخطوة 4: تعديل الإعدادات للعمل على المستودع الجديد
-
-1. افتح اللعبة على الرابط الجديد
-2. اضغط على **🤖**
-3. اذهب إلى **"⚙ GitHub Settings"**
-4. حدّث:
-
-| الحقل | القيمة الجديدة |
-|-------|----------------|
-| **Owner** | اسم المستخدم الخاص بك (يملأ تلقائياً) |
-| **Repo** | `my-cyber-guardians` (أو ما أنشأته) |
-
-5. اضغط **"💾 حفظ"**
-6. اضغط **"🔍 اختبار الاتصال"** للتأكد
-
-### الخطوة 5: مزامنة مع مستودع موجود (جديد ✅)
-
-> إذا كان لديك **مستودع موجود بالفعل** على GitHub و تريد تحديثه:
-
-1. اضغط على **🤖**
-2. اذهب إلى **"⚙ GitHub Settings"**
-3. أضف **Token** + **Owner** + **Repo** (اسم المستودع الموجود)
-4. اضغط **"🔄 مزامنة مع مستودع موجود"**
-
-**ماذا يحدث؟**
-- إذا كان المستودع **فارغاً** → ينسخ كل ملفات اللعبة
-- إذا كان المستودع **يحتوي ملفات** → يُحدّث الملفات الموجودة ويضيف الناقصة
-
-**النتيجة:**
-- 🔄 ملفات موجودة ← تُحدّث لأحدث إصدار
-- ✅ ملفات ناقصة ← تُضاف
-- ⏭️ ملفات كبيرة (>90MB) ← تُتخطى
-
-### الخطوة 6: الرفع التلقائي عند التعديل (جديد ✅)
-
-> يمكنك تفعيل الرفع التلقائي لرفع التعديلات فوراً:
-
-1. اضغط على **🤖**
-2. اذهب إلى **"🛠️ Faculty Editor"**
-3. اذهب إلى تبويب **"📁 ملفات"**
-4. فعّل خيار **"🔄 رفع تلقائي عند التعديل"**
-
-**ماذا يُرفع تلقائياً؟**
-- ✅ الشخصيات (characters)
-- ✅ المستويات (dialogue)
-- ✅ الإعدادات (gameMeta)
-- ✅ الملفات المعدّلة يدوياً
-
-**ملاحظة:** الرفع التلقائي يعمل فقط عند تعديل الملفات في محرر البيانات.
-
----
-
-## 5. القسم الرابع: تعديل المحتوى التعليمي {#customize}
-
-### الطريقة 1: عبر AI Assistant (الأسهل ✅)
-
-1. اضغط على **🤖**
-2. اضغط **"💬 AI Chat"**
-3. اكتب أمر بالعربي، مثلاً:
-   - "غيّر رسالة المستوى 1 لتكون عن فيروسات الفدية"
-   - "أضف شخصية جديدة اسمها سارة تشرح التشفير"
-   - "أضف 3 أسئلة جديدة للاختبار"
-4. AI سيعمل التعديل تلقائياً
-5. اضغط **"🔄 رفع إلى GitHub"** لحفظ التغييرات
-
-### الطريقة 2: يدوياً (للمتقدمين)
-
-1. اضغط على **🤖**
-2. اذهب إلى **"🛠️ Faculty Editor"**
-3. اختر القسم الذي تريد تعديله:
-   - **المستويات** — رسائل وتحديات
-   - **الشخصيات** — أسماء وأوصاف
-   - **الإعدادات العامة** — عنوان اللعبة وألوانها
-4. عدّل واضغط **"💾 حفظ"**
-5. اضغط **"🔄 رفع إلى GitHub"**
-
-### الطريقة 3: تعديل الملفات مباشرة (للمبرمجين)
-
-1. اذهب إلى مستودعك على GitHub
-2. افتح الملف الذي تريد تعديله (مثل: `src/data/dialogue.ts`)
-3. اضغط على زر **✏️ Edit**
-4. عدّل الكود واضغط **"Commit changes"**
-5. سينشر تلقائياً خلال دقائق
-
----
-
-## 6. القسم الخامس: حل المشاكل الشائعة {#troubleshooting}
-
-### ❌ المشكلة: "GitHub token غير مُعد"
-
-**السبب:** لم تدخل التوكن أو أنه انتهت صلاحيته.
-
-**الحل:**
-1. تحقق من أن التوكن صحيح (يبدأ بـ `ghp_`)
-2. تحقق من الصلاحيات: `repo` + `workflow`
-3. أنشئ توكن جديد إذا لزم الأمر
-
----
-
-### ❌ المشكلة: "GitHub API خطأ 404"
-
-**السبب:** اسم المستخدم أو المستودع غير صحيح.
-
-**الحل:**
-1. اكتب اسم المستخدم فقط (وليس الإيميل)
-2. تأكد من اسم المستودع (بدون مسافات)
-3. اضغط **"🔍 اختبار الاتصال"** للتأكد
-
----
-
-### ❌ المشكلة: "CORS error" أو "blocked by CORS policy"
-
-**السبب:** Worker Proxy غير مُعد أو رابطه خاطئ.
-
-**الحل:**
-1. تأكد من أن Worker يعمل: افتح رابط Worker في المتصفح → يجب أن يظهر `ok`
-2. تأكد من `ALLOWED_ORIGINS` يحتوي على رابط اللعبة
-3. تأكد من Base URL صحيح في إعدادات اللعبة
-
----
-
-### ❌ المشكلة: "Unauthorized" أو "401"
-
-**السبب:** AUTH_TOKEN غير متطابق.
-
-**الحل:**
-1. تأكد من AUTH_TOKEN في Worker مطابق لما في اللعبة
-2. لا تضع مسافات زائدة
-3. أعد نسخ الـ Token من Cloudflare
-
----
-
-### ❌ المشكلة: الصفحة البيضاء بعد النسخ
-
-**السبب:** `base` في `vite.config.ts` غير صحيح.
-
-**الحل:**
-1. اذهب إلى مستودعك على GitHub
-2. افتح `vite.config.ts`
-3. تأكد من أن `base` يشير لمسار صحيح:
-   ```typescript
-   base: '/my-cyber-guardians/',  // اسم المستودع
-   ```
-4. احفظ واضغط **"Commit"**
-
----
-
-### ❌ المشكلة: AI لا يرد أو يظهر خطأ
-
-**السبب:** مشكلة في الاتصال بـ Worker أو API Key.
-
-**الحل:**
-1. تحقق من API Key صحيح
-2. تحقق من Worker يعمل (اضفتح رابطه + `/health`)
-3. تحقق من Base URL صحيح
-4. تحقق من Model مدعوم من مزود الـ AI
-
----
-
-### ❌ المشكلة: المهارات (Skills) لا تعمل
-
-**السبب:** المهارة غير مفعلة أو اسمها/وصفها لا يطابق رسالتك.
-
-**الحل:**
-1. تحقق من أن المهارة **مفعلة** ✅ في تبويب Skills
-2. تحقق من أن **اسم المهارة** و**وصفها** يطابقان رسالتك
-3. أعد تشغيل AI Chat بعد تفعيل المهارة
-4. تأكد من أن المهارة صحيحة (اسم + وصف + شروط التفعيل)
-
----
-
-### ❌ المشكلة: تنفيذ الإضافات (Plugins) يفشل
-
-**السبب:** الإضافة ليس لها `baseUrl` صحيح أو خادمها غير متاح.
-
-**الحل:**
-1. تحقق من أن الإضافة لها **`baseUrl`** صحيح (يبدأ بـ `https://`)
-2. تأكد من أن الخادم المستهدف يعمل
-3. افتح رابط الإضافة في المتصفح للتأكد من أنه يعمل
-4. تحقق من أن الخادم يدعم CORS إذا كنت تستخدم الاتصال المباشر
-
----
-
-### ❌ المشكلة: "البحث الذكي لا يعرض نتائج"
-
-**السبب:** عدم وجود قدرات أو أدوات أو معرفة في النظام.
-
-**الحل:**
-1. تأكد من وجود **قدرات** (capabilities) في النظام
-2. تأكد من وجود **أدوات** (tools) مُعرّفة
-3. تأكد من وجود **معرفة** (knowledge) مُحمّلة
-
----
-
-### ❌ المشكلة: "الإحصائيات فارغة"
-
-**السبب:** الإحصائيات لم تُملأ بعد لأن النظام لم يُستخدم.
-
-**الحل:**
-- الإحصائيات **تُملأ تلقائياً** عند استخدام النظام
-- استخدم النظام عادياً (أكمل مستويات، استخدم البحث، أجرِ اختبارات)
-- ستظهر الإحصائيات تلقائياً بعد عدة استخدامات
-
----
-
-### ❌ المشكلة: "الإحصائيات الشهرية فارغة"
-
-**السبب:** الإحصائيات لم تُحسب بعد.
-
-**الحل:**
-- الإحصائيات **تُحسب تلقائياً** عند وجود بيانات استخدام
-- استخدم النظام عادياً وستظهر الإحصائيات الشهرية تلقائياً
-
----
-
-### ❌ المشكلة: "البحث الذكي لا يعرض درجة الصلة"
-
-**السبب:** حساب درجة الصلة كان غير دقيق.
-
-**الحل:**
-- تم **إصلاح حساب الصلة** ليكون deterministic
-- أعد تشغيل البحث وسيتم عرض درجات الصلة بشكل صحيح
-
----
-
-### ❌ المشكلة: "النسخ الاحتياطي من GitHub لا يعمل"
-
-**السبب:** بيانات الاتصال بـ GitHub غير مكتملة.
-
-**الحل:**
-- تأكد من إدخال **GitHub Token** و**اسم المستخدم/المستودع**
-- راجع إعدادات GitHub وتأكد من صحة التوكن والصلاحيات
-
----
-
-### ❌ المشكلة: "إعادة ترتيب القدرات لا تعمل"
-
-**السبب:** طريقة إعادة الترتيب غير واضحة.
-
-**الحل:**
-- **اسحب وأفلت** القدرات لإعادة ترتيبها
-- اضغط مطولاً على القدرة وحركها إلى الموضع المطلوب
-
----
-
-## 📞 الدعم
-
-- **المستند الأصلي:** `PROJECT_MAP.md`
-- **دليل AI:** `AI_ADVANCED_SETTINGS_GUIDE.md`
-- **أخطاء GitHub:** `GITHUB_ERRORS.md`
-- **GitHub Issues:** https://github.com/YoussefAhamedKamal/cyber-guardians-mobile/issues
-
----
-
-## ✅ قائمة التحقق النهائية
-
-### إعداد AI
-- [ ] حساب Cloudflare مجاني
-- [ ] Worker Proxy منشئ ويعمل
-- [ ] AUTH_TOKEN مضبوط في Worker
-- [ ] ALLOWED_ORIGINS يحتوي على رابط اللعبة
-- [ ] API Key مضبوط (Gemini أو OpenAI)
-- [ ] Base URL مضبوط في اللعبة
-- [ ] Model مضبوط في اللعبة
-- [ ] اختبار الاتصال ناجح ✅
-- [ ] Skills مُعدة ومفعلة
-- [ ] معرف المشروع (Project Knowledge) مُحمّل
-- [ ] تعليمات المشروع (Project Instructions) مُعدة
-
-### إعداد GitHub
-- [ ] حساب GitHub مجاني
-- [ ] GitHub Token منشئ بصلاحيات `repo` + `workflow`
-- [ ] GitHub Worker Proxy منشئ ويعمل
-- [ ] AUTH_TOKEN مضبوط في GitHub Worker
-- [ ] GITHUB_TOKEN مضبوط في GitHub Worker
-- [ ] GitHub Worker URL مضبوط في اللعبة
-- [ ] اختبار الاتصال ناجح ✅
-
-### النسخ والنشر
-- [ ] مستودع جديد منشئ من داخل اللعبة
-- [ ] جميع الملفات منقولة بنجاح
-- [ ] GitHub Pages مفعّل
-- [ ] اللعبة تعمل على الرابط الجديد ✅
-
-### التعديل
-- [ ] AI Assistant يعمل ويعدّل المحتوى
-- [ ] التعديلات تُرفع إلى GitHub بنجاح
-- [ ] التغييرات تظهر على اللعبة ✅
-
-### الميزات الجديدة
-- [ ] Analytics auto-population working
-- [ ] Smart search returning real results
-- [ ] Analytics fully computed
-- [ ] GitHub backup sync configured
-- [ ] Auto-sync enabled
-
----
-
-## 🔍 إعداد Worker البحث (اختياري — لتحسين نتائج البحث)
-
-> **ملاحظة:** البحث يعمل بدون Worker (باستخدام DuckDuckGo مباشرة)، لكن Worker يُحسّن النتائج بشكل كبير.
-
-### ما الذي يفعله Worker البحث؟
-- يتجاوز مشاكل CORS في المتصفح
-- يُعطي نتائج بحث أدق وأكثر
-- يدعم البحث بطرق متعددة (DuckDuckGo API + HTML)
-- مجاني تماماً — 100,000 طلب/يوم
-
-### مقارنة: بدون Worker vs مع Worker
-
-| | بدون Worker | مع Worker |
-|---|---|---|
-| **النتائج** | محدودة (DuckDuckGo Instant فقط) | كاملة (API + HTML) |
-| **CORS** | قد يفشل | يعمل دائماً |
-| **السرعة** | بطيء | سريع (Cloudflare edge) |
-| **التكلفة** | مجاني | مجاني |
-
----
-
-### الخطوة 1: إنشاء Worker البحث
-
-#### الخطوة 1.1: تسجيل الدخول إلى Cloudflare
-1. اذهب إلى: **https://dash.cloudflare.com**
-2. سجّل الدخول بحسابك (أو أنشئ حساباً جديداً مجاناً)
-
-#### الخطوة 1.2: الوصول إلى Workers & Pages
-1. في القائمة左侧، اضغط على **"Workers & Pages"**
-2. سترى صفحة Overview — اضغط على **"Create"** (زر أزرق في الأعلى)
-
-#### الخطوة 1.3: اختيار نوع الإنشاء
-1. سترى صفحة **"Ship something new"** مع عدة خيارات:
-   - Continue with GitHub
-   - Connect GitLab
-   - **Start with Hello World!** ✅ ← اختر هذا
-   - Select a template
-   - Upload your static files
-
-2. اضغط على **"Start with Hello World!"**
-
-#### الخطوة 1.4: تسمية Worker
-1. في حقل **"Worker Name"**، اكتب: `cyber-guardians-search-proxy`
-   (أو أي اسم تريده — استخدم أحرف إنجليزية وشرطات فقط)
-2. سترى رابط الـ Worker يتغير تلقائياً:
-   ```
-   https://cyber-guardians-search-proxy.your-username.workers.dev
-   ```
-3. اضغط على **"Deploy"** (زر أزرق في الأسفل)
-
-### الخطوة 2: نسخ الكود
-
-#### الخطوة 2.1: فتح محرر الكود
-1. بعد الضغط على Deploy، سترى صفحة **"Completed deployment"**
-2. اضغط على **"Edit code"** (زر رمادي في الأعلى)
-
-#### الخطوة 2.2: حذف الكود الموجود
-1. سترى محرر كود على اليمين (كود Hello World الافتراضي)
-2. اضغط على `Ctrl+A` (أو `Cmd+A` على Mac) لتحديد كل الكود
-3. اضغط على `Delete` لحذفه
-
-#### الخطوة 2.3: نسخ الكود الجديد
-1. انسخ الكود التالي بالكامل وضعه في المحرر:
-
-```javascript
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url)
-
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      })
-    }
-
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    }
-
-    if (url.pathname === '/search') {
-      return handleSearch(request, corsHeaders)
-    }
-
-    if (url.pathname === '/search/html') {
-      return handleSearchHTML(request, corsHeaders)
-    }
-
-    return new Response(JSON.stringify({ 
-      error: 'Not found',
-      usage: {
-        '/search?q=query': 'Search using DuckDuckGo API',
-        '/search/html?q=query': 'Search using DuckDuckGo HTML (more results)',
-      }
-    }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+**الحقول المتاحة في gameMeta:**
+
+| الحقل | النوع | الوصف |
+|-------|-------|-------|
+| `title` | نص | عنوان اللعبة |
+| `version` | نص | رقم الإصدار |
+| `description` | نص | وصف اللعبة |
+| `author` | نص | اسم المطور |
+| `primaryColor` | نص | اللون الرئيسي (hex) |
+| `secondaryColor` | نص | اللون الثانوي (hex) |
+
+### level — إدارة المستويات
+
+#### تعديل مستوى موجود
+
+```json
+{
+  "command": "modify",
+  "target": "level",
+  "levelNumber": 3,
+  "data": {
+    "title": "العنوان الجديد",
+    "description": "الوصف الجديد",
+    "difficulty": "medium",
+    "points": 150
   }
 }
+```
 
-async function handleSearch(request, corsHeaders) {
-  const url = new URL(request.url)
-  const query = url.searchParams.get('q')
+#### إضافة مستوى جديد
 
-  if (!query) {
-    return new Response(JSON.stringify({ error: 'Missing query parameter ?q=' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
-  try {
-    const encoded = encodeURIComponent(query)
-    const res = await fetch(`https://api.duckduckgo.com/?q=${encoded}&format=json&no_html=1&skip_disambig=1`)
-    
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: 'Search failed', status: res.status }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const data = await res.json()
-    const results = []
-
-    if (data.AbstractText) {
-      results.push({
-        title: data.Heading || query,
-        snippet: data.AbstractText.slice(0, 500),
-        url: data.AbstractURL,
-        source: 'duckduckgo',
-      })
-    }
-
-    if (data.Answer) {
-      results.unshift({
-        title: data.Heading || 'Answer',
-        snippet: data.Answer,
-        url: data.AnswerURL,
-        source: 'duckduckgo',
-      })
-    }
-
-    if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-      for (const topic of data.RelatedTopics.slice(0, 5)) {
-        if (topic.Text) {
-          results.push({
-            title: topic.Text.slice(0, 100),
-            snippet: topic.Text.slice(0, 500),
-            url: topic.FirstURL,
-            source: 'duckduckgo',
-          })
-        }
-      }
-    }
-
-    return new Response(JSON.stringify({
-      query,
-      results: results.slice(0, 8),
-      total: results.length,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'Search error', message: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-}
-
-async function handleSearchHTML(request, corsHeaders) {
-  const url = new URL(request.url)
-  const query = url.searchParams.get('q')
-
-  if (!query) {
-    return new Response(JSON.stringify({ error: 'Missing query parameter ?q=' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
-  try {
-    const encoded = encodeURIComponent(query)
-    const res = await fetch(`https://html.duckduckgo.com/html/?q=${encoded}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+```json
+{
+  "command": "add",
+  "target": "level",
+  "data": {
+    "levelNumber": 11,
+    "title": "أمن التطبيقات",
+    "description": "تعلم كيف تحمي التطبيقات من الاختراق",
+    "difficulty": "hard",
+    "points": 200,
+    "challenges": [
+      {
+        "id": "app_sec_1",
+        "title": "تحليل الكود",
+        "description": "اكتشف الثغرات في كود JavaScript",
+        "type": "code-analysis",
+        "points": 50
       },
-    })
-
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: 'HTML search failed', status: res.status }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const html = await res.text()
-    const results = []
-
-    const resultRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g
-    const snippetRegex = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g
-
-    let match
-    const urls = []
-    const titles = []
-    const snippets = []
-
-    while ((match = resultRegex.exec(html)) !== null) {
-      urls.push(match[1])
-      titles.push(match[2].replace(/<[^>]*>/g, '').trim())
-    }
-
-    while ((match = snippetRegex.exec(html)) !== null) {
-      snippets.push(match[1].replace(/<[^>]*>/g, '').trim())
-    }
-
-    for (let i = 0; i < Math.min(urls.length, 8); i++) {
-      results.push({
-        title: titles[i] || '',
-        snippet: (snippets[i] || '').slice(0, 500),
-        url: urls[i] || '',
-        source: 'duckduckgo-html',
-      })
-    }
-
-    return new Response(JSON.stringify({
-      query,
-      results,
-      total: results.length,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'HTML search error', message: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+      {
+        "id": "app_sec_2",
+        "title": "اختبار الاختراق",
+        "description": "اختبر أمان تطبيق ويب",
+        "type": "penetration-test",
+        "points": 75
+      }
+    ]
   }
 }
 ```
 
-#### الخطوة 2.4: حفظ الكود
-1. اضغط على `Ctrl+S` (أو `Cmd+S` على Mac) لحفظ الكود
-2. أو اضغط على **"Save"** (زر أزرق في الأعلى)
+#### حذف مستوى
 
-#### الخطوة 2.5: نشر الكود
-1. اضغط على **"Deploy"** (زر أزرق في الأعلى)
-2. انتظر حتى ترى رسالة **"Successfully deployed"**
-
----
-
-### الخطوة 3: نسخ رابط Worker
-
-#### الخطوة 3.1: العثور على الرابط
-1. في الأعلى من صفحة الـ Worker، سترى رابطاً مثل:
-   ```
-   https://cyber-guardians-search-proxy.your-username.workers.dev
-   ```
-2. **انسخ هذا الرابط** واحفظه — ستحتاجه لاحقاً
-
-#### الخطوة 3.2: التحقق من الرابط
-1. تأكد من أن الرابط ينتهي بـ `.workers.dev`
-2. تأكد من أن الاسم يطابق ما كتبته في الخطوة 1.4
-
----
-
-### الخطوة 4: اختبار Worker
-
-#### الخطوة 4.1: اختبار البحث الأساسي
-1. افتح الرابط في المتصفح وأضف `?q=hello` في النهاية:
-   ```
-   https://cyber-guardians-search-proxy.your-username.workers.dev/search?q=hello
-   ```
-2. يجب أن ترى نتائج JSON مثل:
-   ```json
-   {
-     "query": "hello",
-     "results": [...],
-     "total": 5
-   }
-   ```
-
-#### الخطوة 4.2: اختبار البحث المتقدم
-1. جرّب البحث عن شيء محدد:
-   ```
-   https://cyber-guardians-search-proxy.your-username.workers.dev/search?q=GPT-5
-   ```
-2. يجب أن ترى نتائج关于 GPT-5
-
-#### الخطوة 4.3: اختبار البحث HTML
-1. جرّب الـ HTML search:
-   ```
-   https://cyber-guardians-search-proxy.your-username.workers.dev/search/html?q=cybersecurity
-   ```
-2. يجب أن ترى نتائج أكثر تفصيلاً
-
----
-
-### أخطاء شائعة وكيفية حلها
-
-#### الخطأ: "Worker not found"
-- **السبب:** الرابط غير صحيح أو الـ Worker لم يُنشر بعد
-- **الحل:** تأكد من نسخ الرابط بشكل صحيح، أو أعد النشر
-
-#### الخطأ: "CORS error"
-- **السبب:** الكود غير مكتمل
-- **الحل:** تأكد من نسخ الكود بالكامل (لا ت deix任何 سطر)
-
-#### الخطأ: "No results"
-- **السبب:** DuckDuckGo لا يُرجع نتائج لهذا الاستعلام
-- **الحل:** جرّب استعلاماً مختلفاً
-
----
-
-### Checklist: تأكد من إتمام كل خطوة
-
-- [ ] Cloudflare Account منشئ
-- [ ] Worker منشئ باسم `cyber-guardians-search-proxy`
-- [ ] الكود منسخ بالكامل
-- [ ] الكود محفوظ ومنشور
-- [ ] رابط Worker منسخ
-- [ ] اختبار `/search?q=hello` ناجح ✅
-- [ ] اختبار `/search?q=GPT-5` ناجح ✅
-- [ ] رابط Worker مضبوط في اللعبة (اختياري)
-
----
-
-### ملاحظات مهمة:
-- **مجاني تماماً** — 100,000 طلب/يوم مجاناً
-- **لا يحتاج مفاتيح API** — يستخدم DuckDuckGo المجاني
-- **يتجاوز CORS** — لا مشاكل مع المتصفح
-- **اختياري** — اللعبة تعمل بدونه (باستخدام DuckDuckGo مباشرة)
-- **لا يحتاج Environment Variables** — لا حاجة لمتغيرات AUTH_TOKEN
-
----
-
-## 📁 ملاحظة عن ملفات wrangler.toml
-
-> ⚠️ **مهم جداً:** ملفات `wrangler.toml` في المشروع مُعدّة للمطور الأصلي فقط!
-
-### ما هي wrangler.toml؟
-هي ملف إعدادات لـ Cloudflare Workers. تحتوي على:
-- `account_id` — رقم حسابك على Cloudflare
-- `ALLOWED_ORIGINS` — المواقع المسموح لها بالاتصال بالـ Worker
-
-### لماذا لا تستخدمها؟
-لأنها تحتوي على معلومات حساب المطور الأصلي:
-```toml
-# ❌ هذا خاص بالمطور الأصلي — لا تستخدمه!
-account_id = "43dcf5575f6f6f59439c0e28a17d3e1a"
-ALLOWED_ORIGINS = "...,https://youssefahamedkamal.github.io,..."
+```json
+{
+  "command": "delete",
+  "target": "level",
+  "levelNumber": 12
+}
 ```
 
-### ماذا تفعل بدلاً من ذلك؟
-1. **أنشئ Worker من واجهة Cloudflare** (كما في الدليل أعلاه)
-2. **استخدم Environment Variables** من واجهة Cloudflare
-3. **لا تعدّل ملفات wrangler.toml** في المشروع
+### character — إدارة الشخصيات
 
-### إذا أردت استخدام Wrangler CLI (اختياري — للمتقدمين فقط)
-1. سجّل الدخول: `npx wrangler login`
-2. أنشئ ملف `wrangler.toml` جديد في مجلد منفصل:
-   ```toml
-   name = "my-worker"
-   main = "index.js"
-   compatibility_date = "2024-01-01"
-   # account_id يُملأ تلقائياً
+#### تعديل شخصية موجودة
 
-   [vars]
-   ALLOWED_ORIGINS = "http://localhost:3001,https://YOUR-USERNAME.github.io"
-   ```
-3. ارفع: `npx wrangler deploy`
+```json
+{
+  "command": "modify",
+  "target": "character",
+  "characterId": "mentor",
+  "data": {
+    "name": "المدرب الأول",
+    "description": "خبير أمن سيبراني يساعدك في رحلتك",
+    "personality": "ودود ومتفهم",
+    "avatar": "mentor_avatar.png"
+  }
+}
+```
+
+#### إضافة شخصية جديدة
+
+```json
+{
+  "command": "add",
+  "target": "character",
+  "data": {
+    "characterId": "hacker",
+    "name": "الهاكر الأخلاقي",
+    "description": "هاكر يساعدك في فهم الثغرات",
+    "personality": "غامض لكن صادق",
+    "avatar": "hacker_avatar.png",
+    "dialogue": {
+      "greeting": "مرحباً، أنا الهاكر الأخلاقي",
+      "hint": "افتح العين على التفاصيل الصغيرة",
+      "success": "أحسنت! أنت تتعلم بسرعة",
+      "failure": "لا تقلق، كل خطأ يعلمك شيئاً جديداً"
+    }
+  }
+}
+```
+
+#### حذف شخصية
+
+```json
+{
+  "command": "delete",
+  "target": "character",
+  "characterId": "old_character"
+}
+```
+
+### file — إدارة الملفات
+
+#### قراءة محتوى ملف
+
+```json
+{
+  "command": "read",
+  "target": "file",
+  "filePath": "src/data/characters.ts"
+}
+```
+
+#### كتابة محتوى ملف
+
+```json
+{
+  "command": "write",
+  "target": "file",
+  "filePath": "src/data/quizQuestions.ts",
+  "data": "export const quizQuestions = [...]"
+}
+```
+
+#### تحديث جزئي لملف
+
+```json
+{
+  "command": "update",
+  "target": "file",
+  "filePath": "src/data/dialogue.ts",
+  "updates": [
+    {
+      "path": "welcome.greeting",
+      "value": "مرحباً بك في عالم الأمن السيبراني!"
+    }
+  ]
+}
+```
 
 ---
 
-> **آخر تحديث:** 2026-06-16
-> **الإصدار:** 6.0.0
+## 5. الملفات القابلة للتعديل (12 ملف) {#editable-files}
+
+### 1. gameMeta — إعدادات اللعبة العامة
+
+**المسار:** `src/data/gameMeta.ts`
+
+**ما يحتويه:**
+- عنوان اللعبة ووصفها
+- رقم الإصدار
+- الألوان والإعدادات البصرية
+- إعدادات الصوت والموسيقى
+
+**مثال على المحتوى:**
+```typescript
+export const gameMeta = {
+  title: "Cyber Guardians",
+  description: "لعبة تعليمية للأمن السيبراني",
+  version: "6.0.0",
+  primaryColor: "#00ff88",
+  secondaryColor: "#1a1a2e",
+  maxLevel: 10,
+  pointsPerLevel: 100
+};
+```
+
+**كيف تعدل:**
+1. افتح AI Chat
+2. اكتب: "غيّر عنوان اللعبة إلى..."
+3. أو افتح الملف يدوياً وعدّل القيم
+
+---
+
+### 2. characters — الشخصيات
+
+**المسار:** `src/data/characters.ts`
+
+**ما يحتويه:**
+- قائمة جميع الشخصيات
+- أسماء الشخصيات وأوصافها
+- صور الشخصيات
+- شخصية كل شخصية (ودود، جاد، etc.)
+
+**مثال على المحتوى:**
+```typescript
+export const characters = {
+  mentor: {
+    name: "المدرب",
+    description: "خبير أمن سيبراني",
+    avatar: "mentor.png",
+    personality: "ودود ومتفهم"
+  },
+  rookie: {
+    name: "المبتدئ",
+    description: "طالب يتعلم الأمن السيبراني",
+    avatar: "rookie.png",
+    personality: "فضولي ومتحمس"
+  }
+};
+```
+
+---
+
+### 3. dialogue — الحوار
+
+**المسار:** `src/data/dialogue.ts`
+
+**ما يحتويه:**
+- رسائل الترحيب والوداع
+- رسائل الخطأ والنجاح
+- حوار الشخصيات في كل مستوى
+- نصائح وإرشادات
+
+**مثال على المحتوى:**
+```typescript
+export const dialogue = {
+  welcome: {
+    greeting: "مرحباً بك في Cyber Guardians!",
+    intro: "هل أنت مستعد لتعلم الأمن السيبراني؟"
+  },
+  levelComplete: {
+    success: "أحسنت! أكملت المستوى بنجاح",
+    bonus: "حصلت على مكافأة إضافية!"
+  },
+  error: {
+    wrongAnswer: "إجابة خاطئة، حاول مرة أخرى",
+    timeout: "انتهى الوقت!"
+  }
+};
+```
+
+---
+
+### 4. ranks — الرتب والمستويات
+
+**المسار:** `src/data/ranks.ts`
+
+**ما يحتويه:**
+- تعريفات الرتب (مبتدئ، متوسط، خبير)
+- شروط الترقية لكل رتبة
+- مكافآت كل رتبة
+
+**مثال على المحتوى:**
+```typescript
+export const ranks = {
+  beginner: {
+    name: "مبتدئ",
+    minPoints: 0,
+    badge: "beginner_badge.png",
+    perks: ["فتح المستوى 1-3"]
+  },
+  intermediate: {
+    name: "متوسط",
+    minPoints: 500,
+    badge: "intermediate_badge.png",
+    perks: ["فتح المستوى 4-6", "وصول لمكتبة النصائح"]
+  },
+  expert: {
+    name: "خبير",
+    minPoints: 1500,
+    badge: "expert_badge.png",
+    perks: ["فتح جميع المستويات", "وصول للوضع المتقدم"]
+  }
+};
+```
+
+---
+
+### 5. badges — الشارات والإنجازات
+
+**المسار:** `src/data/badges.ts`
+
+**ما يحتويه:**
+- تعريفات الشارات
+- شروط الحصول على كل شارة
+- صور الشارات
+
+**مثال على المحتوى:**
+```typescript
+export const badges = {
+  firstLogin: {
+    name: "ال首次 الدخول",
+    description: "سجل دخولك لأول مرة",
+    icon: "first_login.png",
+    points: 10
+  },
+  levelComplete: {
+    name: "مكمل المهمات",
+    description: "أكمل 5 مستويات",
+    icon: "levels.png",
+    points: 50,
+    requirement: { type: "levels_completed", count: 5 }
+  }
+};
+```
+
+---
+
+### 6. missions — المهمات والتحديات
+
+**المسار:** `src/data/missions.ts`
+
+**ما يحتويه:**
+- قائمة المهمات لكل مستوى
+- أنواع المهمات (اختبار، تحدي، لغز)
+- الدرجات والمكافآت
+
+**مثال على المحتوى:**
+```typescript
+export const missions = {
+  level1: [
+    {
+      id: "mission_1_1",
+      title: "اكتشف كلمات المرور الضعيفة",
+      type: "quiz",
+      description: "اختر كلمات المرور الضعيفة من القائمة",
+      points: 25,
+      timeLimit: 60
+    },
+    {
+      id: "mission_1_2",
+      title: "أنشئ كلمة مرور قوية",
+      type: "challenge",
+      description: "أنشئ كلمة مرور تحتوي على حروف وأرقام ورموز",
+      points: 50
+    }
+  ]
+};
+```
+
+---
+
+### 7. quizQuestions — أسئلة الاختبار
+
+**المسار:** `src/data/quizQuestions.ts`
+
+**ما يحتويه:**
+- أسئلة الاختبار لكل مستوى
+- الإجابات الصحيحة والخاطئة
+- شرح الإجابة الصحيحة
+
+**مثال على المحتوى:**
+```typescript
+export const quizQuestions = {
+  level1: [
+    {
+      id: "q1_1",
+      question: "ما هي أقوى كلمة مرور؟",
+      options: [
+        "123456",
+        "password",
+        "MyP@ssw0rd!",
+        "qwerty"
+      ],
+      correctAnswer: 2,
+      explanation: "كلمة المرور القوية تحتوي على حروف كبيرة وصغيرة وأرقام ورموز"
+    }
+  ]
+};
+```
+
+---
+
+### 8. assessmentQuestions — أسئلة التقييم
+
+**المسار:** `src/data/assessmentQuestions.ts`
+
+**ما يحتويه:**
+- أسئلة التقييم النهائية
+- أسئلة تقييم كل مستوى
+- معايير التقييم
+
+**مثال على المحتوى:**
+```typescript
+export const assessmentQuestions = {
+  levelAssessment: {
+    level1: {
+      passingScore: 70,
+      questions: [
+        {
+          id: "a1_1",
+          question: "اختر الإجابة الصحيحة حول كلمات المرور",
+          type: "multiple-choice",
+          options: ["...", "...", "...", "..."],
+          correctIndex: 2,
+          points: 10
+        }
+      ]
+    }
+  },
+  finalAssessment: {
+    passingScore: 80,
+    timeLimit: 1800,
+    questions: []
+  }
+};
+```
+
+---
+
+### 9. referenceContent — المحتوى المرجعي
+
+**المسار:** `src/data/referenceContent.ts`
+
+**ما يحتويه:**
+- مقالات ومراجع تعليمية
+- روابط لمصادر خارجية
+- قاموس المصطلحات
+
+**مثال على المحتوى:**
+```typescript
+export const referenceContent = {
+  topics: {
+    passwordSecurity: {
+      title: "أمان كلمات المرور",
+      content: "كلمة المرور القوية يجب أن تحتوي على...",
+      sources: [
+        { title: "NIST Guidelines", url: "https://..." }
+      ],
+      terms: {
+        "_brute force": "هجوم يجرب جميع الاحتمالات",
+        "hashing": "تحويل كلمة المرور لنص مشفر"
+      }
+    }
+  }
+};
+```
+
+---
+
+### 10. challengeMeta — بيانات التحديات
+
+**المسار:** `src/data/challengeMeta.ts`
+
+**ما يحتويه:**
+- معلومات إضافية عن التحديات
+- إعدادات التحديات التفاعلية
+- قواعد النقاط الإضافية
+
+**مثال على المحتوى:**
+```typescript
+export const challengeMeta = {
+  codeAnalysis: {
+    allowedLanguages: ["javascript", "python"],
+    timeLimit: 300,
+    hints: {
+      available: 3,
+      pointPenalty: 10
+    }
+  },
+  networkChallenge: {
+    scenarios: [
+      {
+        id: "phishing_1",
+        title: "اكتشف رسالة التصيد",
+        difficulty: "easy"
+      }
+    ]
+  }
+};
+```
+
+---
+
+### 11. gameStore — متجر اللعبة
+
+**المسار:** `src/data/gameStore.ts`
+
+**ما يحتويه:**
+- عناصر المتجر القابلة للشراء
+- الأسعار والعملات
+- العروض والخصومات
+
+**مثال على المحتوى:**
+```typescript
+export const gameStore = {
+  currency: "عملة 사이بر",
+  items: {
+    hints: {
+      name: "تلميح",
+      price: 50,
+      description: "يحصل على تلميح للتحدي الحالي"
+    },
+    extraTime: {
+      name: "وقت إضافي",
+      price: 100,
+      description: "يضيف 30 ثانية إضافية"
+    }
+  },
+  bundles: [
+    {
+      id: "starter_pack",
+      name: "حزمة المبتدئ",
+      price: 200,
+      items: ["hints", "hints", "extraTime"]
+    }
+  ]
+};
+```
+
+---
+
+### 12. Shop — واجهة المتجر
+
+**المسار:** `src/data/Shop.ts`
+
+**ما يحتويه:**
+- إعدادات عرض المتجر
+- تخطيط الواجهة
+- إعدادات الشراء
+
+**مثال على المحتوى:**
+```typescript
+export const Shop = {
+  layout: "grid",
+  columnsPerRow: 3,
+  showPrices: true,
+  categories: [
+    { id: "powerups", name: " قوى المساعدة", icon: "power.png" },
+    { id: "cosmetics", name: "المظاهر", icon: "cosmetic.png" }
+  ],
+  purchaseFlow: {
+    confirmBeforeBuy: true,
+    showBalance: true
+  }
+};
+```
+
+---
+
+## 6. الإعدادات المتقدمة {#advanced-settings}
+
+### Skills/Plugins/Connectors
+
+#### المهارات (Skills)
+
+المهارات هي وظائف إضافية يمكن تفعيلها في AI Chat.
+
+**كيف تنشئ مهارة:**
+1. اضغط على **🤖** ثم **"AI Settings"**
+2. اذهب إلى تبويب **"Skills"**
+3. اضغط **"إضافة مهارة جديدة"**
+4. املأ:
+   - **اسم المهارة:** `content-editor`
+   - **الوصف:** `تعديل المحتوى التعليمي`
+   - **شروط التفعيل:** `عند طلب تعديل محتوى`
+5. فعّل المهارة ✅
+
+**مثال على مهارة جاهزة:**
+```json
+{
+  "name": "quiz-generator",
+  "description": "إنشاء أسئلة اختبار جديدة",
+  "trigger": "عند طلب إنشاء أسئلة",
+  "actions": [
+    {
+      "type": "generate",
+      "target": "quizQuestions"
+    }
+  ]
+}
+```
+
+#### الإضافات (Plugins)
+
+الإضافات تتيح الاتصال بخدمات خارجية.
+
+**كيف تضيف إضافة:**
+1. اذهب إلى تبويب **"Plugins"**
+2. اضغط **"إضافة plugin جديد"**
+3. املأ:
+   - **الاسم:** `weather-service`
+   - **Base URL:** `https://api.weather.com`
+   - **API Key:** (إذا كان مطلوباً)
+4. اضغط **"حفظ"**
+
+**ملاحظة أمنية:** تأكد من أن كل إضافة لها `baseUrl` صحيح ومؤمن.
+
+#### الموصلات (Connectors)
+
+الموصلات تربط بين AI وخدمات خارجية.
+
+```json
+{
+  "connectorId": "github-connector",
+  "name": "GitHub",
+  "baseUrl": "https://api.github.com",
+  "authType": "token",
+  "endpoints": {
+    "getRepository": "GET /repos/{owner}/{repo}",
+    "createIssue": "POST /repos/{owner}/{repo}/issues"
+  }
+}
+```
+
+### Marketplace
+
+المتجر يحتوي على إضافات جاهزة قابلة للتنزيل.
+
+**كيفية الاستخدام:**
+1. اذهب إلى **"Marketplace"**
+2. تصفح الإضافات المتاحة
+3. اضغط **"تنزيل"** على الإضافة المطلوبة
+4. أعد تشغيل اللعبة
+
+**أنواع الإضافات:**
+- إضافات تعليمية (محتوى إضافي)
+- إضافات تقييم (أدوات اختبار)
+- إضافات تحليل (إحصائيات)
+- إضافات تواصل (رسائل وإشعارات)
+
+### Version History — سجل الإصدارات
+
+**كيفية الوصول:**
+1. اضغط على **🤖** ثم **"Version History"**
+2. سترى قائمة بجميع التغييرات
+
+**الميزات:**
+- عرض التغييرات لكل إصدار
+- استعادة إصدار سابق
+- مقارنة بين الإصدارات
+- ملاحظات على كل تغيير
+
+**مثال:**
+```
+الإصدار 6.0.0 (2026-06-16)
+- تغيير عنوان اللعبة
+- إضافة 3 مستويات جديدة
+- تحديث شخصية المدرب
+
+الإصدار 5.0.0 (2026-06-01)
+- نظام المهارات الجديد
+- تحسين أداء AI
+```
+
+### Backup & Sync — النسخ الاحتياطي والمزامنة
+
+#### إنشاء نسخة احتياطية
+
+1. اذهب إلى **"Settings"** ثم **"Backup"**
+2. اضغط **"إنشاء نسخة احتياطية جديدة"**
+3. اختر:
+   - **النوع:** كامل / جزئي
+   - **المحتوى:** جميع الملفات / ملفات محددة
+   - **الوجهة:** الجهاز المحلي / GitHub
+4. اضغط **"إنشاء"**
+
+#### استعادة نسخة احتياطية
+
+1. اذهب إلى **"Backup"**
+2. اختر النسخة المراد استعادتها
+3. اضغط **"استعادة"**
+4. تأكد من العملية
+
+#### المزامنة مع GitHub
+
+**إعداد المزامنة:**
+1. احصل على GitHub Token (يُشرح في الأقسام المتقدمة)
+2. اذهب إلى **"Settings"** ثم **"GitHub Sync"**
+3. املأ:
+   - **GitHub Token:** `ghp_...`
+   - **Owner:** اسم المستخدم
+   - **Repo:** اسم المستودع
+4. اضغط **"تفعيل المزامنة التلقائية"**
+
+**أنواع المزامنة:**
+- **مزامنة يدوية:** اضغط "مزامنة الآن"
+- **مزامنة تلقائية:** عند كل تعديل
+- **مزامنة مجدولة:** كل ساعة / يومياً
+
+**حالة المزامنة:**
+```
+🟢 متصل - آخر مزامنة: منذ 5 دقائق
+🟡 قيد المزامنة...
+🔴 غير متصل - تحقق من Token
+```
+
+---
+
+## 7. أفضل الممارسات {#best-practices}
+
+### نسخ احتياطي قبل التعديل
+
+**قبل كل تعديل كبير:**
+1. اذهب إلى **"Backup"**
+2. اضغط **"إنشاء نسخة احتياطية"**
+3. اكتب ملاحظة: "قبل تعديل [اسم التعديل]"
+4. احفظ النسخة
+
+**القاعدة الذهبية:** "لا تعدّل بدون نسخة احتياطية"
+
+### اختبار التغييرات
+
+**خطوات الاختبار:**
+1. **اختبار محلي:** شغّل اللعبة على `localhost` أولاً
+2. **اختبار على نسخة:** أنشئ نسخة تجريبية
+3. **اختبار شامل:** جرّب جميع السيناريوهات
+4. **مراجعة الأخطاء:** تحقق من logs المتصفح
+
+**قائمة الاختبار:**
+- [ ] كل المستويات تعمل بشكل صحيح
+- [ ] الشخصيات تظهر بشكل سليم
+- [ ] الأسئلة صحيحة
+- [ ] النقاط تحسب بشكل صحيح
+- [ ] المزامنة تعمل
+
+### مزامنة مع GitHub
+
+**الإعداد الأولي:**
+1. أنشئ مستودع على GitHub
+2. احصل على Token بصلاحيات `repo`
+3. اضبط إعدادات المزامنة في اللعبة
+4. فعّل المزامنة التلقائية
+
+**أفضل الممارسات:**
+- استخدم branches للتعديلات الكبيرة
+- اكتب commit messages واضحة
+- راجع التغييرات قبل الدمج
+- استخدم pull requests للمشاركة
+
+**مثال على commit message:**
+```
+feat: إضافة مستوى 11关于 أمن التطبيقات
+
+- عنوان: أمن التطبيقات
+- 3 تحديات تعليمية
+- 5 أسئلة تقييم
+- شخصية جديدة: الخبير
+```
+
+---
+
+## ملاحظات مهمة
+
+### متطلبات النظام
+- متصفح حديث (Chrome/Firefox/Safari)
+- اتصال بالإنترنت
+- حساب Google أو OpenAI (لـ API Key)
+- حساب GitHub (للمزامنة)
+
+### الأخطاء الشائعة وحلولها
+
+| الخطأ | السبب | الحل |
+|-------|-------|------|
+| "API Key غير صحيح" | مفتاح منتهي الصلاحية | أنشئ مفتاحاً جديداً |
+| "CORS Error" | Worker Proxy غير مُعد | أنشئ Worker Proxy |
+| "لا يمكن حفظ التغييرات" | مشكلة في الاتصال | تحقق من الاتصال بالإنترنت |
+| "المستوى لا يظهر" | خطأ في JSON | راجع صحة البيانات |
+
+### روابط مفيدة
+- Google AI Studio: https://aistudio.google.com/app/apikey
+- Cloudflare Workers: https://dash.cloudflare.com
+- GitHub: https://github.com
+- توثيق اللعبة: `PROJECT_MAP.md`
+
+---
+
+> **آخر تحديث:** 2026-06-21
+> **الإصدار:** 7.0.0
 > **المطور:** YoussefAhamedKamal
