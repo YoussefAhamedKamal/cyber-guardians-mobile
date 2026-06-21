@@ -110,8 +110,10 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
   const pluginStore = usePluginStore.getState()
   const lowerMsg = message.toLowerCase()
 
-  const pluginKeywords: Record<string, { endpoint: string; paramExtractors: Record<string, (msg: string) => string | null> }> = {
+  // Arabic + English keywords for each plugin
+  const pluginKeywords: Record<string, { keywords: string[]; endpoint: string; paramExtractors: Record<string, (msg: string) => string | null> }> = {
     'calculator': {
+      keywords: ['حاسبة', 'احسب', 'حساب', 'calculate', 'math', 'solve'],
       endpoint: 'calculate',
       paramExtractors: {
         expr: (msg): string | null => {
@@ -121,22 +123,34 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
       }
     },
     'image_generator': {
+      keywords: ['صورة', 'صور', 'توليد صورة', 'ارسم', 'تخيّل', 'اخلق صورة', 'صمم صورة', 'image', 'picture', 'generate image', 'draw'],
       endpoint: 'generate',
       paramExtractors: {
         prompt: (msg): string | null => {
-          const promptMatch = msg.match(/(?:generate|create|draw|image|picture)\s+(.+)/i)
-          return promptMatch?.[1] ?? msg
+          // Try English pattern first
+          const enMatch = msg.match(/(?:generate|create|draw|image|picture)\s+(.+)/i)
+          if (enMatch?.[1]) return enMatch[1]
+          // Try Arabic patterns: "صورة لـ X" or "ارسم X" or "تخيّل X" or "اخلق صورة X"
+          const arMatch = msg.match(/(?:صورة|صور|توليد صورة|ارسم|تخيّل|اخلق صورة|صمم صورة)\s+(?:لـ|ل|لل|عن|من)\s*(.+)/i)
+          if (arMatch?.[1]) return arMatch[1]
+          // Try without preposition: "صورة بتراء"
+          const arMatch2 = msg.match(/(?:صورة|صور|توليد صورة|ارسم|تخيّل|اخلق صورة|صمم صورة)\s+(.+)/i)
+          if (arMatch2?.[1]) return arMatch2[1]
+          // Fallback: use the whole message as prompt
+          return msg
         }
       }
     },
     'chart_generator': {
+      keywords: ['رسم بياني', 'رسم بيانية', 'رسوم بيانية', 'chart', 'graph'],
       endpoint: 'create_chart',
       paramExtractors: {
         data: (): string => '{}',
-        type: (msg): string => msg.includes('line') ? 'line' : msg.includes('bar') ? 'bar' : 'pie'
+        type: (msg): string => msg.includes('خطي') || msg.includes('line') ? 'line' : msg.includes('عمودي') || msg.includes('bar') ? 'bar' : 'pie'
       }
     },
     'web_scraper': {
+      keywords: ['استخراج', 'جلب صفحة', 'محتوى موقع', 'scrape', 'fetch'],
       endpoint: 'scrape',
       paramExtractors: {
         url: (msg): string | null => {
@@ -146,12 +160,14 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
       }
     },
     'search_engine': {
+      keywords: ['ابحث عن', 'بحث', 'search', 'find'],
       endpoint: 'search',
       paramExtractors: {
-        q: (msg): string => msg.replace(/^(search|find|look)\s*/i, '') || msg
+        q: (msg): string => msg.replace(/^(ابحث عن|بحث|search|find)\s*/i, '') || msg
       }
     },
     'stats_analyzer': {
+      keywords: ['إحصائيات', 'تحليل بيانات', 'statistics', 'analyze data'],
       endpoint: 'analyze',
       paramExtractors: {
         expr: (msg): string | null => {
@@ -161,6 +177,7 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
       }
     },
     'api_caller': {
+      keywords: ['استدعاء api', 'طلب http', 'api call', 'fetch'],
       endpoint: 'call_api',
       paramExtractors: {
         url: (msg): string | null => {
@@ -176,7 +193,9 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
     const config = pluginKeywords[plugin.id]
     if (!config) continue
 
-    const hasKeyword = lowerMsg.includes(plugin.name.toLowerCase()) ||
+    // Check if any keyword matches
+    const hasKeyword = config.keywords.some(kw => lowerMsg.includes(kw.toLowerCase())) ||
+      lowerMsg.includes(plugin.name.toLowerCase()) ||
       lowerMsg.includes(plugin.description.toLowerCase())
 
     if (hasKeyword) {

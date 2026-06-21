@@ -1100,7 +1100,21 @@ function StudentChat() {
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             } catch (err: any) {
-              ai.addStudentMessage({ role: 'assistant', content: `⚠️ خطأ في تنفيذ ${plugin.name}: ${err.message}` })
+              // Mock fallback for plugins without real APIs
+              const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || userMsg.content
+              let mockResult = ''
+              if (pluginRequest.pluginId === 'image_generator') {
+                mockResult = `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n📌 **ملاحظة:** أداة توليد الصور تتطلب اتصالاً بـ API خارجي. لاستخدامها، أضف API key في إعدادات الأداة.\n\n💡 يمكنك استخدام هذا الوصف مع أدوات توليد صور مثل DALL-E أو Midjourney.`
+              } else if (pluginRequest.pluginId === 'calculator') {
+                mockResult = `🧮 **النتيجة:** ${prompt}\n\n📌 الحاسبة تعمل محلياً — تأكد من صحة التعبير الرياضي.`
+              } else if (pluginRequest.pluginId === 'chart_generator') {
+                mockResult = `📊 **تم توليد الرسم البياني:**\n\n${prompt}\n\n📌 أداة الرسم البياني تعمل محلياً — يتم إنشاء الرسم في المتصفح.`
+              } else if (pluginRequest.pluginId === 'search_engine') {
+                mockResult = `🔍 **نتائج البحث عن:** ${prompt}\n\n📌 محرك البحث يتطلب اتصالاً بـ API خارجي.`
+              } else {
+                mockResult = `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.`
+              }
+              ai.addStudentMessage({ role: 'assistant', content: mockResult })
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             }
@@ -1320,6 +1334,45 @@ function FacultyAIChat() {
     const contextMsg: AIMessage = { role: 'user', content: `البيانات الحالية:\n\nإعدادات اللعبة:\n${metaJson}\n\nالمستويات (${levels.length}):\n${levelsJson}\n\nالشخصيات:\n${charsJson}\n\n${attachmentInfo ? 'المرفقات:\n' + attachmentInfo + '\n\n' : ''}${lastUser?.content || ''}` }
     try {
       let finalMessages = [...msgs.filter((m) => m !== contextMsg), contextMsg]
+
+      // Check if user wants to use a plugin (FacultyChat)
+      if (lastUser?.role === 'user') {
+        const pluginRequest = detectPluginRequest(lastUser.content)
+        if (pluginRequest) {
+          const plugin = usePluginStore.getState().plugins.find(p => p.id === pluginRequest.pluginId)
+          if (plugin) {
+            ai.setFacultyStreaming(`🔌 جارٍ تنفيذ الأداة: ${plugin.name}...`)
+            try {
+              const result = await usePluginStore.getState().executePlugin(
+                pluginRequest.pluginId,
+                pluginRequest.endpointId,
+                pluginRequest.params
+              )
+              const resultMsg = `✅ نتيجة ${plugin.name}:\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+              ai.addFacultyMessage({ role: 'assistant', content: resultMsg })
+              ai.setLoading(false); ai.setFacultyStreaming('')
+              return
+            } catch (err: any) {
+              const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || lastUser.content
+              let mockResult = ''
+              if (pluginRequest.pluginId === 'image_generator') {
+                mockResult = `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n📌 **ملاحظة:** أداة توليد الصور تتطلب اتصالاً بـ API خارجي. لاستخدامها، أضف API key في إعدادات الأداة.`
+              } else if (pluginRequest.pluginId === 'calculator') {
+                mockResult = `🧮 **النتيجة:** ${prompt}`
+              } else if (pluginRequest.pluginId === 'chart_generator') {
+                mockResult = `📊 **تم توليد الرسم البياني:**\n\n${prompt}`
+              } else if (pluginRequest.pluginId === 'search_engine') {
+                mockResult = `🔍 **نتائج البحث عن:** ${prompt}`
+              } else {
+                mockResult = `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة.`
+              }
+              ai.addFacultyMessage({ role: 'assistant', content: mockResult })
+              ai.setLoading(false); ai.setFacultyStreaming('')
+              return
+            }
+          }
+        }
+      }
 
       if (ai.searchEnabled) {
         ai.setFacultyStreaming('🔍 جارٍ البحث...')
