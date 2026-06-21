@@ -11,12 +11,14 @@ import { CollaborationTab } from './CollaborationTab'
 import { SecurityTab } from './SecurityTab'
 import { CalendarTab } from './CalendarTab'
 import { ReportsTab } from './ReportsTab'
+import { LocalAgentTab } from './LocalAgentTab'
 
 const SUB_TABS = [
   { id: 'skills' as const, label: '📋 قدرات' },
   { id: 'plugins' as const, label: '🔌 أدوات' },
   { id: 'connectors' as const, label: '🔗 اتصالات' },
   { id: 'marketplace' as const, label: '🛒 سوق' },
+  { id: 'agent' as const, label: '🤖 وكيل' },
   { id: 'analytics' as const, label: '📊 إحصائيات' },
   { id: 'backup' as const, label: '💾 نسخ' },
   { id: 'search' as const, label: '🔍 بحث' },
@@ -77,6 +79,7 @@ export function ToolsTab() {
         {activeSubTab === 'security' && <SecurityTab />}
         {activeSubTab === 'calendar' && <CalendarTab />}
         {activeSubTab === 'reports' && <ReportsTab />}
+        {activeSubTab === 'agent' && <LocalAgentTab />}
       </div>
     </div>
   )

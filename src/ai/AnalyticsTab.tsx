@@ -250,7 +250,7 @@ export function AnalyticsTab() {
                         />
                       </div>
                       <p style={{ margin: '4px 0 0', color: '#888', fontSize: '10px' }}>
-                        {day.slice(0, 3)}
+                        {day}
                       </p>
                     </div>
                   )

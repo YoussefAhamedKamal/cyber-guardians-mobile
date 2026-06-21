@@ -118,7 +118,7 @@ export const useCollaborationStore = create<CollaborationStore>()(
           id: generateId(),
           createdAt: Date.now(),
           expiresAt: expiry ? Date.now() + expiry : null,
-          url: `https://share.cyber-guardians.app/${generateId()}`,
+          url: `${window.location.origin}/share/${generateId()}`,
           data,
           accessCount: 0
         }
