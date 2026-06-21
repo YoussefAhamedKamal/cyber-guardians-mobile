@@ -9,7 +9,7 @@ import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from
 import { STUDENT_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
 import { deepthink } from './deepthink'
-import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest } from './skillIntegration'
+import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest, generateImageWithPollinations } from './skillIntegration'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -1100,21 +1100,29 @@ function StudentChat() {
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             } catch (err: any) {
-              // Mock fallback for plugins without real APIs
+              // Real fallback: Pollinations.ai for image generation
               const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || userMsg.content
-              let mockResult = ''
               if (pluginRequest.pluginId === 'image_generator') {
-                mockResult = `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n📌 **ملاحظة:** أداة توليد الصور تتطلب اتصالاً بـ API خارجي. لاستخدامها، أضف API key في إعدادات الأداة.\n\n💡 يمكنك استخدام هذا الوصف مع أدوات توليد صور مثل DALL-E أو Midjourney.`
+                ai.setStudentStreaming('🖼️ جارٍ توليد الصورة...')
+                try {
+                  const imageDataUrl = await generateImageWithPollinations(prompt)
+                  ai.addStudentMessage({
+                    role: 'assistant',
+                    content: `🖼️ **صورة مولّدة:**\n\n${prompt}`,
+                    attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
+                  })
+                } catch (imgErr: any) {
+                  ai.addStudentMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'calculator') {
-                mockResult = `🧮 **النتيجة:** ${prompt}\n\n📌 الحاسبة تعمل محلياً — تأكد من صحة التعبير الرياضي.`
+                ai.addStudentMessage({ role: 'assistant', content: `🧮 **النتيجة:** ${prompt}\n\n📌 الحاسبة تعمل محلياً — تأكد من صحة التعبير الرياضي.` })
               } else if (pluginRequest.pluginId === 'chart_generator') {
-                mockResult = `📊 **تم توليد الرسم البياني:**\n\n${prompt}\n\n📌 أداة الرسم البياني تعمل محلياً — يتم إنشاء الرسم في المتصفح.`
+                ai.addStudentMessage({ role: 'assistant', content: `📊 **تم توليد الرسم البياني:**\n\n${prompt}\n\n📌 أداة الرسم البياني تعمل محلياً — يتم إنشاء الرسم في المتصفح.` })
               } else if (pluginRequest.pluginId === 'search_engine') {
-                mockResult = `🔍 **نتائج البحث عن:** ${prompt}\n\n📌 محرك البحث يتطلب اتصالاً بـ API خارجي.`
+                ai.addStudentMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن:** ${prompt}\n\n📌 محرك البحث يتطلب اتصالاً بـ API خارجي.` })
               } else {
-                mockResult = `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.`
+                ai.addStudentMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.` })
               }
-              ai.addStudentMessage({ role: 'assistant', content: mockResult })
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             }
@@ -1354,19 +1362,27 @@ function FacultyAIChat() {
               return
             } catch (err: any) {
               const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || lastUser.content
-              let mockResult = ''
               if (pluginRequest.pluginId === 'image_generator') {
-                mockResult = `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n📌 **ملاحظة:** أداة توليد الصور تتطلب اتصالاً بـ API خارجي. لاستخدامها، أضف API key في إعدادات الأداة.`
+                ai.setFacultyStreaming('🖼️ جارٍ توليد الصورة...')
+                try {
+                  const imageDataUrl = await generateImageWithPollinations(prompt)
+                  ai.addFacultyMessage({
+                    role: 'assistant',
+                    content: `🖼️ **صورة مولّدة:**\n\n${prompt}`,
+                    attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
+                  })
+                } catch (imgErr: any) {
+                  ai.addFacultyMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'calculator') {
-                mockResult = `🧮 **النتيجة:** ${prompt}`
+                ai.addFacultyMessage({ role: 'assistant', content: `🧮 **النتيجة:** ${prompt}` })
               } else if (pluginRequest.pluginId === 'chart_generator') {
-                mockResult = `📊 **تم توليد الرسم البياني:**\n\n${prompt}`
+                ai.addFacultyMessage({ role: 'assistant', content: `📊 **تم توليد الرسم البياني:**\n\n${prompt}` })
               } else if (pluginRequest.pluginId === 'search_engine') {
-                mockResult = `🔍 **نتائج البحث عن:** ${prompt}`
+                ai.addFacultyMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن:** ${prompt}` })
               } else {
-                mockResult = `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة.`
+                ai.addFacultyMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة.` })
               }
-              ai.addFacultyMessage({ role: 'assistant', content: mockResult })
               ai.setLoading(false); ai.setFacultyStreaming('')
               return
             }

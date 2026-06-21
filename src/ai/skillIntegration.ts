@@ -106,6 +106,20 @@ export function detectSkillRequest(message: string): string | null {
   return null
 }
 
+export async function generateImageWithPollinations(prompt: string): Promise<string> {
+  const encoded = encodeURIComponent(prompt)
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&seed=${Date.now()}`
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Pollinations API error: ${response.status}`)
+  const blob = await response.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
 export function detectPluginRequest(message: string): { pluginId: string; endpointId: string; params: Record<string, string> } | null {
   const pluginStore = usePluginStore.getState()
   const lowerMsg = message.toLowerCase()
