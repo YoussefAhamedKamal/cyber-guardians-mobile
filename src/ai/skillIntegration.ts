@@ -2,6 +2,7 @@ import { useSkillStore } from '@/store/skillStore'
 import { usePluginStore } from '@/store/pluginStore'
 import { useConnectorStore } from '@/store/connectorStore'
 import { useProjectStore } from '@/store/projectStore'
+import { useLocalAgentStore } from '@/store/localAgentStore'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
 
 function buildSkillsPluginsPrompt(basePrompt: string): string {
@@ -9,6 +10,7 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
   const pluginStore = usePluginStore.getState()
   const connectorStore = useConnectorStore.getState()
   const projectStore = useProjectStore.getState()
+  const agentStore = useLocalAgentStore.getState()
 
   const activeSkill = skillStore.activeSkillId
     ? skillStore.skills.find(s => s.id === skillStore.activeSkillId && s.enabled)
@@ -23,6 +25,21 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
   const projectPrompt = projectStore.buildProjectSystemPrompt(prompt)
   if (projectPrompt !== prompt) {
     prompt = projectPrompt
+  }
+
+  // Add Agent capabilities if connected
+  if (agentStore.connected) {
+    prompt += '\n\n--- LOCAL AGENT CONNECTED ---\n'
+    prompt += 'الوكيل المحلي متصل على جهازك. يمكنك استخدام الأدوات التالية:\n'
+    prompt += '🔍 فحص الكود: اكتب "افحص الكود" أو "scan" مع ذكر اللغة والأداة\n'
+    prompt += '📦 بحث عن مهارات: اكتب "ابحث عن مهارة" مع الاستعلام\n'
+    prompt += '⚡ تنفيذ أمر: اكتب "نفّذ الأمر" مع الأمر المطلوب\n'
+    prompt += '📥 تثبيت مهارة: اكتب "ثبّت مهارة" مع اسم الحزمة\n'
+    if (agentStore.tools.length > 0) {
+      prompt += 'الأدوات المتاحة: ' + agentStore.tools.map(t => t.name).join(', ') + '\n'
+    }
+    prompt += '--- END LOCAL AGENT ---\n'
+    prompt += 'عندما يطلب المستخدم فحص أو تنفيذ، وفّر الإجابة التفصيلية.\n'
   }
 
   if (activeSkill) {
@@ -219,6 +236,69 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
         if (value) params[key] = value
       }
       return { pluginId: plugin.id, endpointId: config.endpoint, params }
+    }
+  }
+
+  return null
+}
+
+export interface AgentRequest {
+  type: 'scan' | 'find-skills' | 'execute' | 'install-skill'
+  params: Record<string, string>
+}
+
+export function detectAgentRequest(message: string): AgentRequest | null {
+  const agentStore = useLocalAgentStore.getState()
+  if (!agentStore.connected) return null
+
+  const lowerMsg = message.toLowerCase()
+
+  // Scan detection
+  const scanPatterns = [
+    /(?:افحص|فحص|scan|analyze)\s+(?:الكود|كود|code)?\s*(?:بـ|ب|باستخدام|with|using)?\s*(semgrep|codeql|slither|libfuzzer)?/i,
+    /(?:semgrep|codeql|slither|libfuzzer)\s+(?:scan|افحص|فحص)/i,
+  ]
+  for (const pattern of scanPatterns) {
+    const match = message.match(pattern)
+    if (match) {
+      const tool = match[1] || 'semgrep'
+      return { type: 'scan', params: { tool, code: '', language: 'javascript' } }
+    }
+  }
+
+  // Find skills detection
+  const skillPatterns = [
+    /(?:ابحث عن|بحث عن|find|search)\s+(?:مهارة|skill|قدرات?)\s+(.+)/i,
+    /(?:مهارات|skills)\s+(?:عن|about|for)\s+(.+)/i,
+  ]
+  for (const pattern of skillPatterns) {
+    const match = message.match(pattern)
+    if (match?.[1]) {
+      return { type: 'find-skills', params: { query: match[1].trim() } }
+    }
+  }
+
+  // Execute detection
+  const execPatterns = [
+    /(?:نفّذ|نفذ|execute|run|تشغيل)\s+(?:الأمر|command)?\s*:?\s*(.+)/i,
+    /(?:command|أمر)\s*:?\s*(.+)/i,
+  ]
+  for (const pattern of execPatterns) {
+    const match = message.match(pattern)
+    if (match?.[1]) {
+      return { type: 'execute', params: { command: match[1].trim() } }
+    }
+  }
+
+  // Install skill detection
+  const installPatterns = [
+    /(?:ثبّت|ثبت|install|add)\s+(?:مهارة|skill|حزمة|package)\s+(.+)/i,
+    /(?:npm|pip|apt)\s+(?:install|add)\s+(.+)/i,
+  ]
+  for (const pattern of installPatterns) {
+    const match = message.match(pattern)
+    if (match?.[1]) {
+      return { type: 'install-skill', params: { packageName: match[1].trim() } }
     }
   }
 

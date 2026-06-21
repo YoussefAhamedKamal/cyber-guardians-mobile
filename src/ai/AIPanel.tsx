@@ -5,11 +5,12 @@ import { useAIStore } from '@/store/aiStore'
 import { useContentStore } from '@/store/contentStore'
 import { useSkillStore } from '@/store/skillStore'
 import { usePluginStore } from '@/store/pluginStore'
+import { useLocalAgentStore } from '@/store/localAgentStore'
 import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from './api'
 import { STUDENT_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
 import { deepthink } from './deepthink'
-import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest, generateImageWithPollinations } from './skillIntegration'
+import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest, generateImageWithPollinations, detectAgentRequest } from './skillIntegration'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -1128,6 +1129,42 @@ function StudentChat() {
               } else {
                 ai.addStudentMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.` })
               }
+              ai.setLoading(false); ai.setStudentStreaming('')
+              return
+            }
+          }
+        }
+      }
+
+      // Check if user wants to use Agent tools
+      if (userMsg?.role === 'user') {
+        const agentRequest = detectAgentRequest(userMsg.content)
+        if (agentRequest) {
+          const agentStore = useLocalAgentStore.getState()
+          if (agentStore.connected) {
+            ai.setStudentStreaming('🤖 جارٍ تنفيذ الأمر عبر الوكيل المحلي...')
+            try {
+              let result: any
+              switch (agentRequest.type) {
+                case 'scan':
+                  result = await agentStore.scan(agentRequest.params.tool || 'semgrep', agentRequest.params.code || '// paste code here', agentRequest.params.language || 'javascript')
+                  break
+                case 'find-skills':
+                  result = await agentStore.findSkills(agentRequest.params.query || '')
+                  break
+                case 'execute':
+                  result = await agentStore.execute(agentRequest.params.command || '')
+                  break
+                case 'install-skill':
+                  result = await agentStore.installSkill(agentRequest.params.packageName || '')
+                  break
+              }
+              const resultMsg = `✅ نتيجة الوكيل:\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+              ai.addStudentMessage({ role: 'assistant', content: resultMsg })
+              ai.setLoading(false); ai.setStudentStreaming('')
+              return
+            } catch (err: any) {
+              ai.addStudentMessage({ role: 'assistant', content: `⚠️ خطأ في الوكيل: ${err.message}\n\nتأكد من أن الوكيل متصل عبر تبويب "وكيل".` })
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             }

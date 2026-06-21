@@ -211,16 +211,24 @@ export function createServer(config: AgentConfig) {
 
       case 'find-skills': {
         const { query } = msg.payload
-        const skills = await findSkills(query)
-        sendResponse({ id: msg.id, status: 'complete', result: skills })
+        try {
+          const skills = await findSkills(query)
+          sendResponse({ id: msg.id, status: 'complete', result: skills })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'complete', result: [] })
+        }
         break
       }
 
       case 'install-skill':
       case 'install': {
         const { packageName } = msg.payload
-        const success = await installSkill(packageName)
-        sendResponse({ id: msg.id, status: 'complete', result: { success } })
+        try {
+          const success = await installSkill(packageName)
+          sendResponse({ id: msg.id, status: 'complete', result: { success } })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'complete', result: { success: false, error: err.message } })
+        }
         break
       }
 
