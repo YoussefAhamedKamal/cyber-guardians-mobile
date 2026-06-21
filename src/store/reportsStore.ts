@@ -64,7 +64,7 @@ function collectMetrics(config: ReportConfig): ReportDataPoint[] {
       data.push({ label: 'أفضل نتيجة اختبار', value: game.quizBestScore, category: 'أداء' })
       data.push({ label: 'الإجابات السريعة', value: game.speedAnswers, category: 'أداء' })
       data.push({ label: 'أقصى كومبو', value: game.maxCombo, category: 'أداء' })
-      data.push({ label: 'معدل النجاح', value: Math.round((game.completedLevels.size / 7) * 100), category: 'أداء' })
+      data.push({ label: 'معدل النجاح', value: Math.min(Math.round((game.completedLevels.size / 7) * 100), 100), category: 'أداء' })
       break
     }
     case 'security': {

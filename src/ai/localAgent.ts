@@ -7,6 +7,20 @@ const pendingMessages: Map<string, { resolve: (value: any) => void; reject: (rea
 export async function connectToAgent(url: string, token?: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const wsUrl = token ? `${url}?token=${token}` : url
+
+    if (ws) {
+      ws.onclose = null
+      ws.onerror = null
+      ws.onmessage = null
+      ws.close()
+      ws = null
+    }
+
+    pendingMessages.forEach((pending) => {
+      pending.reject(new Error('Connection reset'))
+    })
+    pendingMessages.clear()
+
     ws = new WebSocket(wsUrl)
 
     ws.onopen = () => {
@@ -22,6 +36,10 @@ export async function connectToAgent(url: string, token?: string): Promise<boole
     ws.onclose = () => {
       console.log('Agent disconnected')
       ws = null
+      pendingMessages.forEach((pending) => {
+        pending.reject(new Error('Connection closed'))
+      })
+      pendingMessages.clear()
     }
 
     ws.onmessage = (event) => {

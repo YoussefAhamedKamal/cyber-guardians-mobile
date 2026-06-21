@@ -221,9 +221,15 @@ export const usePluginStore = create<PluginState>()(
             body: endpoint.method !== 'GET' ? JSON.stringify(params) : null
           })
 
-          const result = await response.json()
           const duration = Date.now() - startTime
 
+          if (!response.ok) {
+            const errorMsg = `HTTP ${response.status}: ${response.statusText}`
+            get().recordUsage(pluginId, endpointId, JSON.stringify(params), '', duration, false, errorMsg)
+            throw new Error(errorMsg)
+          }
+
+          const result = await response.json()
           get().recordUsage(pluginId, endpointId, JSON.stringify(params), JSON.stringify(result), duration, true)
 
           return result

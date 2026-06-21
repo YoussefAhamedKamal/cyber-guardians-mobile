@@ -30,7 +30,7 @@ function getMonthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-function computeDailyStats(records: UsageRecord[]): AnalyticsState['dailyStats'] {
+export function computeDailyStats(records: UsageRecord[]): AnalyticsState['dailyStats'] {
   const statsMap: Record<string, AnalyticsState['dailyStats'][0] & { _hourCounts: number[]; _durations: number[] }> = {}
   records.forEach(r => {
     const date = formatDate(new Date(r.timestamp))
@@ -65,7 +65,7 @@ function computeDailyStats(records: UsageRecord[]): AnalyticsState['dailyStats']
   }).slice(0, 30)
 }
 
-function computeWeeklyStats(records: UsageRecord[]): AnalyticsState['weeklyStats'] {
+export function computeWeeklyStats(records: UsageRecord[]): AnalyticsState['weeklyStats'] {
   const statsMap: Record<string, AnalyticsState['weeklyStats'][0] & { _records: UsageRecord[] }> = {}
   records.forEach(r => {
     const date = new Date(r.timestamp)
@@ -119,7 +119,7 @@ function computeWeeklyStats(records: UsageRecord[]): AnalyticsState['weeklyStats
   }).slice(0, 12)
 }
 
-function computeMonthlyStats(records: UsageRecord[]): AnalyticsState['monthlyStats'] {
+export function computeMonthlyStats(records: UsageRecord[]): AnalyticsState['monthlyStats'] {
   const statsMap: Record<string, AnalyticsState['monthlyStats'][0] & { _records: UsageRecord[] }> = {}
   records.forEach(r => {
     const date = new Date(r.timestamp)
@@ -332,7 +332,11 @@ export const useAnalyticsStore = create<AnalyticsStore>()(
         try {
           const data = JSON.parse(json)
           if (data.usageRecords && Array.isArray(data.usageRecords)) {
-            set({ usageRecords: data.usageRecords })
+            const allRecords = data.usageRecords
+            const dailyStats = computeDailyStats(allRecords)
+            const weeklyStats = computeWeeklyStats(allRecords)
+            const monthlyStats = computeMonthlyStats(allRecords)
+            set({ usageRecords: allRecords, dailyStats, weeklyStats, monthlyStats })
           }
           return true
         } catch {

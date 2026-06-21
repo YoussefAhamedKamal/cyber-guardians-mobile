@@ -17,7 +17,7 @@ import { usePluginStore } from './pluginStore'
 import { useConnectorStore } from './connectorStore'
 import { useProjectStore } from './projectStore'
 import { useVersionHistoryStore } from './versionHistoryStore'
-import { useAnalyticsStore } from './analyticsStore'
+import { useAnalyticsStore, computeDailyStats, computeWeeklyStats, computeMonthlyStats } from './analyticsStore'
 import { useGameStore } from './gameStore'
 import { useCalendarStore } from './calendarStore'
 import { useReportsStore } from './reportsStore'
@@ -140,7 +140,8 @@ export const useBackupStore = create<BackupStore>()(
           const expectedChecksum = await calculateChecksum(dataString)
 
           if (backup.metadata.checksum && backup.metadata.checksum !== expectedChecksum) {
-            console.warn('Backup checksum mismatch, restoring anyway')
+            set({ isRestoring: false })
+            return false
           }
 
           useSkillStore.setState({ skills: backup.skills || [] })
@@ -311,7 +312,6 @@ export const useBackupStore = create<BackupStore>()(
           const files = await res.json()
           if (!Array.isArray(files)) return false
 
-          // Get latest backup file
           const backupFiles = files.filter((f: { name: string }) => f.name.endsWith('.json')).sort((a: { name: string }, b: { name: string }) => b.name.localeCompare(a.name))
           if (backupFiles.length === 0) return false
 
@@ -324,8 +324,44 @@ export const useBackupStore = create<BackupStore>()(
           if (!fileRes.ok) return false
           const fileData = await fileRes.json()
           const content = decodeURIComponent(escape(atob(fileData.content)))
-          const success = get().importBackup(content)
-          return success
+
+          const parsed = JSON.parse(content)
+          if (parsed.skills) useSkillStore.setState({ skills: parsed.skills })
+          if (parsed.plugins) usePluginStore.setState({ plugins: parsed.plugins })
+          if (parsed.connectors) useConnectorStore.setState({ connectors: parsed.connectors })
+          if (parsed.project) {
+            useProjectStore.setState({
+              knowledge: parsed.project.knowledge || [],
+              instructions: parsed.project.instructions || useProjectStore.getState().instructions,
+              chats: parsed.project.chats || []
+            })
+          }
+          if (parsed.history) useVersionHistoryStore.setState({ changes: parsed.history })
+          if (parsed.analytics) {
+            const allRecords = parsed.analytics
+            const dailyStats = computeDailyStats(allRecords)
+            const weeklyStats = computeWeeklyStats(allRecords)
+            const monthlyStats = computeMonthlyStats(allRecords)
+            useAnalyticsStore.setState({ usageRecords: allRecords, dailyStats, weeklyStats, monthlyStats })
+          }
+          if (parsed.game) {
+            const { getRankByXp } = await import('@/data/ranks')
+            useGameStore.setState({
+              completedLevels: new Set(parsed.game.completedLevels || []) as unknown as Set<import('@/types').LevelId>,
+              totalScore: parsed.game.totalScore || 0,
+              xp: parsed.game.xp || 0,
+              rank: getRankByXp(parsed.game.xp || 0),
+              playerName: parsed.game.playerName || '',
+              unlockedBadges: parsed.game.unlockedBadges || [],
+              dailyStreakDays: parsed.game.dailyStreakDays || 0,
+              quizBestScore: parsed.game.quizBestScore || 0,
+              speedAnswers: parsed.game.speedAnswers || 0,
+              maxCombo: parsed.game.maxCombo || 0
+            })
+          }
+
+          get().importBackup(content)
+          return true
         } catch {
           return false
         }

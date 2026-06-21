@@ -26,6 +26,8 @@ export function LocalAgentTab() {
   const [selectedTool, setSelectedTool] = useState('semgrep')
   const [skillQuery, setSkillQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'execute'>('scan')
+  const [executeCommand, setExecuteCommand] = useState('')
+  const [executeResult, setExecuteResult] = useState<string | null>(null)
 
   const handleConnect = async () => {
     try {
@@ -48,6 +50,16 @@ export function LocalAgentTab() {
   const handleInstallSkill = async (pkg: string) => {
     const success = await installSkill(pkg)
     if (success) alert(`Installed: ${pkg}`)
+  }
+
+  const handleExecute = async () => {
+    if (!executeCommand.trim()) return
+    try {
+      const result = await execute(executeCommand)
+      setExecuteResult(JSON.stringify(result, null, 2))
+    } catch (err: any) {
+      setExecuteResult(`Error: ${err.message}`)
+    }
   }
 
   const severityColor = (severity: string) => {
@@ -238,19 +250,27 @@ export function LocalAgentTab() {
       {activeTab === 'execute' && (
         <div>
           <textarea
+            value={executeCommand}
+            onChange={(e) => setExecuteCommand(e.target.value)}
             placeholder="Enter command to execute..."
             style={{ width: '100%', height: '80px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
           />
           <button
-            disabled={!connected}
+            onClick={handleExecute}
+            disabled={!connected || !executeCommand.trim()}
             style={{
               width: '100%', padding: '8px', marginTop: '8px', borderRadius: '4px', border: 'none',
-              background: !connected ? '#444' : 'linear-gradient(135deg,#4CAF50,#66BB6A)',
-              color: '#fff', fontWeight: 700, cursor: !connected ? 'not-allowed' : 'pointer'
+              background: !connected || !executeCommand.trim() ? '#444' : 'linear-gradient(135deg,#4CAF50,#66BB6A)',
+              color: '#fff', fontWeight: 700, cursor: !connected || !executeCommand.trim() ? 'not-allowed' : 'pointer'
             }}
           >
             ⚡ Execute
           </button>
+          {executeResult && (
+            <pre style={{ marginTop: '8px', padding: '8px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', color: '#4CAF50', fontFamily: 'monospace', fontSize: '10px', whiteSpace: 'pre-wrap', maxHeight: '200px', overflow: 'auto' }}>
+              {executeResult}
+            </pre>
+          )}
         </div>
       )}
 

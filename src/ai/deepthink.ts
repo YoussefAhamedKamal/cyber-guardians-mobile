@@ -1,5 +1,6 @@
 import type { AIMessage } from '@/types/ai'
 import { sendChatMessage } from './api'
+import { DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 
 const THINK_PROMPT = `أنت مساعد ذكي متخصص في التفكير العميق. مهمتك تحليل السؤال بدقة قبل الإجابة.
 
@@ -135,7 +136,8 @@ export async function* deepthinkStream(
   messages: AIMessage[],
   apiKey: string,
   customBaseUrl: string,
-  useDirectApi: boolean
+  useDirectApi: boolean,
+  customSystemPrompt?: string
 ): AsyncGenerator<string> {
   const userMsg = [...messages].reverse().find((m) => m.role === 'user')
   const question = userMsg?.content || ''
@@ -143,7 +145,9 @@ export async function* deepthinkStream(
   yield '## 🧠 التفكير العميق\n\n'
   yield '### الخطوة 1: التحليل\n\n'
 
+  const thinkingSystem = customSystemPrompt || DEEPTHINK_SYSTEM_PROMPT
   const thinkingMessages: AIMessage[] = [
+    { role: 'system', content: thinkingSystem },
     { role: 'user', content: `السؤال: ${question}` },
   ]
 

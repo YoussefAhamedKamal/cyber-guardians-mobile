@@ -870,7 +870,12 @@ function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: 
                 ))}
               </div>
             ) : (
-              <MarkdownContent content={msg.content} />
+              <>
+                <MarkdownContent content={msg.content} />
+                {msg.attachments?.filter((a) => a.type === 'image').map((att, i) => (
+                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} />
+                ))}
+              </>
             )}
           </>
         )}
