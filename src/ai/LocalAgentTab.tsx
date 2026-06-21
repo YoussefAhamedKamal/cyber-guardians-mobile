@@ -25,8 +25,8 @@ export function LocalAgentTab() {
     }
   }, [disconnect])
 
-  const [inputUrl, setInputUrl] = useState('ws://localhost:3001')
-  const [inputToken, setInputToken] = useState('')
+  const [inputUrl, setInputUrl] = useState(url || 'ws://localhost:3002')
+  const [inputToken, setInputToken] = useState(token || '')
   const [code, setCode] = useState('')
   const [language, setLanguage] = useState('javascript')
   const [selectedTool, setSelectedTool] = useState('semgrep')
@@ -36,9 +36,15 @@ export function LocalAgentTab() {
   const [executeResult, setExecuteResult] = useState<string | null>(null)
   const [executing, setExecuting] = useState(false)
 
+  useEffect(() => {
+    if (url) setInputUrl(url)
+    if (token) setInputToken(token)
+  }, [url, token])
+
   const handleConnect = async () => {
     try {
-      await connect(inputUrl, inputToken || undefined)
+      const tokenVal = inputToken.trim() || undefined
+      await connect(inputUrl, tokenVal)
     } catch (err: unknown) {
       alert(`Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
@@ -101,7 +107,7 @@ export function LocalAgentTab() {
         <input
           value={inputUrl}
           onChange={(e) => setInputUrl(e.target.value)}
-          placeholder="Agent URL (ws://localhost:3001)"
+          placeholder="Agent URL (ws://localhost:3002)"
           style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', marginBottom: '6px', boxSizing: 'border-box' }}
         />
         <input
@@ -305,7 +311,7 @@ export function LocalAgentTab() {
           <div style={{ fontWeight: 700, color: '#4FC3F7', marginBottom: '6px' }}>📦 Install Agent</div>
           <code style={{ fontSize: '10px', color: '#aaa' }}>
             npm install -g @cyberguard/agent<br/>
-            cyberguard-agent start --port 3001
+            cyberguard-agent start --port 3002
           </code>
         </div>
       )}
