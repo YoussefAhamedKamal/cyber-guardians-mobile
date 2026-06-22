@@ -368,7 +368,10 @@ export async function sendChatViaAgent(
   }
 
   const agentMessages = messages.map(m => ({ role: m.role, content: m.content }))
-  const result = await aiChat(agentMessages, { provider, model })
+  const options: { provider?: string; model?: string; temperature?: number; maxTokens?: number } = {}
+  if (provider !== undefined) options.provider = provider
+  if (model !== undefined) options.model = model
+  const result = await aiChat(agentMessages, Object.keys(options).length > 0 ? options : undefined)
   return result.content
 }
 
