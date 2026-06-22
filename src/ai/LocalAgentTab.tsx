@@ -19,11 +19,8 @@ export function LocalAgentTab() {
     connect, disconnect, scan, findSkills, listInstalled, installSkill, execute, parseFile
   } = useLocalAgentStore()
 
-  useEffect(() => {
-    return () => {
-      disconnect()
-    }
-  }, [disconnect])
+  // Note: Connection persists across tab switches via Zustand store
+  // Do NOT disconnect on unmount
 
   const [inputUrl, setInputUrl] = useState(url || 'ws://localhost:3002')
   const [inputToken, setInputToken] = useState(token || '')
