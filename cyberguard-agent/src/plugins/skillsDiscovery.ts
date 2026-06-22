@@ -120,34 +120,29 @@ function parseSkillsOutput(output: string): SkillInfo[] {
   }
 
   // Parse line-by-line output
-  // Format 1: "owner/repo@skill 1.3K installs"
-  // Format 2: "package-name — description (123 installs)"
+  // Format: "owner/repo@skill-name N installs" or "owner/repo@skill name N installs"
   const lines = clean.split('\n')
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('Name') || trimmed.startsWith('└') || trimmed.startsWith('Install')) continue
 
-    // Try format 1: "owner/repo@skill 1.3K installs"
-    const match1 = trimmed.match(/^([\w.-]+\/[\w.-]+@[\w.-]+)\s+([\d.]+[KkMm]?)\s*installs?/)
-    if (match1) {
-      skills.push({
-        name: stripAnsi(match1[1]),
-        description: '',
-        source: 'skills.sh',
-        installs: parseInt(match1[2].replace(/[KkMm]/g, '')) * (match1[2].toLowerCase().includes('k') ? 1000 : match1[2].toLowerCase().includes('m') ? 1000000 : 1),
-      })
-      continue
-    }
+    // Match: "owner/repo@skill N installs" — capture everything before the number
+    const match = trimmed.match(/^(.+?)\s+(\d[\d.]*(?:[KkMm])?)\s*installs?/)
+    if (match) {
+      const name = match[1].trim()
+      const installsStr = match[2]
+      const installs = parseInt(installsStr.replace(/[KkMm]/g, '')) *
+        (installsStr.toLowerCase().includes('k') ? 1000 : installsStr.toLowerCase().includes('m') ? 1000000 : 1)
 
-    // Try format 2: "package-name — description (123 installs)"
-    const match2 = trimmed.match(/^(\S+)\s*[—–-]\s*(.+?)(?:\s*\((\d+)\s*installs?\))?\s*$/)
-    if (match2) {
-      skills.push({
-        name: stripAnsi(match2[1]),
-        description: stripAnsi(match2[2].trim()),
-        source: '',
-        installs: parseInt(match2[3] || '0'),
-      })
+      // Validate name looks like owner/repo@skill
+      if (name.includes('/') && name.includes('@')) {
+        skills.push({
+          name,
+          description: '',
+          source: 'skills.sh',
+          installs,
+        })
+      }
     }
   }
 

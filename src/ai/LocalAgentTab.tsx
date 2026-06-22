@@ -80,13 +80,13 @@ export function LocalAgentTab() {
   const handleInstallSkill = async (pkg: string) => {
     setInstallingPkg(pkg)
     try {
-      // Strip @skillname suffix — npx skills add installs entire repo
+      // pkg is full name like "owner/repo@skill" — extract owner/repo for install
       const repoName = pkg.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
       const success = await installSkill(repoName)
       if (success) {
-        alert(`✅ Installed all skills from: ${repoName}`)
+        alert(`✅ Installed all skills from:\n${repoName}\n\nFind them in the "Installed" tab.`)
       } else {
-        alert(`❌ Failed to install: ${repoName}`)
+        alert(`❌ Failed to install:\n${repoName}\n\nCheck terminal for details.`)
       }
     } catch (err: unknown) {
       alert(`❌ Install error: ${err instanceof Error ? err.message : 'Unknown error'}`)
