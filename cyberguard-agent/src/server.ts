@@ -16,7 +16,7 @@ import { log, verbose } from './utils/logger.js'
 
 interface AgentMessage {
   id: string
-  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file'
+  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs'
   payload: any
 }
 
@@ -213,6 +213,23 @@ export function createServer(config: AgentConfig) {
         const { query } = msg.payload
         try {
           const skills = await findSkills(query)
+          sendResponse({ id: msg.id, status: 'complete', result: skills })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'complete', result: [] })
+        }
+        break
+      }
+
+      case 'list-installs': {
+        try {
+          const { execSync } = await import('child_process')
+          const raw = execSync('npx skills list -g 2>/dev/null', { encoding: 'utf-8', timeout: 10000 })
+          const ansiRegex = /\x1B\[[0-9;]*[a-zA-Z]/g
+          const lines = raw.replace(ansiRegex, '').split('\n').filter(l => l.trim() && !l.includes('Global Skills'))
+          const skills = lines.map(l => {
+            const parts = l.trim().split(/\s+/)
+            return { name: parts[0] || '', path: parts[1] || '', agents: parts.slice(2).join(' ') }
+          }).filter(s => s.name)
           sendResponse({ id: msg.id, status: 'complete', result: skills })
         } catch (err: any) {
           sendResponse({ id: msg.id, status: 'complete', result: [] })

@@ -43,10 +43,10 @@ export async function findSkills(query: string): Promise<SkillInfo[]> {
 export async function installSkill(packageName: string): Promise<boolean> {
   // Strip ANSI codes
   const cleaned = stripAnsi(packageName)
-  // Remove @skillname suffix (e.g. "owner/repo@skillname" → "owner/repo")
-  const repoName = cleaned.replace(/@[^@/]+$/, '')
+  // Extract owner/repo only (remove @skillname filter and trailing slashes)
+  const repoName = cleaned.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
   // Sanitize: only allow safe characters for shell commands
-  const sanitized = repoName.replace(/[^a-zA-Z0-9._@\/\-:]/g, '')
+  const sanitized = repoName.replace(/[^a-zA-Z0-9._\/\-:]/g, '')
   if (!sanitized) {
     throw new Error(`Invalid package name: ${packageName}`)
   }
@@ -56,6 +56,7 @@ export async function installSkill(packageName: string): Promise<boolean> {
     throw new Error('npx is not available')
   }
 
+  // Install all skills from the repo (npx skills add installs entire repo)
   const result = await executeCommand({
     type: 'install',
     command: `npx skills add "${sanitized}" -g -y`,

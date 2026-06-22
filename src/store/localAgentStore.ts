@@ -11,6 +11,7 @@ import {
   executeCommand,
   parseSkillFile,
   setOnDisconnect,
+  listInstalledSkills,
 } from '../ai/localAgent'
 import type { Tool, Skill, ScanResult, AgentStatus, CommandResult, FileParseResult } from '../types/localAgent'
 
@@ -30,6 +31,7 @@ interface LocalAgentState {
   refreshTools: () => Promise<void>
   scan: (tool: string, code: string, language: string, options?: Record<string, any>) => Promise<ScanResult>
   findSkills: (query: string) => Promise<Skill[]>
+  listInstalled: () => Promise<Skill[]>
   installSkill: (packageName: string) => Promise<boolean>
   execute: (command: string, alternatives?: string[]) => Promise<CommandResult>
   parseFile: (content: string, filename: string) => Promise<FileParseResult>
@@ -116,6 +118,17 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   findSkills: async (query: string) => {
     try {
       const skills = await findSkillsFromAgent(query)
+      set({ skills })
+      return skills
+    } catch (err: any) {
+      set({ error: err.message })
+      return []
+    }
+  },
+
+  listInstalled: async () => {
+    try {
+      const skills = await listInstalledSkills()
       set({ skills })
       return skills
     } catch (err: any) {

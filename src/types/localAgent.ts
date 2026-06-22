@@ -8,6 +8,7 @@ export interface Skill {
   description: string
   source: string
   installs: number
+  path?: string
 }
 
 export interface ScanResult {

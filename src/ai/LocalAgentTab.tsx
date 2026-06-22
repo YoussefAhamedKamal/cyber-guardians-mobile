@@ -16,7 +16,7 @@ const LANGUAGES = [
 export function LocalAgentTab() {
   const {
     connected, url, token, status, tools, skills, lastScanResult, scanning, error,
-    connect, disconnect, scan, findSkills, installSkill, execute, parseFile
+    connect, disconnect, scan, findSkills, listInstalled, installSkill, execute, parseFile
   } = useLocalAgentStore()
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function LocalAgentTab() {
   const [language, setLanguage] = useState('javascript')
   const [selectedTool, setSelectedTool] = useState('semgrep')
   const [skillQuery, setSkillQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'execute'>('scan')
+  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'installed' | 'execute'>('scan')
   const [executeCommand, setExecuteCommand] = useState('')
   const [executeResult, setExecuteResult] = useState<string | null>(null)
   const [executing, setExecuting] = useState(false)
@@ -69,14 +69,24 @@ export function LocalAgentTab() {
     }
   }
 
+  const handleListInstalled = async () => {
+    try {
+      await listInstalled()
+    } catch (err: unknown) {
+      console.error('List installed failed:', err)
+    }
+  }
+
   const handleInstallSkill = async (pkg: string) => {
     setInstallingPkg(pkg)
     try {
-      const success = await installSkill(pkg)
+      // Strip @skillname suffix — npx skills add installs entire repo
+      const repoName = pkg.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
+      const success = await installSkill(repoName)
       if (success) {
-        alert(`✅ Installed: ${pkg}`)
+        alert(`✅ Installed: ${repoName}`)
       } else {
-        alert(`❌ Failed to install: ${pkg}`)
+        alert(`❌ Failed to install: ${repoName}`)
       }
     } catch (err: unknown) {
       alert(`❌ Install error: ${err instanceof Error ? err.message : 'Unknown error'}`)
@@ -160,7 +170,7 @@ export function LocalAgentTab() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
-        {(['scan', 'skills', 'execute'] as const).map(tab => (
+        {(['scan', 'skills', 'installed', 'execute'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -171,7 +181,7 @@ export function LocalAgentTab() {
               fontWeight: 700, cursor: 'pointer', fontSize: '11px'
             }}
           >
-            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Skills' : '⚡ Execute'}
+            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Search' : tab === 'installed' ? '✅ Installed' : '⚡ Execute'}
           </button>
         ))}
       </div>
@@ -283,6 +293,42 @@ export function LocalAgentTab() {
                   {installingPkg === skill.name ? '⏳ Installing...' : 'Install'}
                 </button>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Installed Skills Tab */}
+      {activeTab === 'installed' && (
+        <div>
+          <div style={{ marginBottom: '8px', fontSize: '11px', color: '#888' }}>
+            All skills installed globally on your system
+          </div>
+          {skills.length === 0 && (
+            <button
+              onClick={handleListInstalled}
+              disabled={!connected}
+              style={{
+                width: '100%', padding: '8px', borderRadius: '4px', border: 'none',
+                background: connected ? '#4CAF50' : '#444',
+                color: '#fff', fontWeight: 700, cursor: connected ? 'pointer' : 'not-allowed', fontSize: '11px'
+              }}
+            >
+              📦 Load Installed Skills
+            </button>
+          )}
+          {skills.map((skill, i) => (
+            <div key={i} style={{
+              padding: '8px', marginBottom: '6px', borderRadius: '4px',
+              background: 'rgba(255,255,255,0.05)', borderLeft: '3px solid #4CAF50'
+            }}>
+              <div style={{ fontWeight: 700, color: '#4CAF50' }}>{skill.name}</div>
+              <div style={{ fontSize: '10px', color: '#888' }}>{skill.description}</div>
+              {skill.path && (
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                  📁 {skill.path}
+                </div>
+              )}
             </div>
           ))}
         </div>

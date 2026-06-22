@@ -79,7 +79,7 @@ export function isAgentConnected(): boolean {
 }
 
 const VALID_MESSAGE_TYPES = new Set([
-  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill'
+  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'list-installs'
 ])
 
 async function sendMessage(type: string, payload: any, timeout: number = 60000): Promise<any> {
@@ -155,4 +155,8 @@ export async function installSkillAgent(packageName: string): Promise<boolean> {
   const result = await sendMessage('install-skill', { packageName }, 180000)
   if (!result) return false
   return result.success
+}
+
+export async function listInstalledSkills(): Promise<Skill[]> {
+  return sendMessage('list-installs', {})
 }
