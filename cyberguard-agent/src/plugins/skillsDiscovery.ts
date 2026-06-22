@@ -41,9 +41,12 @@ export async function findSkills(query: string): Promise<SkillInfo[]> {
 }
 
 export async function installSkill(packageName: string): Promise<boolean> {
-  // Strip ANSI codes and sanitize
+  // Strip ANSI codes
   const cleaned = stripAnsi(packageName)
-  const sanitized = cleaned.replace(/[^a-zA-Z0-9._@\/\-:]/g, '')
+  // Remove @skillname suffix (e.g. "owner/repo@skillname" → "owner/repo")
+  const repoName = cleaned.replace(/@[^@/]+$/, '')
+  // Sanitize: only allow safe characters for shell commands
+  const sanitized = repoName.replace(/[^a-zA-Z0-9._@\/\-:]/g, '')
   if (!sanitized) {
     throw new Error(`Invalid package name: ${packageName}`)
   }
