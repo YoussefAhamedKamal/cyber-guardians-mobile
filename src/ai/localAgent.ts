@@ -53,12 +53,14 @@ export async function connectToAgent(url: string, token?: string): Promise<boole
         const response: AgentResponse = JSON.parse(event.data)
         const pending = pendingMessages.get(response.id)
         if (pending) {
-          pendingMessages.delete(response.id)
           if (response.status === 'error') {
+            pendingMessages.delete(response.id)
             pending.reject(new Error(response.error || 'Unknown error'))
-          } else {
+          } else if (response.status === 'complete') {
+            pendingMessages.delete(response.id)
             pending.resolve(response.result)
           }
+          // 'processing' status — keep waiting
         }
       } catch (err) {
         console.error('Failed to parse agent response:', err)
