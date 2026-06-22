@@ -321,21 +321,26 @@ export function LocalAgentTab() {
       {/* Installed Skills Tab */}
       {activeTab === 'installed' && (
         <div>
-          <div style={{ marginBottom: '8px', fontSize: '11px', color: '#888' }}>
-            All skills installed globally on your system
-          </div>
-          {skills.length === 0 && (
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
+            <div style={{ flex: 1, fontSize: '11px', color: '#888' }}>
+              All skills installed globally on your system
+            </div>
             <button
               onClick={handleListInstalled}
               disabled={!connected}
               style={{
-                width: '100%', padding: '8px', borderRadius: '4px', border: 'none',
+                padding: '6px 12px', borderRadius: '4px', border: 'none',
                 background: connected ? '#4CAF50' : '#444',
                 color: '#fff', fontWeight: 700, cursor: connected ? 'pointer' : 'not-allowed', fontSize: '11px'
               }}
             >
-              📦 Load Installed Skills
+              🔄 Refresh
             </button>
+          </div>
+          {skills.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px', color: '#666', fontSize: '11px' }}>
+              No skills loaded. Click Refresh to load.
+            </div>
           )}
           {skills.map((skill, i) => (
             <div key={i} style={{
