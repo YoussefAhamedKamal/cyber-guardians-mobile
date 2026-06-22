@@ -40,9 +40,14 @@ async function findOpenCodeBinary(): Promise<string | null> {
   return null
 }
 
-// Find OpenCode Desktop binary
+// Find OpenCode Desktop binary (supports AppImage)
 async function findDesktopBinary(): Promise<string | null> {
   const possiblePaths = [
+    // AppImage locations
+    join(process.env.HOME || '', 'Downloads/opencode-desktop-linux-x86_64.AppImage'),
+    join(process.env.HOME || '', '.cache/@opencode-aidesktop-updater/pending/opencode-desktop-linux-x86_64.AppImage'),
+    join(process.env.HOME || '', '.local/bin/opencode-desktop.AppImage'),
+    // Binary locations
     join(process.env.HOME || '', '.opencode/bin/opencode-desktop'),
     '/usr/local/bin/opencode-desktop',
     '/usr/bin/opencode-desktop',
@@ -53,14 +58,20 @@ async function findDesktopBinary(): Promise<string | null> {
     if (existsSync(p)) return p
   }
 
+  // Search for any AppImage file
+  try {
+    const { stdout } = await execAsync('find ~/Downloads ~/.cache ~/.local -name "opencode-desktop*.AppImage" -type f 2>/dev/null | head -1')
+    if (stdout.trim()) return stdout.trim()
+  } catch {}
+
   return null
 }
 
 // Check if OpenCode Desktop is running
 async function isDesktopRunning(): Promise<boolean> {
   try {
-    // Check for various possible process names
-    const { stdout } = await execAsync('pgrep -f "opencode-desktop|opencode desktop|opencode.*desktop" || true')
+    // Check for ai.opencode.desktop process (AppImage process name)
+    const { stdout } = await execAsync('pgrep -f "ai.opencode.desktop|opencode-desktop" || true')
     return stdout.trim().length > 0
   } catch {
     return false
@@ -75,17 +86,33 @@ export async function launchDesktop(workDir?: string): Promise<{ success: boolea
     return { 
       success: false, 
       error: 'OpenCode Desktop not found',
-      message: 'OpenCode Desktop is not installed. Install it from https://opencode.ai or use OpenCode CLI with "opencode web" command.'
+      message: 'OpenCode Desktop is not installed. Install it from https://opencode.ai or download the AppImage.'
+    }
+  }
+
+  // Check if already running
+  const alreadyRunning = await isDesktopRunning()
+  if (alreadyRunning) {
+    return { 
+      success: true, 
+      message: 'OpenCode Desktop is already running!'
     }
   }
 
   // Try to launch Desktop app
   try {
-    const launchCmd = `nohup "${desktopPath}" "${workDir || process.cwd()}" > /dev/null 2>&1 &`
+    // Handle AppImage files
+    let launchCmd: string
+    if (desktopPath.endsWith('.AppImage')) {
+      launchCmd = `nohup "${desktopPath}" --no-sandbox > /dev/null 2>&1 &`
+    } else {
+      launchCmd = `nohup "${desktopPath}" "${workDir || process.cwd()}" > /dev/null 2>&1 &`
+    }
+    
     await execAsync(launchCmd)
     
     // Wait a moment and check if it started
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 2000))
     const isRunning = await isDesktopRunning()
     
     if (isRunning) {
@@ -94,7 +121,7 @@ export async function launchDesktop(workDir?: string): Promise<{ success: boolea
       return { 
         success: false, 
         error: 'Desktop app started but may have closed',
-        message: 'OpenCode Desktop was launched but may have closed immediately. Try using "opencode web" instead.'
+        message: 'OpenCode Desktop was launched but may have closed immediately. Try running it manually from your Applications menu.'
       }
     }
   } catch (err: any) {
@@ -214,6 +241,7 @@ export async function getOpenCodeStatus(): Promise<{
   version: string | null
   desktopInstalled: boolean
   desktopRunning: boolean
+  desktopPath: string | null
   providers: string[]
   recommendation: string
 }> {
@@ -236,9 +264,9 @@ export async function getOpenCodeStatus(): Promise<{
   } else if (!desktopBinary) {
     recommendation = 'OpenCode Desktop not installed. Use "opencode web" for web interface.'
   } else if (!desktopRunning) {
-    recommendation = 'OpenCode Desktop is installed but not running. Click "Launch OpenCode Desktop" to start it.'
+    recommendation = 'OpenCode Desktop is installed. Click "Launch OpenCode Desktop" to start it.'
   } else {
-    recommendation = 'OpenCode is ready! You can use the CLI or Desktop app.'
+    recommendation = 'OpenCode is ready! You can use the Desktop app or CLI.'
   }
 
   return {
@@ -247,6 +275,7 @@ export async function getOpenCodeStatus(): Promise<{
     version,
     desktopInstalled: !!desktopBinary,
     desktopRunning,
+    desktopPath: desktopBinary,
     providers: ['openai', 'anthropic', 'google', 'groq', 'ollama', 'openrouter'],
     recommendation
   }
