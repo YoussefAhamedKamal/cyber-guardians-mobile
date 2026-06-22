@@ -273,8 +273,25 @@ export function LocalAgentTab() {
               Search
             </button>
           </div>
-          <div style={{ fontSize: '10px', color: '#888', marginBottom: '8px' }}>
-            💡 Install will add ALL skills from the repository
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '10px' }}>
+            {['ui-ux', 'react', 'nextjs', 'landing-page', 'figma', 'css', 'tailwind', 'animation', 'accessibility', 'python', 'api', 'database'].map(tag => (
+              <button
+                key={tag}
+                onClick={() => { setSkillQuery(tag); findSkills(tag) }}
+                disabled={!connected}
+                style={{
+                  padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(79,195,247,0.3)',
+                  background: skillQuery === tag ? 'rgba(79,195,247,0.2)' : 'transparent',
+                  color: skillQuery === tag ? '#4FC3F7' : '#888',
+                  fontSize: '10px', cursor: connected ? 'pointer' : 'not-allowed'
+                }}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: '10px', color: '#666', marginBottom: '8px' }}>
+            💡 Install adds ALL skills from the repo
           </div>
 
           {skills.map((skill, i) => (
