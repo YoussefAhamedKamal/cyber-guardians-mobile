@@ -84,7 +84,7 @@ export function LocalAgentTab() {
       const repoName = pkg.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
       const success = await installSkill(repoName)
       if (success) {
-        alert(`✅ Installed: ${repoName}`)
+        alert(`✅ Installed all skills from: ${repoName}`)
       } else {
         alert(`❌ Failed to install: ${repoName}`)
       }
@@ -261,7 +261,7 @@ export function LocalAgentTab() {
             <input
               value={skillQuery}
               onChange={(e) => setSkillQuery(e.target.value)}
-              placeholder="Search skills..."
+              placeholder="Search: ui-ux, react, landing..."
               onKeyDown={(e) => e.key === 'Enter' && handleFindSkills()}
               style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
             />
@@ -273,13 +273,16 @@ export function LocalAgentTab() {
               Search
             </button>
           </div>
+          <div style={{ fontSize: '10px', color: '#888', marginBottom: '8px' }}>
+            💡 Install will add ALL skills from the repository
+          </div>
 
           {skills.map((skill, i) => (
             <div key={i} style={{ padding: '8px', marginBottom: '6px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
-              <div style={{ fontWeight: 700 }}>{skill.name}</div>
+              <div style={{ fontWeight: 700, color: '#4FC3F7' }}>{skill.name}</div>
               <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>{skill.description}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '10px', color: '#888' }}>{skill.installs} installs</span>
+                <span style={{ fontSize: '10px', color: '#666' }}>{skill.source}</span>
                 <button
                   onClick={() => handleInstallSkill(skill.name)}
                   disabled={installingPkg === skill.name}
@@ -290,7 +293,7 @@ export function LocalAgentTab() {
                     cursor: installingPkg === skill.name ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {installingPkg === skill.name ? '⏳ Installing...' : 'Install'}
+                  {installingPkg === skill.name ? '⏳ Installing...' : '📦 Install'}
                 </button>
               </div>
             </div>
@@ -329,6 +332,9 @@ export function LocalAgentTab() {
                   📁 {skill.path}
                 </div>
               )}
+              <div style={{ fontSize: '10px', color: '#4CAF50', marginTop: '4px' }}>
+                ✅ Installed
+              </div>
             </div>
           ))}
         </div>

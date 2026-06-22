@@ -120,19 +120,33 @@ function parseSkillsOutput(output: string): SkillInfo[] {
   }
 
   // Parse line-by-line output
+  // Format 1: "owner/repo@skill 1.3K installs"
+  // Format 2: "package-name — description (123 installs)"
   const lines = clean.split('\n')
   for (const line of lines) {
     const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('Name')) continue
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('Name') || trimmed.startsWith('└') || trimmed.startsWith('Install')) continue
 
-    // Try to match patterns like "package-name — description (123 installs)"
-    const match = trimmed.match(/^(\S+)\s*[—–-]\s*(.+?)(?:\s*\((\d+)\s*installs?\))?\s*$/)
-    if (match) {
+    // Try format 1: "owner/repo@skill 1.3K installs"
+    const match1 = trimmed.match(/^([\w.-]+\/[\w.-]+@[\w.-]+)\s+([\d.]+[KkMm]?)\s*installs?/)
+    if (match1) {
       skills.push({
-        name: stripAnsi(match[1]),
-        description: stripAnsi(match[2].trim()),
+        name: stripAnsi(match1[1]),
+        description: '',
+        source: 'skills.sh',
+        installs: parseInt(match1[2].replace(/[KkMm]/g, '')) * (match1[2].toLowerCase().includes('k') ? 1000 : match1[2].toLowerCase().includes('m') ? 1000000 : 1),
+      })
+      continue
+    }
+
+    // Try format 2: "package-name — description (123 installs)"
+    const match2 = trimmed.match(/^(\S+)\s*[—–-]\s*(.+?)(?:\s*\((\d+)\s*installs?\))?\s*$/)
+    if (match2) {
+      skills.push({
+        name: stripAnsi(match2[1]),
+        description: stripAnsi(match2[2].trim()),
         source: '',
-        installs: parseInt(match[3] || '0'),
+        installs: parseInt(match2[3] || '0'),
       })
     }
   }
