@@ -223,7 +223,7 @@ export function createServer(config: AgentConfig) {
       case 'list-installs': {
         try {
           const { execSync } = await import('child_process')
-          const raw = execSync('npx skills list -g 2>/dev/null', { encoding: 'utf-8', timeout: 10000 })
+          const raw = execSync('npx skills list -g 2>/dev/null', { encoding: 'utf-8', timeout: 30000 })
           const ansiRegex = /\x1B\[[0-9;]*[a-zA-Z]/g
           const lines = raw.replace(ansiRegex, '').split('\n').filter(l => l.trim() && !l.includes('Global Skills'))
           const skills = lines.map(l => {

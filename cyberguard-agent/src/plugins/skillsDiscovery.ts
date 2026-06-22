@@ -80,14 +80,35 @@ export async function listInstalledSkills(): Promise<SkillInfo[]> {
 
   const result = await executeCommand({
     type: 'shell',
-    command: 'npx skills list --json 2>/dev/null || npx skills list',
+    command: 'npx skills list -g 2>/dev/null',
   }, { timeout: 30000 })
 
-  if (result.success) {
-    return parseSkillsOutput(result.stdout)
+  if (!result.success) {
+    return []
   }
 
-  return []
+  // Parse "npx skills list -g" output format:
+  // skill-name        ~/.agents/skills/skill-name        Agents: ...
+  const clean = stripAnsi(result.stdout)
+  const lines = clean.split('\n')
+  const skills: SkillInfo[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.includes('Global Skills')) continue
+
+    const parts = trimmed.split(/\s+/)
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      skills.push({
+        name: parts[0],
+        description: '',
+        source: parts[1],
+        installs: 0,
+      })
+    }
+  }
+
+  return skills
 }
 
 function parseSkillsOutput(output: string): SkillInfo[] {
