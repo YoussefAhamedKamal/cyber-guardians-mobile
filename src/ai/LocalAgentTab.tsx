@@ -68,6 +68,13 @@ export function LocalAgentTab() {
     if (token) setInputToken(token)
   }, [url, token])
 
+  // Auto-load OpenCode status when connected
+  useEffect(() => {
+    if (connected && activeTab === 'opencode') {
+      loadOpenCodeStatus()
+    }
+  }, [connected, activeTab])
+
   const handleConnect = async () => {
     try {
       const tokenVal = inputToken.trim() || undefined
@@ -735,14 +742,28 @@ export function LocalAgentTab() {
             {opencodeStatus && (
               <>
                 <span style={{ fontSize: '10px', color: opencodeStatus.installed ? '#4CAF50' : '#f44336' }}>
-                  {opencodeStatus.installed ? `✅ v${opencodeStatus.version}` : '❌ Not installed'}
+                  {opencodeStatus.installed ? `✅ v${opencodeStatus.version}` : '❌ CLI Not installed'}
                 </span>
-                <span style={{ fontSize: '10px', color: opencodeStatus.desktopRunning ? '#4CAF50' : '#888' }}>
-                  {opencodeStatus.desktopRunning ? '🖥️ Desktop Running' : '🖥️ Desktop Stopped'}
+                <span style={{ fontSize: '10px', color: opencodeStatus.desktopInstalled ? '#4CAF50' : '#888' }}>
+                  {opencodeStatus.desktopInstalled ? '🖥️ Desktop Installed' : '🖥️ Desktop Not found'}
+                </span>
+                <span style={{ fontSize: '10px', color: opencodeStatus.desktopRunning ? '#4CAF50' : '#ff9800' }}>
+                  {opencodeStatus.desktopRunning ? '🟢 Running' : '🔴 Stopped'}
                 </span>
               </>
             )}
           </div>
+
+          {/* Recommendation */}
+          {opencodeStatus?.recommendation && (
+            <div style={{ 
+              marginBottom: '8px', padding: '8px', borderRadius: '4px', 
+              background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.3)',
+              fontSize: '10px', color: '#81C784' 
+            }}>
+              💡 {opencodeStatus.recommendation}
+            </div>
+          )}
 
           {/* Launch Desktop Button */}
           {opencodeStatus?.installed && !opencodeStatus.desktopRunning && (
@@ -758,44 +779,58 @@ export function LocalAgentTab() {
             </button>
           )}
 
-          {/* Provider info */}
-          {opencodeStatus?.installed && (
-            <div style={{ marginBottom: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {opencodeStatus.providers?.map((p: string) => (
-                <span key={p} style={{
-                  padding: '2px 6px', borderRadius: '8px', fontSize: '9px',
-                  background: 'rgba(156,39,176,0.15)', color: '#CE93D8'
-                }}>
+          {/* Provider selector */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Provider:</label>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {['google', 'openai', 'anthropic', 'groq', 'ollama', 'openrouter'].map(p => (
+                <button
+                  key={p}
+                  onClick={() => setOpencodeModel(p === 'google' ? 'gemini-2.0-flash' : p === 'openai' ? 'gpt-4o' : p === 'anthropic' ? 'claude-3-5-sonnet' : p === 'groq' ? 'llama-3.1-70b' : p === 'ollama' ? 'llama3' : 'anthropic/claude-3-5-sonnet')}
+                  style={{
+                    padding: '4px 8px', borderRadius: '12px', border: 'none',
+                    background: opencodeModel?.includes(p) ? '#9C27B0' : 'rgba(156,39,176,0.15)',
+                    color: opencodeModel?.includes(p) ? '#fff' : '#CE93D8',
+                    fontSize: '10px', cursor: 'pointer'
+                  }}
+                >
                   {p}
-                </span>
+                </button>
               ))}
             </div>
-          )}
+          </div>
 
-          {/* Model & File inputs */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+          {/* Model input */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Model:</label>
             <input
               value={opencodeModel}
               onChange={(e) => setOpencodeModel(e.target.value)}
-              placeholder="Model (optional)"
-              style={{ flex: 1, minWidth: '100px', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+              placeholder="e.g., gemini-2.0-flash, gpt-4o, claude-3-5-sonnet"
+              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', boxSizing: 'border-box' }}
             />
+          </div>
+
+          {/* File path input */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>File path (optional):</label>
             <input
               value={opencodeFile}
               onChange={(e) => setOpencodeFile(e.target.value)}
-              placeholder="File path (optional)"
-              style={{ flex: 1, minWidth: '100px', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+              placeholder="e.g., /home/user/project/src/app.ts"
+              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', boxSizing: 'border-box' }}
             />
           </div>
 
           {/* Input */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Your request:</label>
             <textarea
               value={opencodeInput}
               onChange={(e) => setOpencodeInput(e.target.value)}
-              placeholder="Ask OpenCode to write code, fix bugs, explain code..."
+              placeholder=" Ask OpenCode to write code, fix bugs, explain code..."
               onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleOpenCode() }}
-              style={{ flex: 1, height: '60px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', height: '80px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
             />
           </div>
 
@@ -803,9 +838,10 @@ export function LocalAgentTab() {
             onClick={handleOpenCode}
             disabled={!connected || !opencodeInput.trim() || opencodeLoading}
             style={{
-              width: '100%', padding: '8px', borderRadius: '4px', border: 'none',
+              width: '100%', padding: '10px', borderRadius: '4px', border: 'none',
               background: !connected || !opencodeInput.trim() || opencodeLoading ? '#444' : 'linear-gradient(135deg,#9C27B0,#7B1FA2)',
-              color: '#fff', fontWeight: 700, cursor: !connected || !opencodeInput.trim() || opencodeLoading ? 'not-allowed' : 'pointer'
+              color: '#fff', fontWeight: 700, cursor: !connected || !opencodeInput.trim() || opencodeLoading ? 'not-allowed' : 'pointer',
+              fontSize: '12px'
             }}
           >
             {opencodeLoading ? '⏳ Running...' : '💻 Run OpenCode CLI'}
