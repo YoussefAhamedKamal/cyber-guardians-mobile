@@ -1,5 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { createServer as createHttpServer } from 'http'
+import { exec } from 'child_process'
+import { promisify } from 'util'
 import type { AgentConfig } from './config.js'
 import { detectPlatform } from './platform/detector.js'
 import { parseSkillMd } from './parser/skillParser.js'
@@ -57,10 +59,10 @@ export function createServer(config: AgentConfig) {
     })
 
     wss.on('connection', (ws, req) => {
-      // Verify token
-      const url = new URL(req.url || '/', `http://localhost:${config.port}`)
+      // Verify token (optional — skip if config.token is empty)
+      const url = new URL(req.url || '', `http://${req.headers.host}`)
       const token = url.searchParams.get('token')
-      if (config.token !== undefined && config.token !== '' && (!token || token !== config.token)) {
+      if (config.token && config.token !== '' && (!token || token !== config.token)) {
         ws.close(1008, 'Invalid token')
         return
       }
@@ -221,17 +223,23 @@ export function createServer(config: AgentConfig) {
       }
 
       case 'list-installs': {
+        log('list-installs: Starting exec...')
         try {
-          const { execSync } = await import('child_process')
-          const raw = execSync('npx skills list -g 2>/dev/null', { encoding: 'utf-8', timeout: 30000 })
+          const execAsync = promisify(exec)
+          log('list-installs: Running npx skills list -g...')
+          const { stdout, stderr } = await execAsync('npx skills list -g', { timeout: 60000, encoding: 'utf-8' })
+          log(`list-installs: Got ${stdout.length} bytes, stderr: ${stderr?.length || 0}`)
           const ansiRegex = /\x1B\[[0-9;]*[a-zA-Z]/g
-          const lines = raw.replace(ansiRegex, '').split('\n').filter(l => l.trim() && !l.includes('Global Skills'))
+          const lines = stdout.replace(ansiRegex, '').split('\n').filter(l => l.trim() && !l.includes('Global Skills'))
           const skills = lines.map(l => {
             const parts = l.trim().split(/\s+/)
             return { name: parts[0] || '', path: parts[1] || '', agents: parts.slice(2).join(' ') }
           }).filter(s => s.name)
+          log(`list-installs: Parsed ${skills.length} skills, sending response...`)
           sendResponse({ id: msg.id, status: 'complete', result: skills })
+          log('list-installs: Response sent')
         } catch (err: any) {
+          log(`list-installs error: ${err.message}`, 'error')
           sendResponse({ id: msg.id, status: 'complete', result: [] })
         }
         break
