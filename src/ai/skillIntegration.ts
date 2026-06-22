@@ -30,26 +30,24 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
   // Add Agent capabilities if connected
   if (agentStore.connected) {
     prompt += '\n\n--- LOCAL AGENT CONNECTED ---\n'
-    prompt += 'الوكيل المحلي متصل على جهازك ויש له 257+ مهارة مثبتة عالمياً!\n\n'
+    prompt += 'الوكيل المحلي متصل على جهاز المستخدم وينفّذ المهام المعقدة محلياً!\n\n'
     prompt += '🔧 الأدوات المتاحة:\n'
     prompt += '🔍 فحص الكود: اكتب "افحص الكود" أو "scan" مع ذكر اللغة والأداة\n'
     prompt += '📦 بحث عن مهارات: اكتب "ابحث عن مهارة" مع الاستعلام\n'
     prompt += '⚡ تنفيذ أمر: اكتب "نفّذ الأمر" مع الأمر المطلوب\n'
     prompt += '📥 تثبيت مهارة: اكتب "ثبّت مهارة" مع اسم الحزمة\n\n'
-    prompt += '📋 فئات المهارات المثبتة:\n'
-    prompt += '- تحليل أمني: semgrep, codeql, slither, libfuzzer\n'
+    prompt += '📋 فئات المهارات المثبتة (257+):\n'
+    prompt += '- أمن سيبراني: semgrep, codeql, slither, libfuzzer\n'
     prompt += '- برمجة: react, nextjs, vue, angular, python, rust, go\n'
-    prompt += '- تصميم واجهات: ui-ux, figma, tailwind, css, animation\n'
-    prompt += '- DevOps: docker, kubernetes, ci/cd, github-actions\n'
-    prompt += '- ذكاء اصطناعي: langchain, openai, embeddings, rag\n'
-    prompt += '- قواعد بيانات: postgres, redis, mongodb, supabase\n'
-    prompt += '- موبايل: react-native, flutter, swift, kotlin\n'
+    prompt += '- تصميم واجهات: ui-ux, figma, tailwind, css\n'
+    prompt += '- DevOps: docker, kubernetes, ci/cd\n'
+    prompt += '- ذكاء اصطناعي: langchain, openai, embeddings\n'
+    prompt += '- موبايل: react-native, flutter, swift\n'
     prompt += '- وأكثر من 200 مهارة أخرى!\n\n'
-    prompt += '💡 للاستفادة القصوى:\n'
-    prompt += '1. عندما يسأل المستخدم عن موضوع معين، اقترح مهارة مناسبة\n'
-    prompt += '2. استخدم "ابحث عن مهارة [الموضوع]" للعثور على مهارات محددة\n'
-    prompt += '3. استخدم "نفّذ الأمر [الأمر]" لتنفيذ أوامر مباشرة\n'
-    prompt += '4. استخدم "افحص الكود" لتحليل أي كود أمنياً\n'
+    prompt += '💡 متى تستخدم الوكيل:\n'
+    prompt += '1. طلب صريح: "استخدم الوكيل" أو "نفّذ محلياً"\n'
+    prompt += '2. مهمة معقدة: بناء مشاريع، فحص كود، تنفيذ أوامر\n'
+    prompt += '3. استخدام مهارة: "استخدم مهارة [الاسم]"\n'
     if (agentStore.tools.length > 0) {
       prompt += 'الأدوات: ' + agentStore.tools.map(t => t.name).join(', ') + '\n'
     }
@@ -267,7 +265,32 @@ export function detectAgentRequest(message: string): AgentRequest | null {
 
   const lowerMsg = message.toLowerCase()
 
-  // Scan detection
+  // 1. Explicit agent requests
+  const explicitPatterns = [
+    /(?:استخدم|运用|excecute|execute|نفّذ|نفذ)\s+(?:الوكيل|agent|محلي|local)/i,
+    /(?:عبر|خالص|من خلال|through|via)\s+(?:الوكيل|agent|محلي|local)/i,
+    /(?:الوكيل|agent|محلي|local)\s+(?:ينفّذ|يقوم|يعمل|does)/i,
+  ]
+  for (const pattern of explicitPatterns) {
+    if (pattern.test(message)) {
+      return { type: 'execute', params: { command: message } }
+    }
+  }
+
+  // 2. Use specific skill
+  const skillUsePatterns = [
+    /(?:استخدم|use|运用)\s+(?:مهارة|skill|قدرة)\s+(.+)/i,
+    /(?:activate|فعّل|شغّل)\s+(?:مهارة|skill|قدرة)\s+(.+)/i,
+    /(?:تشغيل|run|شغّل)\s+(?:مهارة|skill)\s+(.+)/i,
+  ]
+  for (const pattern of skillUsePatterns) {
+    const match = message.match(pattern)
+    if (match?.[1]) {
+      return { type: 'find-skills', params: { query: match[1].trim() } }
+    }
+  }
+
+  // 3. Scan detection
   const scanPatterns = [
     /(?:افحص|فحص|scan|analyze)\s+(?:الكود|كود|code)?\s*(?:بـ|ب|باستخدام|with|using)?\s*(semgrep|codeql|slither|libfuzzer)?/i,
     /(?:semgrep|codeql|slither|libfuzzer)\s+(?:scan|افحص|فحص)/i,
@@ -280,7 +303,7 @@ export function detectAgentRequest(message: string): AgentRequest | null {
     }
   }
 
-  // Find skills detection
+  // 4. Find skills detection
   const skillPatterns = [
     /(?:ابحث عن|بحث عن|find|search)\s+(?:مهارة|skill|قدرات?)\s+(.+)/i,
     /(?:مهارات|skills)\s+(?:عن|about|for)\s+(.+)/i,
@@ -292,7 +315,7 @@ export function detectAgentRequest(message: string): AgentRequest | null {
     }
   }
 
-  // Execute detection
+  // 5. Execute detection
   const execPatterns = [
     /(?:نفّذ|نفذ|execute|run|تشغيل)\s+(?:الأمر|command)?\s*:?\s*(.+)/i,
     /(?:command|أمر)\s*:?\s*(.+)/i,
@@ -304,7 +327,7 @@ export function detectAgentRequest(message: string): AgentRequest | null {
     }
   }
 
-  // Install skill detection
+  // 6. Install skill detection
   const installPatterns = [
     /(?:ثبّت|ثبت|install|add)\s+(?:مهارة|skill|حزمة|package)\s+(.+)/i,
     /(?:npm|pip|apt)\s+(?:install|add)\s+(.+)/i,
