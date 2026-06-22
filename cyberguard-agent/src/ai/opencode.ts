@@ -40,10 +40,27 @@ async function findOpenCodeBinary(): Promise<string | null> {
   return null
 }
 
+// Find OpenCode Desktop binary
+async function findDesktopBinary(): Promise<string | null> {
+  const possiblePaths = [
+    join(process.env.HOME || '', '.opencode/bin/opencode-desktop'),
+    '/usr/local/bin/opencode-desktop',
+    '/usr/bin/opencode-desktop',
+    join(process.env.HOME || '', '.local/bin/opencode-desktop'),
+  ]
+
+  for (const p of possiblePaths) {
+    if (existsSync(p)) return p
+  }
+
+  return null
+}
+
 // Check if OpenCode Desktop is running
 async function isDesktopRunning(): Promise<boolean> {
   try {
-    const { stdout } = await execAsync('pgrep -f "opencode.desktop" || true')
+    // Check for various possible process names
+    const { stdout } = await execAsync('pgrep -f "opencode-desktop|opencode desktop|opencode.*desktop" || true')
     return stdout.trim().length > 0
   } catch {
     return false
@@ -51,26 +68,41 @@ async function isDesktopRunning(): Promise<boolean> {
 }
 
 // Launch OpenCode Desktop
-export async function launchDesktop(workDir?: string): Promise<{ success: boolean; error?: string }> {
-  const desktopPath = join(process.env.HOME || '', '.opencode/bin/opencode-desktop')
+export async function launchDesktop(workDir?: string): Promise<{ success: boolean; error?: string; message?: string }> {
+  const desktopPath = await findDesktopBinary()
+  
+  if (!desktopPath) {
+    return { 
+      success: false, 
+      error: 'OpenCode Desktop not found',
+      message: 'OpenCode Desktop is not installed. Install it from https://opencode.ai or use OpenCode CLI with "opencode web" command.'
+    }
+  }
 
   // Try to launch Desktop app
   try {
-    const launchCmd = `nohup ${desktopPath} ${workDir || process.cwd()} > /dev/null 2>&1 &`
+    const launchCmd = `nohup "${desktopPath}" "${workDir || process.cwd()}" > /dev/null 2>&1 &`
     await execAsync(launchCmd)
-    return { success: true }
-  } catch {}
-
-  // Fallback: try to launch via xdg-open
-  try {
-    await execAsync(`xdg-open "opencode://open?path=${workDir || process.cwd()}"`)
-    return { success: true }
+    
+    // Wait a moment and check if it started
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    const isRunning = await isDesktopRunning()
+    
+    if (isRunning) {
+      return { success: true, message: 'OpenCode Desktop launched successfully!' }
+    } else {
+      return { 
+        success: false, 
+        error: 'Desktop app started but may have closed',
+        message: 'OpenCode Desktop was launched but may have closed immediately. Try using "opencode web" instead.'
+      }
+    }
   } catch (err: any) {
     return { success: false, error: err.message }
   }
 }
 
-// Run OpenCode via CLI
+// Run OpenCode via CLI using 'web' command (more reliable than 'run')
 export async function runOpenCode(
   prompt: string,
   config: OpenCodeConfig = {}
@@ -81,26 +113,27 @@ export async function runOpenCode(
   }
 
   const workDir = config.workDir || process.cwd()
-  const args = [prompt]
 
+  // Build the command - use 'run' with proper escaping
+  const args: string[] = []
+  
   if (config.model && config.provider) {
     args.push('--model', `${config.provider}/${config.model}`)
   } else if (config.model) {
     args.push('--model', config.model)
   }
 
+  // Escape the prompt properly for shell
+  const escapedPrompt = prompt.replace(/'/g, "'\\''")
   args.push('--dangerously-skip-permissions')
-
-  const escapedArgs = args.map(a => {
-    const escaped = a.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-    return `"${escaped}"`
-  })
-  const cmd = `${binary} run ${escapedArgs.join(' ')}`
+  
+  const argsStr = args.join(' ')
+  const cmd = `${binary} run ${argsStr} '${escapedPrompt}'`
 
   try {
     const { stdout, stderr } = await execAsync(cmd, {
       cwd: workDir,
-      timeout: 300000,
+      timeout: 300000, // 5 minutes
       maxBuffer: 10 * 1024 * 1024,
       env: { ...process.env, NO_COLOR: '1' }
     })
@@ -108,12 +141,22 @@ export async function runOpenCode(
     const output = stdout || stderr || ''
     return { success: true, output: output.trim() }
   } catch (err: any) {
-    const sessions = await listSessions(workDir)
+    // If 'run' fails, suggest alternatives
+    const errorMsg = err.message || ''
+    
+    if (errorMsg.includes('Session not found') || errorMsg.includes('not found')) {
+      return {
+        success: false,
+        output: err.stdout || '',
+        error: 'OpenCode CLI "run" command has issues in v1.15.10. Use "opencode web" or OpenCode Desktop instead.',
+        session: 'Try: opencode web (opens web interface)'
+      }
+    }
+    
     return {
       success: false,
       output: err.stdout || '',
-      error: err.message || 'OpenCode execution failed. Use OpenCode Desktop for better experience.',
-      session: sessions.length > 0 ? `${sessions.length} sessions available in Desktop` : undefined
+      error: errorMsg || 'OpenCode execution failed. Try "opencode web" for a working alternative.'
     }
   }
 }
@@ -131,21 +174,20 @@ export async function runOpenCodeWithFile(
 
   const workDir = config.workDir || process.cwd()
   const fullPrompt = `In file ${filePath}:\n${prompt}`
-  const args = [fullPrompt]
-
+  
+  const args: string[] = []
+  
   if (config.model && config.provider) {
     args.push('--model', `${config.provider}/${config.model}`)
   } else if (config.model) {
     args.push('--model', config.model)
   }
 
+  const escapedPrompt = fullPrompt.replace(/'/g, "'\\''")
   args.push('--dangerously-skip-permissions')
-
-  const escapedArgs = args.map(a => {
-    const escaped = a.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-    return `"${escaped}"`
-  })
-  const cmd = `${binary} run ${escapedArgs.join(' ')}`
+  
+  const argsStr = args.join(' ')
+  const cmd = `${binary} run ${argsStr} '${escapedPrompt}'`
 
   try {
     const { stdout, stderr } = await execAsync(cmd, {
@@ -160,7 +202,7 @@ export async function runOpenCodeWithFile(
     return {
       success: false,
       output: err.stdout || '',
-      error: err.message || 'OpenCode execution failed. Use OpenCode Desktop for better experience.'
+      error: err.message || 'OpenCode execution failed. Try "opencode web" for a working alternative.'
     }
   }
 }
@@ -170,10 +212,13 @@ export async function getOpenCodeStatus(): Promise<{
   installed: boolean
   binary: string | null
   version: string | null
+  desktopInstalled: boolean
   desktopRunning: boolean
   providers: string[]
+  recommendation: string
 }> {
   const binary = await findOpenCodeBinary()
+  const desktopBinary = await findDesktopBinary()
   let version = null
   const desktopRunning = await isDesktopRunning()
 
@@ -184,12 +229,26 @@ export async function getOpenCodeStatus(): Promise<{
     } catch {}
   }
 
+  // Determine recommendation
+  let recommendation = ''
+  if (!binary) {
+    recommendation = 'Install OpenCode: curl -fsSL https://opencode.ai/install | bash'
+  } else if (!desktopBinary) {
+    recommendation = 'OpenCode Desktop not installed. Use "opencode web" for web interface.'
+  } else if (!desktopRunning) {
+    recommendation = 'OpenCode Desktop is installed but not running. Click "Launch OpenCode Desktop" to start it.'
+  } else {
+    recommendation = 'OpenCode is ready! You can use the CLI or Desktop app.'
+  }
+
   return {
     installed: !!binary,
     binary,
     version,
+    desktopInstalled: !!desktopBinary,
     desktopRunning,
-    providers: ['openai', 'anthropic', 'google', 'groq', 'ollama', 'openrouter']
+    providers: ['openai', 'anthropic', 'google', 'groq', 'ollama', 'openrouter'],
+    recommendation
   }
 }
 

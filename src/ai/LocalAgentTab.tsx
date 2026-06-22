@@ -258,9 +258,11 @@ export function LocalAgentTab() {
     try {
       const result = await launchOpenCodeDesktop()
       if (result.success) {
-        alert('OpenCode Desktop launched!')
+        alert(result.message || 'OpenCode Desktop launched!')
       } else {
-        alert(`Failed to launch: ${result.error}`)
+        const errorMsg = result.error || 'Unknown error'
+        const suggestion = result.message || ''
+        alert(`Failed to launch: ${errorMsg}${suggestion ? '\n\n' + suggestion : ''}`)
       }
     } catch (err: any) {
       alert(`Error: ${err.message}`)
