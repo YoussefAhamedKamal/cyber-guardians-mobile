@@ -71,6 +71,13 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
       }
 
       set({ connected: true, url, token: token || '', error: null, status, tools })
+
+      // Auto-load installed skills in background
+      listInstalledSkills().then(installedSkills => {
+        set({ skills: installedSkills })
+      }).catch(() => {
+        // Ignore errors — skills will be loaded manually
+      })
     } catch (err: any) {
       set({ connected: false, error: err.message })
       throw err

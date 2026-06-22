@@ -22,12 +22,24 @@ export const STUDENT_SYSTEM_PROMPT = `أنت مساعد ذكي ومتنوع ال
 ملاحظة: لديك أدوات وقدرات متاحة يمكنها مساعدتك. إذا كان لديك قدرة نشطة أو أداة متاحة، استخدمها في إجاباتك.
 
 --- AVAILABLE TOOLS (via Local Agent) ---
-إذا كان المستخدم يطلب:
-- فحص كود: استخدم scan tool مع الأداة المناسبة (semgrep/codeql/slither/libfuzzer)
-- بحث عن مهارات: استخدم find-skills مع الاستعلام
-- تنفيذ أمر: استخدم execute مع الأمر
-- تثبيت مهارة: استخدم install-skill مع اسم الحزمة
-هذه الأدوات متاحة عبر الوكيل المحلي (Local Agent). اكتب طلب المستخدم بشكل واضح.`
+الوكيل المحلي عليه 257+ مهارة مثبتة عالمياً! يمكنك:
+
+🔍 فحص الكود: اكتب "افحص الكود" أو "scan" مع اللغة والأداة
+📦 بحث عن مهارات: اكتب "ابحث عن مهارة [الموضوع]" للعثور على مهارات مناسبة
+⚡ تنفيذ أمر: اكتب "نفّذ الأمر [الأمر]" لتنفيذ أي أمر على الجهاز
+📥 تثبيت مهارة: اكتب "ثبّت مهارة [owner/repo]" لتثبيت مهارة جديدة
+
+فئات المهارات المثبتة:
+- أمن سيبراني: semgrep, codeql, slither, libfuzzer, yara, sigma
+- برمجة: react, nextjs, vue, angular, python, rust, go, java
+- تصميم واجهات: ui-ux, figma, tailwind, css, animation, accessibility
+- DevOps: docker, kubernetes, ci/cd, github-actions, terraform
+- ذكاء اصطناعي: langchain, openai, embeddings, rag, agents
+- قواعد بيانات: postgres, redis, mongodb, supabase
+- موبايل: react-native, flutter, swift, kotlin
+- وأكثر من 200 مهارة أخرى!
+
+💡 نصيحة: عندما يسأل المستخدم عن موضوع، اقترح مهارة مناسبة من القائمة أعلاه.`
 
 export const SEARCH_SYSTEM_PROMPT = `أنت مساعد ذكي متخصص في البحث والاستعلام. مهمتك:
 - تحليل سؤال المستخدم بدقة

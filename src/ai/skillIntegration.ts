@@ -30,16 +30,30 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
   // Add Agent capabilities if connected
   if (agentStore.connected) {
     prompt += '\n\n--- LOCAL AGENT CONNECTED ---\n'
-    prompt += 'الوكيل المحلي متصل على جهازك. يمكنك استخدام الأدوات التالية:\n'
+    prompt += 'الوكيل المحلي متصل على جهازك ויש له 257+ مهارة مثبتة عالمياً!\n\n'
+    prompt += '🔧 الأدوات المتاحة:\n'
     prompt += '🔍 فحص الكود: اكتب "افحص الكود" أو "scan" مع ذكر اللغة والأداة\n'
     prompt += '📦 بحث عن مهارات: اكتب "ابحث عن مهارة" مع الاستعلام\n'
     prompt += '⚡ تنفيذ أمر: اكتب "نفّذ الأمر" مع الأمر المطلوب\n'
-    prompt += '📥 تثبيت مهارة: اكتب "ثبّت مهارة" مع اسم الحزمة\n'
+    prompt += '📥 تثبيت مهارة: اكتب "ثبّت مهارة" مع اسم الحزمة\n\n'
+    prompt += '📋 فئات المهارات المثبتة:\n'
+    prompt += '- تحليل أمني: semgrep, codeql, slither, libfuzzer\n'
+    prompt += '- برمجة: react, nextjs, vue, angular, python, rust, go\n'
+    prompt += '- تصميم واجهات: ui-ux, figma, tailwind, css, animation\n'
+    prompt += '- DevOps: docker, kubernetes, ci/cd, github-actions\n'
+    prompt += '- ذكاء اصطناعي: langchain, openai, embeddings, rag\n'
+    prompt += '- قواعد بيانات: postgres, redis, mongodb, supabase\n'
+    prompt += '- موبايل: react-native, flutter, swift, kotlin\n'
+    prompt += '- وأكثر من 200 مهارة أخرى!\n\n'
+    prompt += '💡 للاستفادة القصوى:\n'
+    prompt += '1. عندما يسأل المستخدم عن موضوع معين، اقترح مهارة مناسبة\n'
+    prompt += '2. استخدم "ابحث عن مهارة [الموضوع]" للعثور على مهارات محددة\n'
+    prompt += '3. استخدم "نفّذ الأمر [الأمر]" لتنفيذ أوامر مباشرة\n'
+    prompt += '4. استخدم "افحص الكود" لتحليل أي كود أمنياً\n'
     if (agentStore.tools.length > 0) {
-      prompt += 'الأدوات المتاحة: ' + agentStore.tools.map(t => t.name).join(', ') + '\n'
+      prompt += 'الأدوات: ' + agentStore.tools.map(t => t.name).join(', ') + '\n'
     }
     prompt += '--- END LOCAL AGENT ---\n'
-    prompt += 'عندما يطلب المستخدم فحص أو تنفيذ، وفّر الإجابة التفصيلية.\n'
   }
 
   if (activeSkill) {
