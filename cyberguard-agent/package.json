@@ -1,7 +1,7 @@
 {
   "name": "@cyberguard/agent",
-  "version": "1.0.0",
-  "description": "Local Agent for Cyber Guardians - Universal Skill/Plugin Executor",
+  "version": "1.2.0",
+  "description": "Local Agent for Cyber Guardians - Universal Skill/Plugin Executor with AI Providers & OpenCode",
   "type": "module",
   "bin": {
     "cyberguard-agent": "./bin/cyberguard-agent"
@@ -26,6 +26,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["cyber-security", "agent", "skills", "plugins", "semgrep", "codeql"],
+  "keywords": ["cyber-security", "agent", "skills", "plugins", "ai", "gemini", "ollama", "groq"],
   "license": "MIT"
 }

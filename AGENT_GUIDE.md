@@ -1,6 +1,6 @@
 # دليل الجهة المحلية — CyberGuard Agent
 
-> الإصدار: **1.0.0** (آخر تحديث: 2026-06-22)
+> الإصدار: **1.2.0** (آخر تحديث: 2026-06-22)
 
 ---
 
@@ -10,6 +10,12 @@
 
 الجهة المحلية (CyberGuard Agent) هي خادم خفيف يعمل على جهازك المحلي ويتفاعل مع لعبة Cyber Guardians عبر بروتوكول WebSocket. توفر هذه الجهة واجهة برمجية تتيح لمحرك اللعبة تنفيذ عمليات أمنية متقدمة مثل الفحص الساكن، واكتشاف الثغرات، وفحص العقود الذكية، والبحث عن مهارات جديدة.
 
+**القدرات الجديدة في الإصدار 1.2.0:**
+- **مقدمات AI متعددة** — Gemini, Ollama, Groq, HuggingFace, OpenRouter مع تراجع تلقائي
+- **عمليات الملفات** — 8 عمليات: قراءة، كتابة، قائمة، حذف، نقل، إنشاء مجلد، فحص، بحث
+- **بحث المحتوى (grep)** — بحث في محتوى الملفات باستخدام أنماط regex
+- **تكامل OpenCode** — تشغيل تطبيق سطح مكتب OpenCode وسرد الجلسات
+
 ### لماذا تحتاجها
 
 - **تكامل مباشر:** تربط بين اللعبة وأدوات الأمن السيبراني الحقيقية
@@ -17,6 +23,7 @@
 - **خصوصية:** البيانات لا تغادر جهازك إلا عند الضرورة
 - **توسعية:** يمكنك إضافة أدوات مخصصة ومهارات جديدة بسهولة
 - **تعليمية:** تتيح للمستخدمين تعلم أدوات الأمن الحقيقي أثناء اللعب
+- **مقدمات AI متعددة:** اختر المزود المناسب أو دع النظام يختار تلقائياً
 
 ### كيف تعمل (WebSocket ↔ اللعبة)
 
@@ -25,12 +32,14 @@
 │  لعبة Cyber  │ ◄─────────────────────► │  CyberGuard      │
 │  Guardians   │   ws://localhost:3002   │  Agent (محلي)    │
 └──────────────┘                         └────────┬─────────┘
-                                                  │
-                                         ┌────────▼─────────┐
-                                         │  أدوات الفحص      │
-                                         │  semgrep / codeql │
-                                         │  slither / fuzzer │
-                                         └──────────────────┘
+                                                   │
+                              ┌─────────────────────┼─────────────────────┐
+                              │                     │                     │
+                    ┌─────────▼─────────┐  ┌───────▼───────┐  ┌─────────▼─────────┐
+                    │  أدوات الفحص      │  │  مقدمات AI    │  │  OpenCode         │
+                    │  semgrep / codeql │  │  Gemini/Ollama│  │  سطح مكتب        │
+                    │  slither / fuzzer │  │  Groq/HF      │  │  جلسات            │
+                    └───────────────────┘  └───────────────┘  └───────────────────┘
 ```
 
 تتصل اللعبة بالجهة المحلية عبر WebSocket على المنفذ المحدد. تُرسل اللعبة طلبات بالصيغة المحددة `{id, type, payload}`، وتستجيب الجهة المحلية بالنتائج `{id, status, result/error}`.
@@ -316,6 +325,134 @@ npx skills list
   - إدارة الإصدارات
   - معاينة المهارات قبل التثبيت
 
+### 6.6. مقدمات AI المتعددة
+
+الجهة المحلية تدعم 5 مقدمات AI مع واجهة موحدة و FALLBACK تلقائي:
+
+| المزود | الميزة الرئيسية | المفتاح | الحد المجاني |
+|--------|-----------------|---------|--------------|
+| **Gemini** | المزود الافتراضي | `GEMINI_API_KEY` | 1500 طلب/يوم |
+| **Ollama** | يعمل محلياً | لا يحتاج مفتاح | غير محدود |
+| **Groq** | سرعة عالية | `GROQ_API_KEY` | 30 طلب/دقيقة |
+| **HuggingFace** | موديلات متنوعة | `HUGGINGFACE_API_KEY` | 1000 طلب/يوم |
+| **OpenRouter** | وصول لموديلات متعددة | `OPENROUTER_API_KEY` | حسب الموديل |
+
+#### إعداد مفاتيح API
+
+```bash
+# إعداد المفاتيح (اختياري — اتركه فارغاً لاستخدام الافتراضي)
+export GEMINI_API_KEY="your-gemini-key"
+export GROQ_API_KEY="your-groq-key"
+export HUGGINGFACE_API_KEY="your-hf-key"
+export OPENROUTER_API_KEY="your-openrouter-key"
+
+# Ollama يعمل محلياً — لا يحتاج مفتاح
+# تأكد من تشغيل Ollama أولاً
+ollama serve
+```
+
+#### استخدام AI عبر WebSocket
+
+```javascript
+// إرسال رسالة AI
+ws.send(JSON.stringify({
+  id: 'ai-001',
+  type: 'ai-chat',
+  payload: {
+    message: 'اشرح لي什么是SQL injection',
+    provider: 'gemini'  // أو 'ollama', 'groq', 'huggingface', 'openrouter'
+  }
+}));
+
+// استجابة
+{
+  "id": "ai-001",
+  "status": "complete",
+  "result": {
+    "response": "SQL injection هو...",
+    "provider": "gemini",
+    "model": "gemini-3.5-flash"
+  }
+}
+```
+
+#### الفصل التلقائي (Fallback)
+
+إذا فشل المزود الحالي، يحاول المزود التالي تلقائياً:
+1. المزود النشط (Gemini افتراضياً)
+2. المزودات الأخرى حسب التوفر
+
+### 6.7. عمليات الملفات
+
+```javascript
+// قراءة ملف
+{ "type": "file-op", "payload": { "operation": "read", "path": "/path/to/file.ts" } }
+
+// كتابة ملف
+{ "type": "file-op", "payload": { "operation": "write", "path": "/path/to/file.ts", "content": "..." } }
+
+// سرد ملفات
+{ "type": "file-op", "payload": { "operation": "list", "path": "/path/to/dir" } }
+
+// حذف ملف
+{ "type": "file-op", "payload": { "operation": "delete", "path": "/path/to/file.ts" } }
+
+// نقل/إعادة تسمية
+{ "type": "file-op", "payload": { "operation": "move", "source": "/old/path", "destination": "/new/path" } }
+
+// إنشاء مجلد
+{ "type": "file-op", "payload": { "operation": "mkdir", "path": "/path/to/new/dir" } }
+
+// فحص وجود ملف
+{ "type": "file-op", "payload": { "operation": "exists", "path": "/path/to/file.ts" } }
+
+// بحث في أسماء الملفات
+{ "type": "file-op", "payload": { "operation": "search", "path": "/path/to/dir", "pattern": "*.ts" } }
+```
+
+### 6.8. بحث المحتوى (grep)
+
+```javascript
+// بحث في محتوى الملفات باستخدام regex
+{ "type": "grep", "payload": { "pattern": "function\\s+\\w+", "path": "./src", "include": "*.ts" } }
+
+// استجابة
+{
+  "id": "grep-001",
+  "status": "complete",
+  "result": {
+    "matches": [
+      { "file": "src/app.ts", "line": 10, "content": "function main() {" },
+      { "file": "src/utils.ts", "line": 25, "content": "function helper() {" }
+    ],
+    "total": 2
+  }
+}
+```
+
+### 6.9. تكامل OpenCode
+
+OpenCode هو أداة AI لكتابة الكود. الجهة المحلية تتكامل معها:
+
+```javascript
+// فحص حالة OpenCode Desktop
+{ "type": "opencode-status", "payload": {} }
+
+// سرد جلسات OpenCode
+{ "type": "opencode-sessions", "payload": {} }
+
+// تشغيل OpenCode agent
+{ "type": "opencode", "payload": { "command": "اكتب دالة لحساب المضروب" } }
+
+// تشغيل تطبيق سطح مكتب OpenCode
+{ "type": "opencode-launch", "payload": {} }
+```
+
+**ملاحظات:**
+- OpenCode CLI قد يواجه مشاكل في بعض الإصدارات — تطبيق سطح المكتب يعمل بشكل أفضل
+- مهلة التنفيذ: 300 ثانية (5 دقائق)
+- النموذج: `provider/model` (مثل: `google/gemini-2.0-flash`)
+
 ---
 
 ## 7. البروتوكول (WebSocket)
@@ -323,7 +460,7 @@ npx skills list
 ### الاتصال
 
 ```
-ws://localhost:3001
+ws://localhost:3002
 ```
 
 ### هيكل الرسائل
@@ -368,17 +505,27 @@ ws://localhost:3001
 }
 ```
 
-### أنواع الرسائل (Message Types)
+### أنواع الرسائل (16 Message Types)
 
-| النوع | الوصف | الحمولة المطلوبة |
-|-------|-------|------------------|
-| `scan` | فحص أمني ساكن | `tool`, `target`, `options` |
-| `execute` | تنفيذ أداة محددة | `tool`, `target`, `duration` |
-| `find-skills` | البحث عن مهارات | `query` |
-| `install-skill` | تثبيت مهارة | `skillName`, `version` |
-| `status` | الحالة الحالية | — (فارغة) |
-| `tools` | عرض الأدوات المتاحة | — (فارغة) |
-| `parse-file` | تحليل ملف محدد | `filePath`, `language` |
+| # | النوع | الوصف | الحمولة المطلوبة |
+|---|-------|-------|------------------|
+| 1 | `scan` | فحص أمني ساكن | `tool`, `target`, `options` |
+| 2 | `execute` | تنفيذ أداة محددة | `tool`, `target`, `duration` |
+| 3 | `find-skills` | البحث عن مهارات | `query` |
+| 4 | `install-skill` | تثبيت مهارة | `skillName`, `version` |
+| 5 | `status` | الحالة الحالية | — (فارغة) |
+| 6 | `tools` | عرض الأدوات المتاحة | — (فارغة) |
+| 7 | `parse-file` | تحليل ملف محدد | `filePath`, `language` |
+| 8 | `list-installs` | سرد المهارات المثبتة عالمياً | — (فارغة) |
+| 9 | `ai-chat` | إرسال رسالة AI | `message`, `provider` |
+| 10 | `file-op` | عمليات الملفات | `operation`, `path`, `content` |
+| 11 | `grep` | بحث المحتوى | `pattern`, `path`, `include` |
+| 12 | `ai-providers` | سرد مقدمات AI المتاحة | — (فارغة) |
+| 13 | `opencode` | تشغيل OpenCode agent | `command` |
+| 14 | `opencode-status` | فحص حالة OpenCode Desktop | — (فارغة) |
+| 15 | `opencode-sessions` | سرد جلسات OpenCode | — (فارغة) |
+| 16 | `opencode-launch` | تشغيل تطبيق سطح مكتب OpenCode | — (فارغة) |
+| 17 | `install` | تثبيت حزمة (pip/npm/apt) | `package`, `manager` |
 
 ### مثال عملي على الاتصال
 
@@ -386,7 +533,7 @@ ws://localhost:3001
 // JavaScript — الاتصال بالجهة المحلية
 const WebSocket = require('ws');
 
-const ws = new WebSocket('ws://localhost:3001');
+const ws = new WebSocket('ws://localhost:3002');
 
 ws.on('open', () => {
   // إرسال طلب فحص
@@ -399,12 +546,43 @@ ws.on('open', () => {
       options: { severity: 'high' }
     }
   }));
+
+  // إرسال رسالة AI
+  ws.send(JSON.stringify({
+    id: 'ai-001',
+    type: 'ai-chat',
+    payload: {
+      message: 'اشرح لي什么是SQL injection',
+      provider: 'gemini'
+    }
+  }));
+
+  // قراءة ملف
+  ws.send(JSON.stringify({
+    id: 'file-001',
+    type: 'file-op',
+    payload: {
+      operation: 'read',
+      path: './src/app.ts'
+    }
+  }));
+
+  // بحث في محتوى الملفات
+  ws.send(JSON.stringify({
+    id: 'grep-001',
+    type: 'grep',
+    payload: {
+      pattern: 'function\\s+\\w+',
+      path: './src',
+      include: '*.ts'
+    }
+  }));
 });
 
 ws.on('message', (data) => {
   const response = JSON.parse(data);
-  if (response.status === 'success') {
-    console.log('نتائج الفحص:', response.result);
+  if (response.status === 'success' || response.status === 'complete') {
+    console.log('النتيجة:', response.result);
   } else {
     console.error('خطأ:', response.error);
   }
@@ -424,7 +602,7 @@ ws.on('message', (data) => {
 cyberguard-agent start --token my-secret-token
 
 # الاتصال يتطلب الرمز
-ws://localhost:3001?token=my-secret-token
+ws://localhost:3002?token=my-secret-token
 ```
 
 **القواعد:**
@@ -432,6 +610,7 @@ ws://localhost:3001?token=my-secret-token
 - لا يُسجل في ملفات السجل
 - يُرسل عبر WebSocket فقط (ليس عبر HTTP)
 - يمكن تغييره عند إعادة التشغيل
+- **ملاحظة:** الرمز اختياري — إذا لم يُحدد، لا تُطلب مصادقة
 
 ### 8.2. عزل Sandbox
 
@@ -500,14 +679,14 @@ cyberguard-agent logs --follow
 **الحل:**
 ```bash
 # اكتشاف العملية المشغّلة للمنفذ
-lsof -i :3001          # Linux/macOS
-netstat -ano | findstr :3001  # Windows
+lsof -i :3002          # Linux/macOS
+netstat -ano | findstr :3002  # Windows
 
 # إيقاف العملية
 kill -9 <PID>
 
 # أو استخدم منفذاً مختلفاً
-cyberguard-agent start --port 3002
+cyberguard-agent start --port 3003
 ```
 
 #### ❌ `MODULE_NOT_FOUND`
@@ -791,6 +970,7 @@ sudo systemctl status cyberguard-agent
 |-------|-------|
 | `cyberguard-agent start` | تشغيل الجهة المحلية |
 | `cyberguard-agent start --profile full` | تشغيل بالإعداد الكامل |
+| `cyberguard-agent start --port 3002` | تشغيل على منفذ محدد |
 | `cyberguard-agent stop` | إيقاف الجهة المحلية |
 | `cyberguard-agent status` | عرض الحالة الحالية |
 | `cyberguard-agent config` | عرض الإعدادات |
@@ -798,9 +978,10 @@ sudo systemctl status cyberguard-agent
 | `cyberguard-agent logs --follow` | مراقبة السجلات مباشرة |
 | `npx skills search "term"` | البحث عن مهارات |
 | `npx skills install name` | تثبيت مهارة |
+| `npx skills list -g` | سرد المهارات المثبتة عالمياً |
 
 ---
 
 > **تُحديث آخر:** يونيو 2026
-> **الإصدار:** 1.0.0
+> **الإصدار:** 1.2.0
 > **المطور:** Cyber Guardians Team

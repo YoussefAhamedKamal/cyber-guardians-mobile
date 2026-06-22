@@ -2,7 +2,7 @@
 
 > Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
 > Status: **🟢 Live on Cloudflare Pages**
-> Version: **9.0.0**
+> Version: **10.0.0**
 
 ---
 
@@ -24,7 +24,7 @@
 | Testing | Vitest | — | 70 tests |
 | Deploy | **Cloudflare Pages** | — | Auto-deploy via Git push |
 | Search Worker | Cloudflare Worker | — | DuckDuckGo search (API + HTML) |
-| Local Agent | @cyberguard/agent v1.0.0 | — | npm package, WebSocket |
+| Local Agent | @cyberguard/agent v1.2.0 | — | npm package, WebSocket, AI providers, file ops, OpenCode |
 | AI Music | MiniMax Music 2.6 | — | Music generation (Instrumental Mode) |
 
 ### Technical Constraints
@@ -150,7 +150,7 @@ src/
 │   ├── ReportsTab.tsx               # Custom reports + analytics + zero-division guard
 │   ├── ToolsTab.tsx                 # 13 sub-tabs
 │   ├── ProjectTab.tsx               # Knowledge + instructions + shared chats
-│   └── LocalAgentTab.tsx            # Local Agent UI (Scan + Skills + Execute)
+│   └── LocalAgentTab.tsx            # Local Agent UI (8 tabs: Scan + Skills + Installed + Execute + AI + Files + Search + OpenCode)
 │
 ├── pages/
 │   ├── MenuPage.tsx                 # Home screen (lazy)
@@ -296,7 +296,7 @@ src/
 │   ├── calendar.ts
 │   ├── reports.ts
 │   ├── voice.ts
-│   └── localAgent.ts               # Agent types (Tool, Skill, ScanResult, Finding)
+│   └── localAgent.ts               # Agent types (Tool, Skill, ScanResult, Finding, AIProvider, FileOp, OpenCodeStatus)
 │
 ├── utils/
 │   ├── constants.ts
@@ -466,6 +466,12 @@ OpenAI, Anthropic, Google, Meta, Mistral, GitHub Copilot, Cursor, Codeium, AWS B
 ### Overview
 Local Agent = a server running on the user's machine that connects the browser to external tools.
 
+**v1.2.0 — New Features:**
+- **Multi-Provider AI** — Gemini, Ollama, Groq, HuggingFace, OpenRouter with automatic fallback
+- **File Operations** — Read, write, list, delete, move, mkdir, exists, search, grep
+- **OpenCode Integration** — Desktop app launch, session listing, CLI execution
+- **8 UI Tabs** — Scan, Skills, Installed, Execute, AI Chat, File Manager, Search, OpenCode
+
 ### Compatibility
 
 | OS | Shell | Package Managers |
@@ -478,14 +484,14 @@ Local Agent = a server running on the user's machine that connects the browser t
 
 | File | Function |
 |---|---|
-| `cyberguard-agent/src/server.ts` | WebSocket + HTTP server |
+| `cyberguard-agent/src/server.ts` | WebSocket + HTTP server (16 message types) |
 | `cyberguard-agent/src/platform/detector.ts` | OS + package manager detection |
 | `cyberguard-agent/src/platform/commandTranslator.ts` | Cross-platform command translation |
 | `cyberguard-agent/src/platform/pathResolver.ts` | Path + temp dir resolution |
 | `cyberguard-agent/src/parser/skillParser.ts` | SKILL.md parser (frontmatter + commands) |
 | `cyberguard-agent/src/parser/pluginParser.ts` | plugin.json parser |
 | `cyberguard-agent/src/parser/manifestParser.ts` | Makefile, Dockerfile, requirements.txt |
-| `cyberguard-agent/src/executor/commandExecutor.ts` | Command execution with alternatives |
+| `cyberguard-agent/src/executor/commandExecutor.ts` | Command execution with alternatives (async) |
 | `cyberguard-agent/src/executor/toolChecker.ts` | Tool availability checker |
 | `cyberguard-agent/src/executor/packageInstaller.ts` | Auto-install (pip, npm, apt, brew, choco) |
 | `cyberguard-agent/src/executor/alternativesResolver.ts` | Find missing tool alternatives |
@@ -498,11 +504,16 @@ Local Agent = a server running on the user's machine that connects the browser t
 | `cyberguard-agent/src/plugins/codeql.ts` | CodeQL integration |
 | `cyberguard-agent/src/plugins/slither.ts` | Slither (Solidity) integration |
 | `cyberguard-agent/src/plugins/libfuzzer.ts` | libFuzzer (C/C++) integration |
-| `cyberguard-agent/src/plugins/skillsDiscovery.ts` | npx skills find/add |
-| `src/types/localAgent.ts` | Types |
-| `src/ai/localAgent.ts` | WebSocket client |
-| `src/store/localAgentStore.ts` | Zustand store |
-| `src/ai/LocalAgentTab.tsx` | UI |
+| `cyberguard-agent/src/plugins/skillsDiscovery.ts` | npx skills find/add (257+ installed) |
+| `cyberguard-agent/src/ai/providers.ts` | 5 AI providers + AIManager with fallback |
+| `cyberguard-agent/src/ai/fileOps.ts` | 8 file operations + grepFiles content search |
+| `cyberguard-agent/src/ai/opencode.ts` | OpenCode CLI + Desktop launch + session listing |
+| `cyberguard-agent/src/config.ts` | Config with AI provider API keys |
+| `src/types/localAgent.ts` | Types (AIProvider, FileOp, OpenCodeStatus) |
+| `src/ai/localAgent.ts` | WebSocket client (16 message types) |
+| `src/store/localAgentStore.ts` | Zustand store + auto-load installed skills |
+| `src/ai/LocalAgentTab.tsx` | UI (8 tabs) |
+| `src/ai/api.ts` | sendChatViaAgent, getAgentProviders |
 
 ### Supported Plugins
 
@@ -515,21 +526,43 @@ Local Agent = a server running on the user's machine that connects the browser t
 | skills-discovery | npx skills | query | Skill list |
 
 ### Features
-- **Universal Executor** — reads any instruction file (SKILL.md, plugin.json, Makefile, Dockerfile) and executes everything
-- **Cross-platform** — Windows / macOS / Linux
-- **Auto-install** — installs missing libraries automatically
-- **Alternatives** — finds alternatives for missing tools
-- **Model flexibility** — no model restrictions, uses whatever is available
-- **Sandboxing** — isolates untrusted code
-- **Docker fallback** — runs in isolated container
-- **Smart caching** — caches results
-- **Skills marketplace** — search + install from the internet
+
+| Feature | Details |
+|---|---|
+| **Universal Executor** | reads any instruction file (SKILL.md, plugin.json, Makefile, Dockerfile) and executes everything |
+| **Cross-platform** | Windows / macOS / Linux |
+| **Auto-install** | installs missing libraries automatically |
+| **Alternatives** | finds alternatives for missing tools |
+| **Model flexibility** | no model restrictions, uses whatever is available |
+| **Sandboxing** | isolates untrusted code |
+| **Docker fallback** | runs in isolated container |
+| **Smart caching** | caches results |
+| **Skills marketplace** | search + install from the internet (257+ globally installed) |
+| **Multi-Provider AI** | Gemini, Ollama, Groq, HuggingFace, OpenRouter with automatic fallback |
+| **File Operations** | 8 operations: read, write, list, delete, move, mkdir, exists, search |
+| **Content Search (grep)** | Search file contents with regex patterns |
+| **OpenCode Integration** | Desktop app launch, session listing, CLI execution (300s timeout) |
+| **AI Chat** | Natural language task execution via connected AI providers |
+| **Installed Skills Viewer** | Lists all globally installed skills (npx skills list -g) |
+| **File Manager** | Browse, read, create, delete files and directories |
+| **Search Tab** | Grep-style content search across project files |
 
 ### Installation
 
 ```bash
 npm install -g @cyberguard/agent
-cyberguard-agent start --port 3001 --profile full
+cyberguard-agent start --port 3002 --profile full
+```
+
+**Environment Variables (AI Providers):**
+
+```bash
+# Optional — leave empty to use defaults
+export GEMINI_API_KEY="your-key"      # Default provider
+export GROQ_API_KEY="your-key"        # Fast inference
+export HUGGINGFACE_API_KEY="your-key" # Free tier
+export OPENROUTER_API_KEY="your-key"  # Multi-model
+# Ollama runs locally — no key needed
 ```
 
 ### Profiles
@@ -537,24 +570,65 @@ cyberguard-agent start --port 3001 --profile full
 | Profile | Description |
 |---|---|
 | minimal | Basic scanning only |
-| full | All tools and plugins |
+| full | All tools + AI providers + file ops + OpenCode |
 | education | Education-focused configuration |
 
 ### Protocol
 
-Game ↔ Agent via WebSocket (`ws://localhost:3001`)
+Game ↔ Agent via WebSocket (`ws://localhost:3002`)
+
+**16 Message Types:**
+
+| # | Type | Direction | Purpose |
+|---|---|---|---|
+| 1 | scan | Game → Agent | Run security scan (semgrep, codeql, slither, libfuzzer) |
+| 2 | install-skill | Game → Agent | Install a skill from marketplace |
+| 3 | execute | Game → Agent | Execute a skill or command |
+| 4 | find-skills | Game → Agent | Search for skills in marketplace |
+| 5 | install | Game → Agent | Install package (pip, npm, apt, brew) |
+| 6 | status | Game → Agent | Get agent status and tools |
+| 7 | tools | Game → Agent | List available tools |
+| 8 | parse-file | Game → Agent | Parse SKILL.md, plugin.json, etc. |
+| 9 | list-installs | Game → Agent | List globally installed skills |
+| 10 | ai-chat | Game → Agent | Send chat to connected AI provider |
+| 11 | file-op | Game → Agent | File operations (read/write/list/delete/move/mkdir/exists/search) |
+| 12 | grep | Game → Agent | Content search with regex patterns |
+| 13 | ai-providers | Game → Agent | List available AI providers |
+| 14 | opencode | Game → Agent | Run OpenCode agent command |
+| 15 | opencode-status | Game → Agent | Check OpenCode Desktop status |
+| 16 | opencode-sessions | Game → Agent | List OpenCode sessions |
+| 17 | opencode-launch | Game → Agent | Launch OpenCode Desktop app |
 
 ```typescript
 // Game → Agent
 { id: "1", type: "scan", payload: { tool: "semgrep", code: "...", language: "python" } }
+{ id: "2", type: "ai-chat", payload: { message: "Explain SQL injection", provider: "gemini" } }
+{ id: "3", type: "file-op", payload: { operation: "read", path: "/path/to/file.ts" } }
+{ id: "4", type: "grep", payload: { pattern: "function\\s+\\w+", path: "./src" } }
+{ id: "5", type: "opencode-launch", payload: {} }
 
 // Agent → Game
 { id: "1", status: "complete", result: { findings: [...], summary: "Found 3 issues" } }
+{ id: "2", status: "complete", result: { response: "SQL injection is..." } }
 ```
 
 ---
 
 ## [ORPHANS & PENDING]
+
+### Completed — v10.0.0 (AI Providers + File Ops + OpenCode)
+- [x] **Multi-provider AI** — Gemini, Ollama, Groq, HuggingFace, OpenRouter with AIManager fallback
+- [x] **File operations module** — 8 operations (read/write/list/delete/move/mkdir/exists/search) + grepFiles
+- [x] **OpenCode integration** — Desktop app launch, session listing, CLI execution
+- [x] **16 WebSocket message types** — Including ai-chat, file-op, grep, opencode, opencode-launch
+- [x] **8 UI tabs** — Scan, Skills, Installed, Execute, AI Chat, Files, Search, OpenCode
+- [x] **AI chat via agent** — sendChatViaAgent function in api.ts
+- [x] **Agent provider listing** — getAIProviders + getAgentProviders
+- [x] **Auto-load installed skills** — Background loading after WebSocket connect
+- [x] **Gemini model names updated** — gemini-3.5-flash, gemini-3.1-flash-lite, gemini-3-flash
+- [x] **OpenCode model format** — provider/model (e.g., google/gemini-2.0-flash)
+- [x] **OpenCode timeout 300s** — 5-minute timeout for agent execution
+- [x] **PROJECT_MAP.md updated** — Reflects v10.0.0 with all new features
 
 ### Completed — v9.0.0 (Help Guide + Documentation)
 - [x] **HelpGuide component** — 11-section in-game usage guide with Arabic content
@@ -726,7 +800,7 @@ server: {
 
 ## [SECURITY_SCAN]
 
-**Scan date:** 2026-06-13
+**Scan date:** 2026-06-20
 **Tools:** Semgrep 1.166.0 (OSS) + Supply Chain Risk Audit
 
 ### Semgrep Results (SAST) — 0 vulnerabilities

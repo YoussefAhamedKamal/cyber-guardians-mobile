@@ -15,10 +15,13 @@ import { runLibFuzzer } from './plugins/libfuzzer.js'
 import { findSkills, installSkill } from './plugins/skillsDiscovery.js'
 import { SmartCache } from './cache/smartCache.js'
 import { log, verbose } from './utils/logger.js'
+import { aiManager, GeminiProvider, GroqProvider, HuggingFaceProvider, OpenRouterProvider, OllamaProvider, type AIMessage } from './ai/providers.js'
+import { executeFileOp, grepFiles } from './ai/fileOps.js'
+import { runOpenCode, runOpenCodeWithFile, getOpenCodeStatus, listSessions, launchDesktop } from './ai/opencode.js'
 
 interface AgentMessage {
   id: string
-  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs'
+  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'opencode' | 'opencode-status' | 'opencode-sessions' | 'opencode-launch'
   payload: any
 }
 
@@ -257,24 +260,141 @@ export function createServer(config: AgentConfig) {
         break
       }
 
+      case 'ai-chat': {
+        const { messages, provider, model, temperature, maxTokens } = msg.payload
+        try {
+          if (provider && model) aiManager.setActive(provider, model)
+          const result = await aiManager.chat(messages, { temperature, maxTokens })
+          sendResponse({ id: msg.id, status: 'complete', result })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'ai-providers': {
+        try {
+          const providers = await aiManager.getAvailableProviders()
+          const active = aiManager.getActive()
+          sendResponse({ id: msg.id, status: 'complete', result: { providers, active } })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'file-op': {
+        const { operation, path, content, pattern, recursive } = msg.payload
+        try {
+          const result = await executeFileOp({ type: operation, path, content, pattern, recursive })
+          sendResponse({ id: msg.id, status: 'complete', result })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'grep': {
+        const { dir, query, include } = msg.payload
+        try {
+          const results = await grepFiles(dir, query, include)
+          sendResponse({ id: msg.id, status: 'complete', result: results })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'opencode': {
+        const { prompt, model, provider, filePath } = msg.payload
+        sendResponse({ id: msg.id, status: 'processing', result: { message: 'Running OpenCode...' } })
+        try {
+          let result
+          if (filePath) {
+            result = await runOpenCodeWithFile(prompt, filePath, { model, provider })
+          } else {
+            result = await runOpenCode(prompt, { model, provider })
+          }
+          sendResponse({ id: msg.id, status: 'complete', result })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'opencode-status': {
+        try {
+          const status = await getOpenCodeStatus()
+          sendResponse({ id: msg.id, status: 'complete', result: status })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'opencode-sessions': {
+        try {
+          const sessions = await listSessions()
+          sendResponse({ id: msg.id, status: 'complete', result: sessions })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'opencode-launch': {
+        const { workDir } = msg.payload || {}
+        try {
+          const result = await launchDesktop(workDir)
+          sendResponse({ id: msg.id, status: 'complete', result })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
       default:
         sendResponse({ id: msg.id, status: 'error', error: `Unknown message type: ${msg.type}` })
     }
   }
 
   async function start() {
+    // Register AI providers
+    if (config.geminiKey) {
+      aiManager.registerProvider(new GeminiProvider(config.geminiKey))
+      log('AI: Gemini provider registered')
+    }
+    if (config.groqKey) {
+      aiManager.registerProvider(new GroqProvider(config.groqKey))
+      log('AI: Groq provider registered')
+    }
+    if (config.huggingfaceKey) {
+      aiManager.registerProvider(new HuggingFaceProvider(config.huggingfaceKey))
+      log('AI: HuggingFace provider registered')
+    }
+    if (config.openrouterKey) {
+      aiManager.registerProvider(new OpenRouterProvider(config.openrouterKey))
+      log('AI: OpenRouter provider registered')
+    }
+    // Ollama is always available (local)
+    const ollama = new OllamaProvider()
+    if (await ollama.isAvailable()) {
+      aiManager.registerProvider(ollama)
+      log('AI: Ollama provider registered (local)')
+    }
+
     const { httpServer } = createWSServer()
 
     httpServer.listen(config.port, '0.0.0.0', () => {
       log(`╔══════════════════════════════════════════════════════════════╗`)
-      log(`║  @cyberguard/agent v1.0.0                                   ║`)
-      log(`║  Universal Skill/Plugin Executor                           ║`)
+      log(`║  @cyberguard/agent v1.1.0                                   ║`)
+      log(`║  Universal Skill/Plugin Executor + AI Providers             ║`)
       log(`╚══════════════════════════════════════════════════════════════╝`)
       log(`Server running on ws://localhost:${config.port}`)
       log(`Platform: ${platform.os} (${platform.arch})`)
       log(`Shell: ${platform.shell}`)
       log(`Profile: ${config.profile}`)
-      log(`Token: ${config.token.slice(0, 8)}...`)
+      log(`Token: ${config.token ? config.token.slice(0, 8) + '...' : 'none'}`)
     })
   }
 

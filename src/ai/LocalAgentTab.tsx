@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocalAgentStore } from '../store/localAgentStore'
+import { aiChat, getAIProviders, fileOp, grepSearch, runOpenCodeAgent, getOpenCodeStatus, launchOpenCodeDesktop } from './localAgent'
 import type { ScanResult, Finding } from '../types/localAgent'
 
 const TOOLS = [
@@ -28,11 +29,39 @@ export function LocalAgentTab() {
   const [language, setLanguage] = useState('javascript')
   const [selectedTool, setSelectedTool] = useState('semgrep')
   const [skillQuery, setSkillQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'installed' | 'execute'>('scan')
+  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'installed' | 'execute' | 'ai' | 'files' | 'search' | 'opencode'>('scan')
   const [executeCommand, setExecuteCommand] = useState('')
   const [executeResult, setExecuteResult] = useState<string | null>(null)
   const [executing, setExecuting] = useState(false)
   const [installingPkg, setInstallingPkg] = useState<string | null>(null)
+
+  // AI Chat state
+  const [aiMessages, setAiMessages] = useState<{ role: string; content: string }[]>([])
+  const [aiInput, setAiInput] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiProviders, setAiProviders] = useState<any[]>([])
+  const [selectedProvider, setSelectedProvider] = useState('gemini')
+  const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash')
+
+  // File manager state
+  const [filePath, setFilePath] = useState('')
+  const [fileContent, setFileContent] = useState('')
+  const [fileList, setFileList] = useState<string[]>([])
+  const [fileLoading, setFileLoading] = useState(false)
+
+  // Search state
+  const [searchDir, setSearchDir] = useState('.')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+
+  // OpenCode state
+  const [opencodeInput, setOpencodeInput] = useState('')
+  const [opencodeOutput, setOpencodeOutput] = useState('')
+  const [opencodeLoading, setOpencodeLoading] = useState(false)
+  const [opencodeStatus, setOpencodeStatus] = useState<any>(null)
+  const [opencodeModel, setOpencodeModel] = useState('')
+  const [opencodeFile, setOpencodeFile] = useState('')
 
   useEffect(() => {
     if (url) setInputUrl(url)
@@ -105,6 +134,139 @@ export function LocalAgentTab() {
     }
   }
 
+  // AI Chat
+  const handleAiChat = async () => {
+    if (!aiInput.trim() || aiLoading) return
+    const userMsg = { role: 'user', content: aiInput }
+    const newMessages = [...aiMessages, userMsg]
+    setAiMessages(newMessages)
+    setAiInput('')
+    setAiLoading(true)
+    try {
+      const result = await aiChat(newMessages, { provider: selectedProvider, model: selectedModel })
+      setAiMessages([...newMessages, { role: 'assistant', content: result.content }])
+    } catch (err: any) {
+      setAiMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}` }])
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const loadProviders = async () => {
+    try {
+      const result = await getAIProviders()
+      setAiProviders(result.providers || [])
+      if (result.active) {
+        setSelectedProvider(result.active.provider)
+        setSelectedModel(result.active.model)
+      }
+    } catch (err) {
+      console.error('Failed to load providers:', err)
+    }
+  }
+
+  // File operations
+  const handleFileRead = async () => {
+    if (!filePath.trim()) return
+    setFileLoading(true)
+    try {
+      const result = await fileOp('read', filePath)
+      if (result.success) {
+        setFileContent(result.content || '')
+      } else {
+        setFileContent(`Error: ${result.error}`)
+      }
+    } catch (err: any) {
+      setFileContent(`Error: ${err.message}`)
+    } finally {
+      setFileLoading(false)
+    }
+  }
+
+  const handleFileList = async () => {
+    const dir = filePath.trim() || '.'
+    setFileLoading(true)
+    try {
+      const result = await fileOp('list', dir)
+      if (result.success) {
+        setFileList(result.files || [])
+      } else {
+        setFileList([`Error: ${result.error}`])
+      }
+    } catch (err: any) {
+      setFileList([`Error: ${err.message}`])
+    } finally {
+      setFileLoading(false)
+    }
+  }
+
+  const handleFileWrite = async () => {
+    if (!filePath.trim()) return
+    setFileLoading(true)
+    try {
+      const result = await fileOp('write', filePath, fileContent)
+      alert(result.success ? 'File saved!' : `Error: ${result.error}`)
+    } catch (err: any) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setFileLoading(false)
+    }
+  }
+
+  // Search
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    setSearchLoading(true)
+    try {
+      const results = await grepSearch(searchDir || '.', searchQuery)
+      setSearchResults(results || [])
+    } catch (err: any) {
+      setSearchResults([{ file: 'Error', line: 0, content: err.message }])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  // OpenCode
+  const handleOpenCode = async () => {
+    if (!opencodeInput.trim() || opencodeLoading) return
+    setOpencodeLoading(true)
+    setOpencodeOutput('')
+    try {
+      const options: any = {}
+      if (opencodeModel) options.model = opencodeModel
+      if (opencodeFile) options.filePath = opencodeFile
+      const result = await runOpenCodeAgent(opencodeInput, options)
+      setOpencodeOutput(result.output || result.error || 'No output')
+    } catch (err: any) {
+      setOpencodeOutput(`Error: ${err.message}`)
+    } finally {
+      setOpencodeLoading(false)
+    }
+  }
+
+  const loadOpenCodeStatus = async () => {
+    try {
+      const status = await getOpenCodeStatus()
+      setOpencodeStatus(status)
+    } catch (err) {
+      console.error('Failed to load OpenCode status:', err)
+    }
+  }
+
+  const handleLaunchDesktop = async () => {
+    try {
+      const result = await launchOpenCodeDesktop()
+      if (result.success) {
+        alert('OpenCode Desktop launched!')
+      } else {
+        alert(`Failed to launch: ${result.error}`)
+      }
+    } catch (err: any) {
+      alert(`Error: ${err.message}`)
+    }
+  }
+
   const severityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return '#ff4444'
@@ -166,19 +328,19 @@ export function LocalAgentTab() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
-        {(['scan', 'skills', 'installed', 'execute'] as const).map(tab => (
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        {(['scan', 'skills', 'installed', 'execute', 'ai', 'files', 'search', 'opencode'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              flex: 1, padding: '6px', borderRadius: '4px', border: 'none',
+              flex: 1, minWidth: '60px', padding: '6px', borderRadius: '4px', border: 'none',
               background: activeTab === tab ? '#4FC3F7' : 'rgba(255,255,255,0.05)',
               color: activeTab === tab ? '#000' : '#888',
               fontWeight: 700, cursor: 'pointer', fontSize: '11px'
             }}
           >
-            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Search' : tab === 'installed' ? '✅ Installed' : '⚡ Execute'}
+            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Search' : tab === 'installed' ? '✅ Installed' : tab === 'execute' ? '⚡ Execute' : tab === 'ai' ? '🤖 AI' : tab === 'files' ? '📁 Files' : tab === 'search' ? '🔎 Grep' : '💻 Code'}
           </button>
         ))}
       </div>
@@ -384,6 +546,285 @@ export function LocalAgentTab() {
               {executeResult}
             </pre>
           )}
+        </div>
+      )}
+
+      {/* AI Chat Tab */}
+      {activeTab === 'ai' && (
+        <div>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              style={{ padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            >
+              <option value="gemini">Gemini (Cloud)</option>
+              <option value="ollama">Ollama (Local)</option>
+              <option value="groq">Groq (Cloud)</option>
+              <option value="huggingface">HuggingFace</option>
+              <option value="openrouter">OpenRouter</option>
+            </select>
+            <button
+              onClick={loadProviders}
+              disabled={!connected}
+              style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#4FC3F7', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}
+            >
+              🔄 Load
+            </button>
+          </div>
+
+          {/* Provider status */}
+          {aiProviders.length > 0 && (
+            <div style={{ marginBottom: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {aiProviders.map((p: any) => (
+                <span key={p.name} style={{
+                  padding: '3px 8px', borderRadius: '12px', fontSize: '10px',
+                  background: p.available ? 'rgba(76,175,80,0.2)' : 'rgba(244,67,54,0.2)',
+                  color: p.available ? '#4CAF50' : '#f44336'
+                }}>
+                  {p.type === 'local' ? '🏠' : '☁️'} {p.name} ({p.models.length})
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Chat messages */}
+          <div style={{ maxHeight: '300px', overflow: 'auto', marginBottom: '8px', padding: '8px', borderRadius: '4px', background: 'rgba(0,0,0,0.2)' }}>
+            {aiMessages.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#666', fontSize: '11px', padding: '20px' }}>
+                AI Chat — powered by local agent
+              </div>
+            )}
+            {aiMessages.map((msg, i) => (
+              <div key={i} style={{
+                marginBottom: '8px', padding: '8px', borderRadius: '4px',
+                background: msg.role === 'user' ? 'rgba(79,195,247,0.1)' : 'rgba(76,175,80,0.1)',
+                borderLeft: msg.role === 'user' ? '3px solid #4FC3F7' : '3px solid #4CAF50'
+              }}>
+                <div style={{ fontSize: '10px', color: msg.role === 'user' ? '#4FC3F7' : '#4CAF50', marginBottom: '4px', fontWeight: 700 }}>
+                  {msg.role === 'user' ? 'You' : 'AI'}
+                </div>
+                <div style={{ fontSize: '11px', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+              </div>
+            ))}
+            {aiLoading && (
+              <div style={{ textAlign: 'center', color: '#888', fontSize: '11px' }}>AI is thinking...</div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <input
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAiChat()}
+              placeholder="Ask AI..."
+              disabled={!connected || aiLoading}
+              style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+            <button
+              onClick={handleAiChat}
+              disabled={!connected || !aiInput.trim() || aiLoading}
+              style={{ padding: '8px 16px', borderRadius: '4px', border: 'none', background: '#4CAF50', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* File Manager Tab */}
+      {activeTab === 'files' && (
+        <div>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+            <input
+              value={filePath}
+              onChange={(e) => setFilePath(e.target.value)}
+              placeholder="File or directory path"
+              style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+            <button onClick={handleFileRead} disabled={!connected || fileLoading} style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#4FC3F7', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}>Read</button>
+            <button onClick={handleFileList} disabled={!connected || fileLoading} style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#4CAF50', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}>List</button>
+            <button onClick={handleFileWrite} disabled={!connected || fileLoading} style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#ff9800', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}>Write</button>
+          </div>
+
+          {/* File content */}
+          {fileContent && (
+            <div>
+              <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>Content:</div>
+              <textarea
+                value={fileContent}
+                onChange={(e) => setFileContent(e.target.value)}
+                style={{ width: '100%', height: '150px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
+
+          {/* File list */}
+          {fileList.length > 0 && (
+            <div>
+              <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>Files ({fileList.length}):</div>
+              <div style={{ maxHeight: '200px', overflow: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '8px' }}>
+                {fileList.map((f, i) => (
+                  <div key={i} onClick={() => setFilePath(f)} style={{ padding: '4px', cursor: 'pointer', fontSize: '11px', color: '#4FC3F7', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Search (Grep) Tab */}
+      {activeTab === 'search' && (
+        <div>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+            <input
+              value={searchDir}
+              onChange={(e) => setSearchDir(e.target.value)}
+              placeholder="Directory (.)"
+              style={{ width: '80px', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search query..."
+              style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+            <button
+              onClick={handleSearch}
+              disabled={!connected || !searchQuery.trim() || searchLoading}
+              style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: '#4CAF50', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >
+              {searchLoading ? '...' : '🔎'}
+            </button>
+          </div>
+
+          {searchResults.length > 0 && (
+            <div style={{ maxHeight: '300px', overflow: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '8px' }}>
+              <div style={{ fontSize: '10px', color: '#888', marginBottom: '8px' }}>
+                {searchResults.length} matches found
+              </div>
+              {searchResults.map((r, i) => (
+                <div key={i} style={{ marginBottom: '6px', padding: '6px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: '10px', color: '#4FC3F7' }}>{r.file}:{r.line}</div>
+                  <div style={{ fontSize: '11px', color: '#fff', fontFamily: 'monospace' }}>{r.content}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* OpenCode Tab */}
+      {activeTab === 'opencode' && (
+        <div>
+          {/* Status */}
+          <div style={{ marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={loadOpenCodeStatus}
+              disabled={!connected}
+              style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#4FC3F7', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}
+            >
+              🔄 Status
+            </button>
+            {opencodeStatus && (
+              <>
+                <span style={{ fontSize: '10px', color: opencodeStatus.installed ? '#4CAF50' : '#f44336' }}>
+                  {opencodeStatus.installed ? `✅ v${opencodeStatus.version}` : '❌ Not installed'}
+                </span>
+                <span style={{ fontSize: '10px', color: opencodeStatus.desktopRunning ? '#4CAF50' : '#888' }}>
+                  {opencodeStatus.desktopRunning ? '🖥️ Desktop Running' : '🖥️ Desktop Stopped'}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Launch Desktop Button */}
+          {opencodeStatus?.installed && !opencodeStatus.desktopRunning && (
+            <button
+              onClick={handleLaunchDesktop}
+              style={{
+                width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: 'none',
+                background: 'linear-gradient(135deg,#9C27B0,#7B1FA2)',
+                color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '12px'
+              }}
+            >
+              🚀 Launch OpenCode Desktop
+            </button>
+          )}
+
+          {/* Provider info */}
+          {opencodeStatus?.installed && (
+            <div style={{ marginBottom: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {opencodeStatus.providers?.map((p: string) => (
+                <span key={p} style={{
+                  padding: '2px 6px', borderRadius: '8px', fontSize: '9px',
+                  background: 'rgba(156,39,176,0.15)', color: '#CE93D8'
+                }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Model & File inputs */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+            <input
+              value={opencodeModel}
+              onChange={(e) => setOpencodeModel(e.target.value)}
+              placeholder="Model (optional)"
+              style={{ flex: 1, minWidth: '100px', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+            <input
+              value={opencodeFile}
+              onChange={(e) => setOpencodeFile(e.target.value)}
+              placeholder="File path (optional)"
+              style={{ flex: 1, minWidth: '100px', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px' }}
+            />
+          </div>
+
+          {/* Input */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+            <textarea
+              value={opencodeInput}
+              onChange={(e) => setOpencodeInput(e.target.value)}
+              placeholder="Ask OpenCode to write code, fix bugs, explain code..."
+              onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleOpenCode() }}
+              style={{ flex: 1, height: '60px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
+            />
+          </div>
+
+          <button
+            onClick={handleOpenCode}
+            disabled={!connected || !opencodeInput.trim() || opencodeLoading}
+            style={{
+              width: '100%', padding: '8px', borderRadius: '4px', border: 'none',
+              background: !connected || !opencodeInput.trim() || opencodeLoading ? '#444' : 'linear-gradient(135deg,#9C27B0,#7B1FA2)',
+              color: '#fff', fontWeight: 700, cursor: !connected || !opencodeInput.trim() || opencodeLoading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {opencodeLoading ? '⏳ Running...' : '💻 Run OpenCode CLI'}
+          </button>
+
+          {/* Output */}
+          {opencodeOutput && (
+            <pre style={{
+              marginTop: '8px', padding: '8px', borderRadius: '4px',
+              background: 'rgba(0,0,0,0.3)', color: '#CE93D8',
+              fontFamily: 'monospace', fontSize: '10px', whiteSpace: 'pre-wrap',
+              maxHeight: '300px', overflow: 'auto'
+            }}>
+              {opencodeOutput}
+            </pre>
+          )}
+
+          {/* Tip */}
+          <div style={{ marginTop: '10px', padding: '8px', borderRadius: '4px', background: 'rgba(156,39,176,0.1)', border: '1px solid rgba(156,39,176,0.3)', fontSize: '10px', color: '#CE93D8' }}>
+            💡 For best experience, use OpenCode Desktop App for coding tasks. Click "Launch" above to open it.
+          </div>
         </div>
       )}
 

@@ -9,6 +9,10 @@ export interface AgentConfig {
   sandboxEnabled: boolean
   dockerFallback: boolean
   cacheTTL: number
+  geminiKey: string
+  groqKey: string
+  huggingfaceKey: string
+  openrouterKey: string
 }
 
 const PROFILES: Record<string, Partial<AgentConfig>> = {
@@ -45,5 +49,9 @@ export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
     sandboxEnabled: profileConfig.sandboxEnabled!,
     dockerFallback: profileConfig.dockerFallback!,
     cacheTTL: profileConfig.cacheTTL!,
+    geminiKey: overrides.geminiKey || process.env.GEMINI_API_KEY || '',
+    groqKey: overrides.groqKey || process.env.GROQ_API_KEY || '',
+    huggingfaceKey: overrides.huggingfaceKey || process.env.HUGGINGFACE_API_KEY || '',
+    openrouterKey: overrides.openrouterKey || process.env.OPENROUTER_API_KEY || '',
   }
 }

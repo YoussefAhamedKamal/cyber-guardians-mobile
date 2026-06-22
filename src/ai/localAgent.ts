@@ -81,7 +81,8 @@ export function isAgentConnected(): boolean {
 }
 
 const VALID_MESSAGE_TYPES = new Set([
-  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'list-installs'
+  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'list-installs',
+  'ai-chat', 'ai-providers', 'file-op', 'grep', 'opencode', 'opencode-status', 'opencode-sessions', 'opencode-launch'
 ])
 
 async function sendMessage(type: string, payload: any, timeout: number = 60000): Promise<any> {
@@ -161,4 +162,37 @@ export async function installSkillAgent(packageName: string): Promise<boolean> {
 
 export async function listInstalledSkills(): Promise<Skill[]> {
   return sendMessage('list-installs', {})
+}
+
+export async function aiChat(messages: { role: string; content: string }[], options?: { provider?: string; model?: string; temperature?: number; maxTokens?: number }): Promise<any> {
+  return sendMessage('ai-chat', { messages, ...options })
+}
+
+export async function getAIProviders(): Promise<any> {
+  return sendMessage('ai-providers', {})
+}
+
+export async function fileOp(operation: string, path: string, content?: string, pattern?: string, recursive?: boolean): Promise<any> {
+  return sendMessage('file-op', { operation, path, content, pattern, recursive })
+}
+
+export async function grepSearch(dir: string, query: string, include?: string): Promise<any> {
+  return sendMessage('grep', { dir, query, include })
+}
+
+// OpenCode functions
+export async function runOpenCodeAgent(prompt: string, options?: { model?: string; provider?: string; filePath?: string }): Promise<any> {
+  return sendMessage('opencode', { prompt, ...options }, 300000) // 5 minutes for OpenCode
+}
+
+export async function getOpenCodeStatus(): Promise<any> {
+  return sendMessage('opencode-status', {})
+}
+
+export async function listOpenCodeSessions(): Promise<any> {
+  return sendMessage('opencode-sessions', {})
+}
+
+export async function launchOpenCodeDesktop(workDir?: string): Promise<any> {
+  return sendMessage('opencode-launch', { workDir })
 }

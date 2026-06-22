@@ -1,6 +1,7 @@
 import type { AIMessage, AIProviderDef } from '@/types/ai'
 import { AI_PROVIDERS } from '@/types/ai'
 import { loadWorkerConfig, saveWorkerConfig, AI_WORKER_KEY } from '@/utils/workerCrypto'
+import { aiChat, getAIProviders, isAgentConnected } from './localAgent'
 
 const WORKER_CONFIG_KEY = AI_WORKER_KEY
 
@@ -355,3 +356,28 @@ export async function testConnection(
 }
 
 export const AI_KEY_STORAGE_KEY = 'cg-ai-keys'
+
+// ==================== LOCAL AGENT AI ====================
+export async function sendChatViaAgent(
+  messages: AIMessage[],
+  provider?: string,
+  model?: string
+): Promise<string> {
+  if (!isAgentConnected()) {
+    throw new Error('الوكيل غير متصل')
+  }
+
+  const agentMessages = messages.map(m => ({ role: m.role, content: m.content }))
+  const result = await aiChat(agentMessages, { provider, model })
+  return result.content
+}
+
+export async function getAgentProviders(): Promise<{ name: string; type: string; models: string[]; available: boolean }[]> {
+  if (!isAgentConnected()) return []
+  try {
+    const result = await getAIProviders()
+    return result.providers || []
+  } catch {
+    return []
+  }
+}
