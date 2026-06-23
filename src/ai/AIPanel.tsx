@@ -192,7 +192,7 @@ function AISettings() {
   const handleTestConnection = async () => {
     setTesting(true); setTestStatus('⏳ جارٍ اختبار الاتصال...')
     try {
-      const r = await testConnection(ai.providerId, ai.modelId, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, ai.useDirectApi)
+      const r = await testConnection(ai.providerId, ai.modelId, ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, ai.useDirectApi, ai.maxTokens)
       setTestStatus(r)
     } catch (e: any) { setTestStatus(`⚠️ ${e.message}`) }
     setTesting(false)

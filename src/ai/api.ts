@@ -323,7 +323,8 @@ export async function testConnection(
   modelId: string,
   apiKey: string,
   customBaseUrl: string,
-  useDirectApi = false
+  useDirectApi = false,
+  maxTokens?: number
 ): Promise<string> {
   const provider = getProvider(providerId)
   if (!provider) return '⚠️ مزود AI غير معروف'
@@ -346,10 +347,12 @@ export async function testConnection(
     headers['X-Title'] = 'Cyber Guardians'
   }
 
-  const body = {
+  const body: Record<string, any> = {
     model: modelId,
     messages: [{ role: 'user', content: 'hi' }],
-    max_tokens: 3,
+  }
+  if (maxTokens && maxTokens > 0) {
+    body.max_tokens = maxTokens
   }
 
   try {
