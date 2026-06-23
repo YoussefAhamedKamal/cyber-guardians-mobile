@@ -2,7 +2,8 @@
 
 > Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
 > Status: **🟢 Live on Cloudflare Pages**
-> Version: **10.0.0**
+> Version: **10.1.0** (Audit Complete)
+> Last Audit: **2026-06-23** — 13 issues found (4 critical, 3 medium, 6 low)
 
 ---
 
@@ -833,3 +834,54 @@ server: {
 | 70 unit tests | ✅ 70/70 pass |
 | TypeScript compilation | ✅ No errors |
 | Vite build | ✅ No errors |
+
+---
+
+## [AUDIT_REPORT] — 2026-06-23
+
+**Full report:** `AUDIT_REPORT.md`
+
+### Pre-Audit Verification
+
+| Check | Status |
+|-------|--------|
+| TypeScript type check (`tsc --noEmit`) | ✅ Passed |
+| Tests (`vitest run`) | ✅ 70/70 passed |
+| Build (`npm run build`) | ✅ Passed |
+
+### Issues Summary
+
+| Severity | Count | Status |
+|----------|-------|--------|
+| Critical | 4 | 🔴 Must fix |
+| Medium | 3 | 🟡 Should fix |
+| Low | 6 | 🟢 Nice to have |
+| **Total** | **13** | |
+
+### Critical Bugs
+
+| ID | File | Issue | Impact |
+|---|---|---|---|
+| BUG-001 | `providers.ts:246` | HuggingFace `data.generated_text` on string | AI chat always returns "Empty response" for HuggingFace |
+| BUG-002 | `providers.ts:255` | HuggingFace missing `choices` field | HuggingFace provider completely non-functional |
+| BUG-003 | `providers.ts:349-350` | AI fallback mutates global state | Concurrent requests interfere with each other |
+| BUG-004 | `opencode.ts:154-158` | Shell injection in OpenCode prompts | User input could execute arbitrary commands |
+
+### Medium Bugs
+
+| ID | File | Issue | Impact |
+|---|---|---|---|
+| BUG-005 | `localAgent.ts:179` | grepSearch `include` not connected | Grep UI include filter is cosmetic |
+| BUG-006 | `LocalAgentTab.tsx:786` | OpenCode provider buttons cosmetic | Provider selector doesn't set actual provider |
+| BUG-007 | `LocalAgentTab.tsx:80` | Empty string token handling | Empty token treated as no token |
+
+### Low Issues
+
+| ID | Issue |
+|---|---|
+| BUG-008 | 12+ `any` types in LocalAgentTab |
+| BUG-009 | All agent functions return `Promise<any>` |
+| BUG-010 | Silent error swallowing in fileOps |
+| BUG-011 | Cross-platform `nohup` not supported |
+| BUG-012 | Install pkg regex edge case |
+| BUG-013 | Missing provider in agent chat request |

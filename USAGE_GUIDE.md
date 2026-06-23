@@ -1129,7 +1129,28 @@ JavaScript، TypeScript، Python، Java، Go، Ruby، PHP، C، C++، Rust، Sol
 
 ---
 
-> **آخر تحديث:** الإصدار 10.0.0
+## مشاكل معروفة (Known Bugs)
+
+> آخر تدقيق: 2026-06-23 — التقرير الكامل في `AUDIT_REPORT.md`
+
+### الوكيل المحلي (Local Agent)
+
+|المشكلة | التأثير | الحل المقترح |
+|--------|---------|-------------|
+| **HuggingFace استجابة خاطئة** | مزود HuggingFace غير وظيفي | إصلاح تحليل الاستجابة في `providers.ts` |
+| **حالة AI Fallback** | الطلبات المتزامنة تتداخل | استخدام متغير محلي بدلاً من حالة عامة |
+| **grep include غير متصل** | فلتر include وهمي | توصيل `include` في `fileOp` handler |
+| **OpenCode أزرار المزود** | أزرار المزود وهمية | إضافة حالة `opencodeProvider` منفصلة |
+
+### للعلم
+
+- **OpenCode CLI `run`** — يواجه مشاكل في الإصدار v1.15.10 — تطبيق سطح المكتب يعمل بشكل أفضل
+- **مهلة OpenCode** — 300 ثانية (5 دقائق) — يُنصح باستخدام OpenCode Desktop للمهام الطويلة
+- **HuggingFace** — غير وظيفي حالياً — استخدم Gemini أو Ollama كبديل
+
+---
+
+> **آخر تحديث:** الإصدار 10.1.0 (تدقيق مكتمل)
 > **المطور:** YoussefAhamedKamal
 > **الاستضافة:** Cloudflare Pages
 > **المستودع:** github.com/YoussefAhamedKamal/cyber-guardians-mobile

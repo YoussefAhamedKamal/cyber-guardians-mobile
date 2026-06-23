@@ -1,6 +1,7 @@
 # دليل الجهة المحلية — CyberGuard Agent
 
-> الإصدار: **1.2.0** (آخر تحديث: 2026-06-22)
+> الإصدار: **1.2.1** (آخر تحديث: 2026-06-23)
+> تقرير التدقيق: `AUDIT_REPORT.md` — 13 مشكلة مكتشفة
 
 ---
 
@@ -10,7 +11,7 @@
 
 الجهة المحلية (CyberGuard Agent) هي خادم خفيف يعمل على جهازك المحلي ويتفاعل مع لعبة Cyber Guardians عبر بروتوكول WebSocket. توفر هذه الجهة واجهة برمجية تتيح لمحرك اللعبة تنفيذ عمليات أمنية متقدمة مثل الفحص الساكن، واكتشاف الثغرات، وفحص العقود الذكية، والبحث عن مهارات جديدة.
 
-**القدرات الجديدة في الإصدار 1.2.0:**
+**القدرات الجديدة في الإصدار 1.2.1:**
 - **مقدمات AI متعددة** — Gemini, Ollama, Groq, HuggingFace, OpenRouter مع تراجع تلقائي
 - **عمليات الملفات** — 8 عمليات: قراءة، كتابة، قائمة، حذف، نقل، إنشاء مجلد، فحص، بحث
 - **بحث المحتوى (grep)** — بحث في محتوى الملفات باستخدام أنماط regex
@@ -772,9 +773,71 @@ DEBUG=cyberguard:* cyberguard-agent start
 
 ---
 
-## 10. دعم الأنظمة
+## 10. مشاكل معروفة (Known Bugs)
 
-### 10.1. Windows
+> آخر تدقيق: 2026-06-23 — التقرير الكامل في `AUDIT_REPORT.md`
+
+### حرج (Must Fix)
+
+|المشكلة | الملف | التأثير |
+|--------|-------|---------|
+| **HuggingFace استجابة خاطئة** | `providers.ts:246,255` | مزود HuggingFace غير وظيفي — يسترجع `generated_text` من نص |
+| **حالة AI Fallback** | `providers.ts:349-350` | التراجع التلقائي يغير حالة عامة — الطلبات المتزامنة تتداخل |
+| **حقن أوامر Shell** | `opencode.ts:154-158` | هروب الأسطر المفردة فقط — مدخلات خبيثة قد تنفذ أوامر عشوائية |
+
+### متوسط (Should Fix)
+
+|المشكلة | الملف | التأثير |
+|--------|-------|---------|
+| **grep include غير متصل** | `localAgent.ts:179` | فلتر include في واجهة Grep وهمي |
+| **OpenCode أزرار المزود** | `LocalAgentTab.tsx:786` | أزرار المزود تغير الموديل فقط — لا تحدد المزود فعلياً |
+| **رمز فارغ** | `LocalAgentTab.tsx:80` | الرمز الفارغ يُعامل كعدم وجود رمز |
+
+### منخفض (Nice to Have)
+
+|المشكلة | الوصف |
+|--------|-------|
+| `any` types في LocalAgentTab | 12+ حالة lacks type safety |
+| إرجاع `Promise<any>` | جميع دوال الجهة تُرجع أي |
+| ابتلاع أخطاء صامتة في fileOps | كتل catch فارغة تُخفي أخطاء الصلاحيات |
+| `nohup` عبر المنصات | لا يعمل على Windows |
+
+### حلول مقترحة
+
+#### BUG-001/002: إصلاح HuggingFace
+
+```typescript
+// الملف: cyberguard-agent/src/ai/providers.ts
+// سطر 246: استبدال
+const text = (response as any).generated_text || response.choices?.[0]
+return text || 'Empty response'
+```
+
+#### BUG-003: إصلاح حالة Fallback
+
+```typescript
+// الملف: cyberguard-agent/src/ai/providers.ts
+// سطر 349-350: استخدام متغير محلي بدلاً من حالة عامة
+const fallbackProvider = AIManager.getProviders().find(p => p.available && p.name !== currentProvider?.name)
+if (fallbackProvider) {
+  // استخدام fallbackProvider محلياً فقط
+}
+```
+
+#### BUG-004: إصلاح حقن الأوامر
+
+```typescript
+// الملف: cyberguard-agent/src/ai/opencode.ts
+// استخدام execFile بدلاً من exec لتجنب تفسير Shell
+import { execFile } from 'child_process'
+const execFileAsync = promisify(execFile)
+```
+
+---
+
+## 11. دعم الأنظمة
+
+### 11.1. Windows
 
 #### التشغيل عبر Command Prompt (cmd)
 
@@ -822,7 +885,7 @@ winget install Docker.DockerDesktop
 
 ---
 
-### 10.2. macOS
+### 11.2. macOS
 
 #### التشغيل عبر Bash/Zsh
 
@@ -857,7 +920,7 @@ pip3 install semgrep
 
 ---
 
-### 10.3. Linux
+### 11.3. Linux
 
 #### Debian/Ubuntu (apt)
 
@@ -983,5 +1046,5 @@ sudo systemctl status cyberguard-agent
 ---
 
 > **تُحديث آخر:** يونيو 2026
-> **الإصدار:** 1.2.0
+> **الإصدار:** 1.2.1
 > **المطور:** Cyber Guardians Team
