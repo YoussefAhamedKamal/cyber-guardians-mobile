@@ -95,7 +95,12 @@ async function searchFiles(dir: string, pattern: string): Promise<string[]> {
         results.push(fullPath)
       }
     }
-  } catch {}
+  } catch (err: any) {
+    // Skip directories we can't read
+    if (err.code !== 'EACCES') {
+      console.warn(`searchFiles: Cannot read directory ${dir}: ${err.message}`)
+    }
+  }
   return results
 }
 
@@ -121,9 +126,16 @@ export async function grepFiles(dir: string, query: string, include?: string): P
               results.push({ file: fullPath, line: idx + 1, content: line.trim() })
             }
           })
-        } catch {}
+        } catch (err: any) {
+          // Skip files we can't read (permissions, binary, etc.)
+          if (err.code !== 'EACCES' && err.code !== 'EISDIR') {
+            console.warn(`grepFiles: Cannot read ${fullPath}: ${err.message}`)
+          }
+        }
       }
     }
-  } catch {}
+  } catch (err: any) {
+    console.warn(`grepFiles: Cannot read directory ${dir}: ${err.message}`)
+  }
   return results
 }

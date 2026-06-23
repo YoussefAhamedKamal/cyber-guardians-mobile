@@ -336,25 +336,29 @@ export class AIManager {
     if (!provider) throw new Error(`Provider not found: ${this.activeProvider}`)
 
     // Try active provider first, fallback to others
+    // Use local variables to avoid race condition with concurrent requests
+    let lastError: Error | null = null
     try {
       return await provider.chat(this.activeModel, messages, options)
     } catch (err) {
-      console.log(`Primary provider failed, trying fallback...`)
-      for (const [name, fallback] of this.providers) {
-        if (name === this.activeProvider) continue
-        try {
-          if (await fallback.isAvailable()) {
-            const model = fallback.models[0]
-            if (model) {
-              this.activeProvider = name
-              this.activeModel = model
-              return await fallback.chat(model, messages, options)
-            }
-          }
-        } catch { continue }
-      }
-      throw err
+      lastError = err as Error
+      console.log(`Primary provider (${this.activeProvider}) failed, trying fallback...`)
     }
+
+    // Fallback: try other providers without mutating global state
+    for (const [name, fallback] of this.providers) {
+      if (name === this.activeProvider) continue
+      try {
+        if (await fallback.isAvailable()) {
+          const model = fallback.models[0]
+          if (model) {
+            console.log(`Fallback to ${name}/${model}`)
+            return await fallback.chat(model, messages, options)
+          }
+        }
+      } catch { continue }
+    }
+    throw lastError || new Error('All providers failed')
   }
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocalAgentStore } from '../store/localAgentStore'
 import { aiChat, getAIProviders, fileOp, grepSearch, runOpenCodeAgent, getOpenCodeStatus, launchOpenCodeDesktop } from './localAgent'
-import type { ScanResult, Finding } from '../types/localAgent'
+import type { ScanResult, Finding, AIProviderInfo, GrepResult, OpenCodeStatus } from '../types/localAgent'
 
 const TOOLS = [
   { id: 'semgrep', name: 'Semgrep', icon: '🔍', desc: 'Static analysis for many languages' },
@@ -39,7 +39,7 @@ export function LocalAgentTab() {
   const [aiMessages, setAiMessages] = useState<{ role: string; content: string }[]>([])
   const [aiInput, setAiInput] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiProviders, setAiProviders] = useState<any[]>([])
+  const [aiProviders, setAiProviders] = useState<AIProviderInfo[]>([])
   const [selectedProvider, setSelectedProvider] = useState('gemini')
   const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash')
 
@@ -52,15 +52,17 @@ export function LocalAgentTab() {
   // Search state
   const [searchDir, setSearchDir] = useState('.')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [searchInclude, setSearchInclude] = useState('')
+  const [searchResults, setSearchResults] = useState<GrepResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
 
   // OpenCode state
   const [opencodeInput, setOpencodeInput] = useState('')
   const [opencodeOutput, setOpencodeOutput] = useState('')
   const [opencodeLoading, setOpencodeLoading] = useState(false)
-  const [opencodeStatus, setOpencodeStatus] = useState<any>(null)
-  const [opencodeModel, setOpencodeModel] = useState('')
+  const [opencodeStatus, setOpencodeStatus] = useState<OpenCodeStatus | null>(null)
+  const [opencodeProvider, setOpencodeProvider] = useState('google')
+  const [opencodeModel, setOpencodeModel] = useState('gemini-2.0-flash')
   const [opencodeFile, setOpencodeFile] = useState('')
 
   useEffect(() => {
@@ -77,7 +79,8 @@ export function LocalAgentTab() {
 
   const handleConnect = async () => {
     try {
-      const tokenVal = inputToken.trim() || undefined
+      // Only pass token if user explicitly entered something (not empty)
+      const tokenVal = inputToken.trim() !== '' ? inputToken.trim() : undefined
       await connect(inputUrl, tokenVal)
     } catch (err: unknown) {
       alert(`Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
@@ -152,8 +155,8 @@ export function LocalAgentTab() {
     try {
       const result = await aiChat(newMessages, { provider: selectedProvider, model: selectedModel })
       setAiMessages([...newMessages, { role: 'assistant', content: result.content }])
-    } catch (err: any) {
-      setAiMessages([...newMessages, { role: 'assistant', content: `Error: ${err.message}` }])
+    } catch (err: unknown) {
+      setAiMessages([...newMessages, { role: 'assistant', content: `Error: ${err instanceof Error ? err.message : 'Unknown error'}` }])
     } finally {
       setAiLoading(false)
     }
@@ -183,8 +186,8 @@ export function LocalAgentTab() {
       } else {
         setFileContent(`Error: ${result.error}`)
       }
-    } catch (err: any) {
-      setFileContent(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      setFileContent(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setFileLoading(false)
     }
@@ -200,8 +203,8 @@ export function LocalAgentTab() {
       } else {
         setFileList([`Error: ${result.error}`])
       }
-    } catch (err: any) {
-      setFileList([`Error: ${err.message}`])
+    } catch (err: unknown) {
+      setFileList([`Error: ${err instanceof Error ? err.message : 'Unknown error'}`])
     } finally {
       setFileLoading(false)
     }
@@ -213,8 +216,8 @@ export function LocalAgentTab() {
     try {
       const result = await fileOp('write', filePath, fileContent)
       alert(result.success ? 'File saved!' : `Error: ${result.error}`)
-    } catch (err: any) {
-      alert(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setFileLoading(false)
     }
@@ -225,10 +228,10 @@ export function LocalAgentTab() {
     if (!searchQuery.trim()) return
     setSearchLoading(true)
     try {
-      const results = await grepSearch(searchDir || '.', searchQuery)
+      const results = await grepSearch(searchDir || '.', searchQuery, searchInclude || undefined)
       setSearchResults(results || [])
-    } catch (err: any) {
-      setSearchResults([{ file: 'Error', line: 0, content: err.message }])
+    } catch (err: unknown) {
+      setSearchResults([{ file: 'Error', line: 0, content: err instanceof Error ? err.message : 'Unknown error' }])
     } finally {
       setSearchLoading(false)
     }
@@ -240,13 +243,13 @@ export function LocalAgentTab() {
     setOpencodeLoading(true)
     setOpencodeOutput('')
     try {
-      const options: any = {}
+      const options: { provider: string; model?: string; filePath?: string } = { provider: opencodeProvider }
       if (opencodeModel) options.model = opencodeModel
       if (opencodeFile) options.filePath = opencodeFile
       const result = await runOpenCodeAgent(opencodeInput, options)
       setOpencodeOutput(result.output || result.error || 'No output')
-    } catch (err: any) {
-      setOpencodeOutput(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      setOpencodeOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setOpencodeLoading(false)
     }
@@ -271,8 +274,8 @@ export function LocalAgentTab() {
         const suggestion = result.message || ''
         alert(`Failed to launch: ${errorMsg}${suggestion ? '\n\n' + suggestion : ''}`)
       }
-    } catch (err: any) {
-      alert(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -710,6 +713,14 @@ export function LocalAgentTab() {
               {searchLoading ? '...' : '🔎'}
             </button>
           </div>
+          <div style={{ marginBottom: '8px' }}>
+            <input
+              value={searchInclude}
+              onChange={(e) => setSearchInclude(e.target.value)}
+              placeholder="Include filter (e.g., .ts, .tsx, .js)"
+              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', boxSizing: 'border-box' }}
+            />
+          </div>
 
           {searchResults.length > 0 && (
             <div style={{ maxHeight: '300px', overflow: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', padding: '8px' }}>
@@ -783,18 +794,25 @@ export function LocalAgentTab() {
           <div style={{ marginBottom: '8px' }}>
             <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Provider:</label>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {['google', 'openai', 'anthropic', 'groq', 'ollama', 'openrouter'].map(p => (
+              {[
+                { id: 'google', model: 'gemini-2.0-flash' },
+                { id: 'openai', model: 'gpt-4o' },
+                { id: 'anthropic', model: 'claude-3-5-sonnet' },
+                { id: 'groq', model: 'llama-3.1-70b' },
+                { id: 'ollama', model: 'llama3' },
+                { id: 'openrouter', model: 'anthropic/claude-3-5-sonnet' },
+              ].map(p => (
                 <button
-                  key={p}
-                  onClick={() => setOpencodeModel(p === 'google' ? 'gemini-2.0-flash' : p === 'openai' ? 'gpt-4o' : p === 'anthropic' ? 'claude-3-5-sonnet' : p === 'groq' ? 'llama-3.1-70b' : p === 'ollama' ? 'llama3' : 'anthropic/claude-3-5-sonnet')}
+                  key={p.id}
+                  onClick={() => { setOpencodeProvider(p.id); setOpencodeModel(p.model) }}
                   style={{
                     padding: '4px 8px', borderRadius: '12px', border: 'none',
-                    background: opencodeModel?.includes(p) ? '#9C27B0' : 'rgba(156,39,176,0.15)',
-                    color: opencodeModel?.includes(p) ? '#fff' : '#CE93D8',
+                    background: opencodeProvider === p.id ? '#9C27B0' : 'rgba(156,39,176,0.15)',
+                    color: opencodeProvider === p.id ? '#fff' : '#CE93D8',
                     fontSize: '10px', cursor: 'pointer'
                   }}
                 >
-                  {p}
+                  {p.id}
                 </button>
               ))}
             </div>

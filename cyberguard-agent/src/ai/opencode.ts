@@ -1,9 +1,10 @@
-import { exec } from 'child_process'
+import { exec, execFile } from 'child_process'
 import { promisify } from 'util'
 import { existsSync } from 'fs'
 import { join } from 'path'
 
 const execAsync = promisify(exec)
+const execFileAsync = promisify(execFile)
 
 export interface OpenCodeConfig {
   binaryPath?: string
@@ -99,14 +100,28 @@ export async function launchDesktop(workDir?: string): Promise<{ success: boolea
     }
   }
 
-  // Try to launch Desktop app
+  // Try to launch Desktop app with platform-specific commands
   try {
-    // Handle AppImage files
+    const platform = process.platform
     let launchCmd: string
-    if (desktopPath.endsWith('.AppImage')) {
-      launchCmd = `nohup "${desktopPath}" --no-sandbox > /dev/null 2>&1 &`
+    
+    if (platform === 'win32') {
+      // Windows: use 'start' command
+      if (desktopPath.endsWith('.exe')) {
+        launchCmd = `start "" "${desktopPath}"`
+      } else {
+        launchCmd = `start "" "${desktopPath}" "${workDir || process.cwd()}"`
+      }
+    } else if (platform === 'darwin') {
+      // macOS: use 'open' command
+      launchCmd = `open "${desktopPath}"`
     } else {
-      launchCmd = `nohup "${desktopPath}" "${workDir || process.cwd()}" > /dev/null 2>&1 &`
+      // Linux: use 'nohup' for AppImage, direct execution for binary
+      if (desktopPath.endsWith('.AppImage')) {
+        launchCmd = `nohup "${desktopPath}" --no-sandbox > /dev/null 2>&1 &`
+      } else {
+        launchCmd = `nohup "${desktopPath}" "${workDir || process.cwd()}" > /dev/null 2>&1 &`
+      }
     }
     
     await execAsync(launchCmd)
@@ -129,7 +144,7 @@ export async function launchDesktop(workDir?: string): Promise<{ success: boolea
   }
 }
 
-// Run OpenCode via CLI using 'web' command (more reliable than 'run')
+// Run OpenCode via CLI using 'run' command (more reliable than 'run')
 export async function runOpenCode(
   prompt: string,
   config: OpenCodeConfig = {}
@@ -141,8 +156,8 @@ export async function runOpenCode(
 
   const workDir = config.workDir || process.cwd()
 
-  // Build the command - use 'run' with proper escaping
-  const args: string[] = []
+  // Build arguments array — no shell interpolation needed with execFile
+  const args: string[] = ['run']
   
   if (config.model && config.provider) {
     args.push('--model', `${config.provider}/${config.model}`)
@@ -150,15 +165,11 @@ export async function runOpenCode(
     args.push('--model', config.model)
   }
 
-  // Escape the prompt properly for shell
-  const escapedPrompt = prompt.replace(/'/g, "'\\''")
   args.push('--dangerously-skip-permissions')
-  
-  const argsStr = args.join(' ')
-  const cmd = `${binary} run ${argsStr} '${escapedPrompt}'`
+  args.push(prompt)  // No escaping needed — execFile passes as array element
 
   try {
-    const { stdout, stderr } = await execAsync(cmd, {
+    const { stdout, stderr } = await execFileAsync(binary, args, {
       cwd: workDir,
       timeout: 300000, // 5 minutes
       maxBuffer: 10 * 1024 * 1024,
@@ -202,7 +213,8 @@ export async function runOpenCodeWithFile(
   const workDir = config.workDir || process.cwd()
   const fullPrompt = `In file ${filePath}:\n${prompt}`
   
-  const args: string[] = []
+  // Build arguments array — no shell interpolation needed with execFile
+  const args: string[] = ['run']
   
   if (config.model && config.provider) {
     args.push('--model', `${config.provider}/${config.model}`)
@@ -210,14 +222,11 @@ export async function runOpenCodeWithFile(
     args.push('--model', config.model)
   }
 
-  const escapedPrompt = fullPrompt.replace(/'/g, "'\\''")
   args.push('--dangerously-skip-permissions')
-  
-  const argsStr = args.join(' ')
-  const cmd = `${binary} run ${argsStr} '${escapedPrompt}'`
+  args.push(fullPrompt)  // No escaping needed — execFile passes as array element
 
   try {
-    const { stdout, stderr } = await execAsync(cmd, {
+    const { stdout, stderr } = await execFileAsync(binary, args, {
       cwd: workDir,
       timeout: 300000,
       maxBuffer: 10 * 1024 * 1024,

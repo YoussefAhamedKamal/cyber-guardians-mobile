@@ -1,4 +1,18 @@
-import type { AgentMessage, AgentResponse, ScanResult, Skill, CommandResult, FileParseResult, AgentStatus } from '../types/localAgent'
+import type {
+  AgentMessage,
+  AgentResponse,
+  ScanResult,
+  Skill,
+  CommandResult,
+  FileParseResult,
+  AgentStatus,
+  AIProvidersResult,
+  AIChatResult,
+  FileOperationResult,
+  GrepResult,
+  OpenCodeStatus,
+  OpenCodeResult
+} from '../types/localAgent'
 
 let ws: WebSocket | null = null
 let messageId = 0
@@ -164,35 +178,35 @@ export async function listInstalledSkills(): Promise<Skill[]> {
   return sendMessage('list-installs', {})
 }
 
-export async function aiChat(messages: { role: string; content: string }[], options?: { provider?: string; model?: string; temperature?: number; maxTokens?: number }): Promise<any> {
+export async function aiChat(messages: { role: string; content: string }[], options?: { provider?: string; model?: string; temperature?: number; maxTokens?: number }): Promise<AIChatResult> {
   return sendMessage('ai-chat', { messages, ...options })
 }
 
-export async function getAIProviders(): Promise<any> {
+export async function getAIProviders(): Promise<AIProvidersResult> {
   return sendMessage('ai-providers', {})
 }
 
-export async function fileOp(operation: string, path: string, content?: string, pattern?: string, recursive?: boolean): Promise<any> {
+export async function fileOp(operation: string, path: string, content?: string, pattern?: string, recursive?: boolean): Promise<FileOperationResult> {
   return sendMessage('file-op', { operation, path, content, pattern, recursive })
 }
 
-export async function grepSearch(dir: string, query: string, include?: string): Promise<any> {
+export async function grepSearch(dir: string, query: string, include?: string): Promise<GrepResult[]> {
   return sendMessage('grep', { dir, query, include })
 }
 
 // OpenCode functions
-export async function runOpenCodeAgent(prompt: string, options?: { model?: string; provider?: string; filePath?: string }): Promise<any> {
+export async function runOpenCodeAgent(prompt: string, options?: { model?: string; provider?: string; filePath?: string }): Promise<OpenCodeResult> {
   return sendMessage('opencode', { prompt, ...options }, 300000) // 5 minutes for OpenCode
 }
 
-export async function getOpenCodeStatus(): Promise<any> {
+export async function getOpenCodeStatus(): Promise<OpenCodeStatus> {
   return sendMessage('opencode-status', {})
 }
 
-export async function listOpenCodeSessions(): Promise<any> {
+export async function listOpenCodeSessions(): Promise<string[]> {
   return sendMessage('opencode-sessions', {})
 }
 
-export async function launchOpenCodeDesktop(workDir?: string): Promise<any> {
+export async function launchOpenCodeDesktop(workDir?: string): Promise<{ success: boolean; error?: string; message?: string }> {
   return sendMessage('opencode-launch', { workDir })
 }

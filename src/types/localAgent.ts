@@ -49,7 +49,59 @@ export interface AgentStatus {
   packageManagers: string[]
 }
 
-export type AgentMessageType = 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file'
+export interface AIProviderInfo {
+  name: string
+  type: 'cloud' | 'local'
+  models: string[]
+  available: boolean
+}
+
+export interface AIProvidersResult {
+  providers: AIProviderInfo[]
+  active: { provider: string; model: string }
+}
+
+export interface AIChatResult {
+  content: string
+  model: string
+  provider: string
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+}
+
+export interface FileOperationResult {
+  success: boolean
+  operation: string
+  path: string
+  content?: string
+  files?: string[]
+  error?: string
+}
+
+export interface GrepResult {
+  file: string
+  line: number
+  content: string
+}
+
+export interface OpenCodeStatus {
+  installed: boolean
+  binary: string | null
+  version: string | null
+  desktopInstalled: boolean
+  desktopRunning: boolean
+  desktopPath: string | null
+  providers: string[]
+  recommendation: string
+}
+
+export interface OpenCodeResult {
+  success: boolean
+  output: string
+  error?: string
+  session?: string
+}
+
+export type AgentMessageType = 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'opencode' | 'opencode-status' | 'opencode-sessions' | 'opencode-launch'
 
 export interface AgentMessage {
   id: string
