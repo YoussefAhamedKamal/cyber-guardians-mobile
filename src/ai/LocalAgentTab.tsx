@@ -117,7 +117,13 @@ export function LocalAgentTab() {
     setInstallingPkg(pkg)
     try {
       // pkg is full name like "owner/repo@skill" — extract owner/repo for install
-      const repoName = pkg.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
+      // Split on @ and take first part, then remove trailing slashes
+      const parts = pkg.split('@')
+      const repoName = (parts[0] || '').replace(/\/+$/, '')
+      if (!repoName) {
+        alert('❌ Invalid package name')
+        return
+      }
       const success = await installSkill(repoName)
       if (success) {
         alert(`✅ Installed all skills from:\n${repoName}\n\nFind them in the "Installed" tab.`)

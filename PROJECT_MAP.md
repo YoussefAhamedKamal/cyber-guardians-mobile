@@ -881,8 +881,8 @@ server: {
 |----------|-------|-------|--------|
 | Critical | 4 | 2 fixed, 2 false positives | ✅ All resolved |
 | Medium | 3 | 3 fixed | ✅ All resolved |
-| Low | 6 | 5 fixed, 1 edge case | ✅ 5/6 resolved |
-| **Total** | **13** | **10** | **77% fixed** |
+| Low | 6 | 6 fixed | ✅ All resolved |
+| **Total** | **13** | **13** | **100% resolved** |
 
 ### Fixed Bugs
 
@@ -897,16 +897,12 @@ server: {
 | BUG-009 | `localAgent.ts` | All agent functions return `Promise<any>` | Added return types for all functions |
 | BUG-010 | `fileOps.ts` | Silent error swallowing | Now logs warnings for permission/IO errors |
 | BUG-011 | `opencode.ts` | Cross-platform `nohup` not supported | Platform-specific launch commands |
+| BUG-012 | `LocalAgentTab.tsx` | Install pkg regex edge case | Uses `split('@')[0]` for robust parsing |
 
-### False Positives
+### False Positives (Correctly Implemented)
 
 | ID | File | Issue | Explanation |
 |---|---|---|---|
 | BUG-001 | `providers.ts` | HuggingFace `data.generated_text` on string | Code correctly handles both array/object responses |
 | BUG-002 | `providers.ts` | HuggingFace missing `choices` field | Code correctly extracts `generated_text` from response |
-
-### Remaining Edge Case
-
-| ID | Issue | Severity | Notes |
-|---|---|---|---|
-| BUG-012 | Install pkg regex edge case | Low | Rare edge case with package name parsing |
+| BUG-013 | `server.ts` | Missing provider in agent chat request | Server handler correctly uses `aiManager.setActive(provider, model)` |

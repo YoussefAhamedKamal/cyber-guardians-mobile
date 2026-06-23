@@ -143,8 +143,8 @@
 |----------|-------|-------|--------|
 | Critical | 4 | 2 fixed, 2 false positives | ✅ All resolved |
 | Medium | 3 | 3 fixed | ✅ All resolved |
-| Low | 6 | 5 fixed, 1 edge case | ✅ 5/6 resolved |
-| **Total** | **13** | **10** | **77% fixed** |
+| Low | 6 | 6 fixed | ✅ All resolved |
+| **Total** | **13** | **13** | **100% resolved** |
 
 ### Fixed Bugs
 
@@ -159,21 +159,16 @@
 | BUG-009 | Missing return types on agent functions | Added return types for all functions |
 | BUG-010 | Silent error swallowing in fileOps | Now logs warnings for errors |
 | BUG-011 | Cross-platform nohup support | Platform-specific launch commands |
+| BUG-012 | Install pkg regex edge case | Uses `split('@')[0]` for robust parsing |
 
-### False Positives
+### False Positives (Correctly Implemented)
 
 | ID | Issue | Explanation |
 |---|---|---|
-| BUG-001 | HuggingFace response parsing | Code correctly handles both array/object |
-| BUG-002 | HuggingFace missing choices | Code correctly extracts generated_text |
-| BUG-013 | Missing provider in agent chat | Server handler correctly applies provider/model |
-
-### Remaining Edge Case
-
-| ID | Issue | Severity | Notes |
-|---|---|---|---|
-| BUG-012 | Install pkg regex edge case | Low | Rare edge case with package name parsing |
+| BUG-001 | HuggingFace response parsing | Code correctly handles both array/object: `Array.isArray(data) ? data[0]?.generated_text || '' : data.generated_text || ''` |
+| BUG-002 | HuggingFace missing choices | Code correctly extracts `generated_text` from response |
+| BUG-013 | Missing provider in agent chat | Server handler correctly uses `aiManager.setActive(provider, model)` before `chat()` |
 
 ---
 
-*End of audit report. Updated 2026-06-23 with all fixes applied.*
+*End of audit report. Updated 2026-06-23 — All 13 issues resolved (100%).*

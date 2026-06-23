@@ -37,7 +37,8 @@ export async function installSkill(packageName: string): Promise<boolean> {
   // Strip ANSI codes
   const cleaned = stripAnsi(packageName)
   // Extract owner/repo only (remove @skillname filter and trailing slashes)
-  const repoName = cleaned.replace(/@[^@/]+$/, '').replace(/\/+$/, '')
+  // Split on @ and take first part, then remove trailing slashes
+  const repoName = cleaned.split('@')[0].replace(/\/+$/, '')
   // Sanitize: only allow safe characters for shell commands
   const sanitized = repoName.replace(/[^a-zA-Z0-9._\/\-:]/g, '')
   if (!sanitized) {
