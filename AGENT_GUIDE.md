@@ -130,10 +130,25 @@ npm unlink -g
 
 ## 4. التشغيل
 
+> ⚠️ **مهم جداً:** يجب تشغيل جميع الأوامر من مجلد الجهة المحلية فقط!
+
+```bash
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 📍 أولاً: انتقل إلى مجلد الجهة المحلية
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd cyber-guardians-mobile/cyberguard-agent
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ▶️ ثانياً: شغّل الجهة
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+npm start
+```
+
 ### الحد الأدنى
 
 ```bash
-cyberguard-agent start
+cd cyber-guardians-mobile/cyberguard-agent
+npm start
 ```
 
 يُشغّل الجهة على المنفذ الافتراضي `3001` بدون أي إعدادات إضافية.
@@ -141,7 +156,8 @@ cyberguard-agent start
 ### الإعداد الكامل
 
 ```bash
-cyberguard-agent start --profile full
+cd cyber-guardians-mobile/cyberguard-agent
+npm start -- --profile full
 ```
 
 يُفعّل جميع الأدوات والقدرات مع 3 عمليات متزامنة وذاكرة مؤقتة لمدة ساعتين.
@@ -149,7 +165,8 @@ cyberguard-agent start --profile full
 ### مخصص
 
 ```bash
-cyberguard-agent start --port 3001 --token mytoken --verbose
+cd cyber-guardians-mobile/cyberguard-agent
+npm start -- --port 3001 --token mytoken --verbose
 ```
 
 | المعامل | الوصف | القيمة الافتراضية |
@@ -162,14 +179,17 @@ cyberguard-agent start --port 3001 --token mytoken --verbose
 ### أوامر أخرى
 
 ```bash
+# من مجلد الجهة المحلية فقط!
+cd cyber-guardians-mobile/cyberguard-agent
+
 # عرض حالة الخادم
-cyberguard-agent status
+node bin/cyberguard-agent status
 
 # عرض الإعدادات الحالية
-cyberguard-agent config
+node bin/cyberguard-agent tools
 
-# إيقاف الخادم
-cyberguard-agent stop
+# عرض المساعدة
+node bin/cyberguard-agent help
 ```
 
 ---
@@ -346,17 +366,61 @@ npx skills list
 
 #### إعداد مفاتيح API
 
-```bash
-# إعداد المفاتيح (اختياري — اتركه فارغاً لاستخدام الافتراضي)
-export GEMINI_API_KEY="your-gemini-key"
-export GROQ_API_KEY="your-groq-key"
-export HUGGINGFACE_API_KEY="your-hf-key"
-export OPENROUTER_API_KEY="your-openrouter-key"
+> ⚠️ **مهم:** يجب تشغيل هذه الأوامر من مجلد الجهة المحلية فقط!
 
-# Ollama يعمل محلياً — لا يحتاج مفتاح
-# تأكد من تشغيل Ollama أولاً
+```bash
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 📍 أولاً: انتقل إلى مجلد الجهة المحلية
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd cyber-guardians-mobile/cyberguard-agent
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🔑 ثانياً: احصل على مفتاح API (اختر واحداً)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# --- Gemini (مجاني - Google AI Studio) ---
+# 1. افتح: https://aistudio.google.com/apikey
+# 2. اضغط "Create API Key"
+# 3. انسخ المفتاح
+export GEMINI_API_KEY="AIzaSy..."
+
+# --- Groq (مجاني - سريع جداً) ---
+# 1. افتح: https://console.groq.com/keys
+# 2. اضغط "Create API Key"
+# 3. انسخ المفتاح
+export GROQ_API_KEY="gsk_..."
+
+# --- HuggingFace (مجاني) ---
+# 1. افتح: https://huggingface.co/settings/tokens
+# 2. اضغط "New token"
+# 3. انسخ التوكن
+export HUGGINGFACE_API_KEY="hf_..."
+
+# --- OpenRouter (مجاني) ---
+# 1. افتح: https://openrouter.ai/keys
+# 2. اضغط "Create Key"
+# 3. انسخ المفتاح
+export OPENROUTER_API_KEY="sk-or-..."
+
+# --- Ollama (مجاني - محلي) ---
+# لا يحتاج مفتاح! يجب تثبيته أولاً:
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.2
 ollama serve
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ▶️ ثالثاً: شغّل الجهة المحلية
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+npm start
 ```
+
+> 💡 **نصيحة:** لجعل المفاتيح تدوم بعد إغلاق Terminal، أضفها إلى `~/.bashrc` أو `~/.zshrc`:
+> ```bash
+> echo 'export GEMINI_API_KEY="your-key"' >> ~/.bashrc
+> source ~/.bashrc
+> ```
+
+> ⚠️ **لا تضع مفاتيح API في ملف `.env` داخل المشروع!** لأنها قد تُرفع عن طريق الخطأ إلى GitHub.
 
 #### استخدام AI عبر WebSocket
 

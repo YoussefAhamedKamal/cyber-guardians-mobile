@@ -14,6 +14,19 @@ function printHelp() {
 ╚══════════════════════════════════════════════════════════════════════════╝
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 QUICK START (3 Steps)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. cd cyberguard-agent && npm install
+
+  2. export GEMINI_API_KEY="your-key"
+     Get key from: https://aistudio.google.com/apikey
+
+  3. npm start
+
+  Agent is now running on ws://localhost:3001
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 USAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -88,11 +101,49 @@ function printHelp() {
   OpenRouter     OPENROUTER_API_KEY        Varies by model   No
   Ollama         (none — runs locally)     Unlimited         Yes
 
-  Setup:
-    export GEMINI_API_KEY="your-key"
-    export GROQ_API_KEY="your-key"
-    export HUGGINGFACE_API_KEY="your-key"
-    export OPENROUTER_API_KEY="your-key"
+  📍 WHERE TO RUN COMMANDS:
+  ─────────────────────────────────────────────────────────────────────
+
+  Step 1: Open Terminal
+
+  Step 2: Navigate to the agent directory:
+          cd cyber-guardians-mobile/cyberguard-agent
+
+  Step 3: Set your API key (one of these):
+
+          # Gemini (Google AI Studio)
+          export GEMINI_API_KEY="your-key-here"
+          Get key from: https://aistudio.google.com/apikey
+
+          # Groq (Console)
+          export GROQ_API_KEY="your-key-here"
+          Get key from: https://console.groq.com/keys
+
+          # HuggingFace (Settings)
+          export HUGGINGFACE_API_KEY="your-key-here"
+          Get key from: https://huggingface.co/settings/tokens
+
+          # OpenRouter (Keys)
+          export OPENROUTER_API_KEY="your-key-here"
+          Get key from: https://openrouter.ai/keys
+
+          # Ollama (No key needed!)
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama pull llama3.2
+
+  Step 4: Start the agent:
+          npm start
+
+  💡 TIP: Add export commands to ~/.bashrc or ~/.zshrc to persist them:
+
+          echo 'export GEMINI_API_KEY="your-key"' >> ~/.bashrc
+          source ~/.bashrc
+
+  📌 IMPORTANT: Always run commands from the agent directory:
+     /cyber-guardians-mobile/cyberguard-agent/
+
+     NOT from the game root directory!
+     NOT from inside src/ or bin/!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📁 FILE OPERATIONS
@@ -139,46 +190,88 @@ function printHelp() {
 🐳 DOCKER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Run with Docker (recommended):
+  📍 WHERE TO RUN DOCKER COMMANDS:
+  ─────────────────────────────────────────────────────────────────────
 
-    # Full stack (Agent + Frontend)
+  From the PROJECT ROOT directory:
+    cd cyber-guardians-mobile
+
+  Create .env file in project root:
+    echo "GEMINI_API_KEY=your-key" > .env
+    echo "GROQ_API_KEY=your-key" >> .env
+    echo "AGENT_TOKEN=your-token" >> .env
+
+  Run everything:
     docker-compose up -d
 
-    # Agent only
+  Run agent only:
     cd cyberguard-agent
     docker build -t cyberguard-agent .
     docker run -d -p 3001:3001 cyberguard-agent
 
-  Environment variables in .env:
-    GEMINI_API_KEY=your-key
-    GROQ_API_KEY=your-key
-    AGENT_PORT=3001
-    AGENT_TOKEN=your-token
+  View logs:
+    docker-compose logs -f agent
+
+  Stop:
+    docker-compose down
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💡 EXAMPLES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  # Start with default settings
-  cyberguard-agent start
+  📍 FIRST TIME SETUP:
+  ─────────────────────────────────────────────────────────────────────
 
-  # Start on custom port with full profile
-  cyberguard-agent start --port 3002 --profile full
+  1. Clone the repository:
+     git clone https://github.com/YoussefAhamedKamal/cyber-guardians-mobile.git
+     cd cyber-guardians-mobile
+
+  2. Install agent dependencies:
+     cd cyberguard-agent
+     npm install
+
+  3. Set API key (choose one):
+     export GEMINI_API_KEY="your-key"
+
+  4. Start agent:
+     npm start
+
+  5. In another terminal, start the game:
+     cd ..  (back to cyber-guardians-mobile)
+     npm install
+     npm run dev
+
+  📍 DAILY USAGE (after first setup):
+  ─────────────────────────────────────────────────────────────────────
+
+  Terminal 1 (Agent):
+    cd ~/cyber-guardians-mobile/cyberguard-agent
+    npm start
+
+  Terminal 2 (Game):
+    cd ~/cyber-guardians-mobile
+    npm run dev
+
+  📍 COMMON COMMANDS:
+  ─────────────────────────────────────────────────────────────────────
+
+  # Start with default settings
+  cd cyberguard-agent && npm start
+
+  # Start on custom port
+  cd cyberguard-agent && npm start -- --port 3002
 
   # Start with auth token
-  cyberguard-agent start --token my-secret-token
+  cd cyberguard-agent && AGENT_TOKEN=my-secret npm start
 
   # Start with verbose logging
-  cyberguard-agent start --verbose
-
-  # Start with specific AI provider
-  GEMINI_API_KEY=your-key cyberguard-agent start
+  cd cyberguard-agent && npm start -- --verbose
 
   # Check agent status
-  cyberguard-agent status
+  cd cyberguard-agent && node bin/cyberguard-agent status
 
   # List all available tools
-  cyberguard-agent tools
+  cd cyberguard-agent && node bin/cyberguard-agent tools
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📚 MORE INFORMATION
@@ -195,6 +288,32 @@ function printHelp() {
 
   Support:
     Report issues at GitHub Issues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❌ "GEMINI_API_KEY not set"
+     → Run: export GEMINI_API_KEY="your-key"
+     → Check: echo $GEMINI_API_KEY
+
+  ❌ "Connection refused"
+     → Agent not running. Start it: npm start
+     → Wrong port? Check: --port flag
+
+  ❌ "npm: command not found"
+     → Install Node.js: https://nodejs.org
+     → Requires Node 18+
+
+  ❌ "Permission denied"
+     → Run with sudo (not recommended)
+     → Or fix permissions: sudo chown -R $(whoami) ~/.npm
+
+  ❌ "Ollama not found"
+     → Install: curl -fsSL https://ollama.com/install.sh | sh
+     → Start: ollama serve
+
+  Still stuck? Check AGENT_GUIDE.md in the project root.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `)
