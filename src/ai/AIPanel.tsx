@@ -244,6 +244,21 @@ function AISettings() {
       <label style={{ color: '#aaa' }}>{provider?.apiKeyLabel || 'API Key'}
         <input type="password" value={ai.apiKeys[ai.providerId] || ''} onChange={(e) => ai.setApiKey(ai.providerId, e.target.value)} placeholder="sk-..." style={inputStyle} />
       </label>
+      {provider?.requiresMaxTokens && (
+        <label style={{ color: '#aaa' }}>حد التوكن (اختياري)
+          <input 
+            type="number" 
+            value={ai.maxTokens || ''} 
+            onChange={(e) => ai.setMaxTokens(e.target.value ? parseInt(e.target.value) : undefined)}
+            placeholder="اتركه فارغاً لعدم التحديد"
+            min="1"
+            style={inputStyle} 
+          />
+          <span style={{ fontSize: '10px', color: '#666', marginTop: '4px', display: 'block' }}>
+            اتركه فارغاً لعدم تحديد حد للتوكن
+          </span>
+        </label>
+      )}
       <label style={{ 
         display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', cursor: 'pointer',
         padding: '8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)',
@@ -1203,7 +1218,7 @@ function StudentChat() {
       } else {
         const systemMsg: AIMessage = { role: 'system', content: systemPrompt }
         let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...finalMessages], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
+        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...finalMessages], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, ai.maxTokens, ai.useDirectApi)
         for await (const chunk of gen) {
           full += chunk
           const now = Date.now()
@@ -1499,7 +1514,7 @@ function FacultyAIChat() {
         const systemMsg: AIMessage = { role: 'system', content: facultySystemPrompt }
         const chatMsgs = msgs.filter((m) => m !== contextMsg)
         let full = ''; let lastUpdate = 0; const THROTTLE_MS = 80
-        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, undefined, ai.useDirectApi)
+        const gen = streamChatMessage(ai.providerId, ai.modelId, [systemMsg, ...chatMsgs, contextMsg], ai.apiKeys[ai.providerId] || '', ai.customBaseUrl, undefined, ai.maxTokens, ai.useDirectApi)
         for await (const chunk of gen) {
           full += chunk
           const now = Date.now()

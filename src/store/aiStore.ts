@@ -23,6 +23,7 @@ interface AIStore extends AIState {
   setSearchEnabled: (v: boolean) => void
   setDeepthinkEnabled: (v: boolean) => void
   setDeepthinkStep: (v: string) => void
+  setMaxTokens: (tokens?: number) => void
   setFacultyPin: (pin: string) => Promise<void>
   unlockFaculty: (pin: string) => Promise<boolean>
   lockFaculty: () => void
@@ -84,6 +85,7 @@ export const useAIStore = create<AIStore>()(
       setSearchEnabled: (v) => set({ searchEnabled: v }),
       setDeepthinkEnabled: (v) => set({ deepthinkEnabled: v }),
       setDeepthinkStep: (v) => set({ deepthinkStep: v }),
+      setMaxTokens: (tokens) => set({ maxTokens: tokens }),
       setFacultyPin: async (pin) => {
         const hashed = await hashPin(pin)
         set({ facultyPinHash: hashed })

@@ -30,6 +30,7 @@ export interface AIProviderDef {
   models: AIModelDef[]
   apiKeyLabel: string
   docUrl?: string
+  requiresMaxTokens?: boolean
 }
 
 export interface AIModelDef {
@@ -96,6 +97,7 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     name: 'API مخصص (OpenAI-compatible)',
     baseUrl: '',
     apiKeyLabel: 'API Key',
+    requiresMaxTokens: true,
     models: [
       { id: 'custom-model', name: 'نموذج مخصص', providerId: 'custom', free: true },
     ],
@@ -141,6 +143,7 @@ export interface AIState {
   plugins: Plugin[]
   connectors: Connector[]
   project: ProjectState
+  maxTokens?: number | undefined
 }
 
 export const DEFAULT_AI_STATE: Omit<AIState, 'apiKeys'> = {

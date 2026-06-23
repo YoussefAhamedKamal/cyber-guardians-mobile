@@ -149,11 +149,14 @@ function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?
   return parts
 }
 
-function buildBody(modelId: string, messages: AIMessage[]) {
+function buildBody(modelId: string, messages: AIMessage[], maxTokens?: number) {
   const body: Record<string, any> = {
     model: modelId,
     messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
+  }
+  if (maxTokens && maxTokens > 0) {
+    body.max_tokens = maxTokens
   }
   return body
 }
@@ -198,7 +201,8 @@ export async function sendChatMessage(
   apiKey: string,
   customBaseUrl: string,
   signal?: AbortSignal,
-  useDirectApi = false
+  useDirectApi = false,
+  maxTokens?: number
 ): Promise<string> {
   const provider = getProvider(providerId)
   if (!provider) throw new Error('مزود AI غير معروف')
@@ -209,7 +213,7 @@ export async function sendChatMessage(
   }
 
   const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-  const body = buildBody(modelId, messages)
+  const body = buildBody(modelId, messages, maxTokens)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -259,7 +263,7 @@ export async function* streamChatMessage(
   }
 
   const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-  const body = { ...buildBody(modelId, messages), stream: true }
+  const body = { ...buildBody(modelId, messages, maxTokens), stream: true }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
