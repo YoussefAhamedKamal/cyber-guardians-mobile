@@ -149,12 +149,11 @@ function buildMessageContent(m: AIMessage): string | Array<{ type: string; text?
   return parts
 }
 
-function buildBody(modelId: string, messages: AIMessage[], maxTokens?: number) {
+function buildBody(modelId: string, messages: AIMessage[]) {
   const body: Record<string, any> = {
     model: modelId,
     messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
-    max_tokens: maxTokens || 1024,
   }
   return body
 }
@@ -210,7 +209,7 @@ export async function sendChatMessage(
   }
 
   const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-  const body = buildBody(modelId, messages, 1024)
+  const body = buildBody(modelId, messages)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -260,7 +259,7 @@ export async function* streamChatMessage(
   }
 
   const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-  const body = { ...buildBody(modelId, messages, maxTokens ?? 4096), stream: true }
+  const body = { ...buildBody(modelId, messages), stream: true }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
