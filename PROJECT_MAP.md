@@ -2,8 +2,8 @@
 
 > Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
 > Status: **🟢 Live on Cloudflare Pages**
-> Version: **10.2.0** (Docker + Audit Fixes)
-> Last Audit: **2026-06-23** — 13 issues found, **10 fixed**, 2 false positives, 1 edge case
+> Version: **11.0.0** (Multi-Tool Agent System)
+> Last Audit: **2026-06-23** — 13 issues found, **13 resolved** (100%)
 
 ---
 
@@ -25,9 +25,10 @@
 | Testing | Vitest | — | 70 tests |
 | Deploy | **Cloudflare Pages** | — | Auto-deploy via Git push |
 | Search Worker | Cloudflare Worker | — | DuckDuckGo search (API + HTML) |
-| Local Agent | @cyberguard/agent v1.2.2 | — | npm package, WebSocket, AI providers, file ops, OpenCode, Docker |
+| Local Agent | @cyberguard/agent v2.0.0 | — | npm package, WebSocket, AI providers, file ops, Multi-tool (Aider/Cline/Custom) |
 | AI Music | MiniMax Music 2.6 | — | Music generation (Instrumental Mode) |
 | Docker | docker-compose | — | Agent + Frontend containers |
+| Tool Integration | Aider + Cline + Custom | — | Multi-tool agent with fallback |
 
 ### Technical Constraints
 - Strict TypeScript (noImplicitAny, strictNullChecks, exactOptionalPropertyTypes)
@@ -468,13 +469,14 @@ OpenAI, Anthropic, Google, Meta, Mistral, GitHub Copilot, Cursor, Codeium, AWS B
 ### Overview
 Local Agent = a server running on the user's machine that connects the browser to external tools.
 
-**v1.2.2 — Audit Fixes + Docker:**
+**v2.0.0 — Multi-Tool Agent System:**
+- **Multi-Tool Integration** — Aider (priority), Cline, Custom Agent with automatic fallback
 - **Multi-Provider AI** — Gemini, Ollama, Groq, HuggingFace, OpenRouter with automatic fallback
 - **File Operations** — Read, write, list, delete, move, mkdir, exists, search, grep
-- **OpenCode Integration** — Desktop app launch, session listing, CLI execution
-- **8 UI Tabs** — Scan, Skills, Installed, Execute, AI Chat, File Manager, Search, OpenCode
+- **Task Execution** — Complex multi-step tasks with detailed results
+- **9 UI Tabs** — Scan, Skills, Installed, Execute, AI Chat, File Manager, Search, Tools, Settings
 - **Docker Support** — Agent + Frontend containers with docker-compose
-- **npm Audit Fix** — js-yaml vulnerability fixed
+- **Both AIs Connected** — Student and Faculty AI can use the agent
 
 ### Compatibility
 
@@ -488,7 +490,12 @@ Local Agent = a server running on the user's machine that connects the browser t
 
 | File | Function |
 |---|---|
-| `cyberguard-agent/src/server.ts` | WebSocket + HTTP server (16 message types) |
+| `cyberguard-agent/src/server.ts` | WebSocket + HTTP server (19 message types) |
+| `cyberguard-agent/src/ai/toolManager.ts` | **NEW** — Multi-tool management with fallback |
+| `cyberguard-agent/src/ai/aiderTool.ts` | **NEW** — Aider CLI integration |
+| `cyberguard-agent/src/ai/clineTool.ts` | **NEW** — Cline CLI integration |
+| `cyberguard-agent/src/ai/customAgent.ts` | **NEW** — Custom agent using AI providers |
+| `cyberguard-agent/src/ai/taskExecutor.ts` | **NEW** — Task execution with tool selection |
 | `cyberguard-agent/src/platform/detector.ts` | OS + package manager detection |
 | `cyberguard-agent/src/platform/commandTranslator.ts` | Cross-platform command translation |
 | `cyberguard-agent/src/platform/pathResolver.ts` | Path + temp dir resolution |
@@ -511,13 +518,13 @@ Local Agent = a server running on the user's machine that connects the browser t
 | `cyberguard-agent/src/plugins/skillsDiscovery.ts` | npx skills find/add (257+ installed) |
 | `cyberguard-agent/src/ai/providers.ts` | 5 AI providers + AIManager with fallback |
 | `cyberguard-agent/src/ai/fileOps.ts` | 8 file operations + grepFiles content search |
-| `cyberguard-agent/src/ai/opencode.ts` | OpenCode CLI + Desktop launch + session listing |
 | `cyberguard-agent/src/config.ts` | Config with AI provider API keys |
-| `src/types/localAgent.ts` | Types (AIProvider, FileOp, OpenCodeStatus) |
-| `src/ai/localAgent.ts` | WebSocket client (16 message types) |
-| `src/store/localAgentStore.ts` | Zustand store + auto-load installed skills |
-| `src/ai/LocalAgentTab.tsx` | UI (8 tabs) |
-| `src/ai/api.ts` | sendChatViaAgent, getAgentProviders |
+| `src/types/localAgent.ts` | Types (Task, ToolSettings, AgentResult) |
+| `src/ai/localAgent.ts` | WebSocket client (19 message types) |
+| `src/store/localAgentStore.ts` | Zustand store + tool settings |
+| `src/ai/LocalAgentTab.tsx` | UI (9 tabs) |
+| `src/ai/ToolSettingsPanel.tsx` | **NEW** — Tool selection and settings |
+| `src/ai/api.ts` | sendChatViaAgent, getAgentProviders, executeTask |
 
 ### Supported Plugins
 
@@ -533,6 +540,7 @@ Local Agent = a server running on the user's machine that connects the browser t
 
 | Feature | Details |
 |---|---|
+| **Multi-Tool Integration** | Aider (priority), Cline, Custom Agent with automatic fallback |
 | **Universal Executor** | reads any instruction file (SKILL.md, plugin.json, Makefile, Dockerfile) and executes everything |
 | **Cross-platform** | Windows / macOS / Linux |
 | **Auto-install** | installs missing libraries automatically |
@@ -545,11 +553,10 @@ Local Agent = a server running on the user's machine that connects the browser t
 | **Multi-Provider AI** | Gemini, Ollama, Groq, HuggingFace, OpenRouter with automatic fallback |
 | **File Operations** | 8 operations: read, write, list, delete, move, mkdir, exists, search |
 | **Content Search (grep)** | Search file contents with regex patterns |
-| **OpenCode Integration** | Desktop app launch, session listing, CLI execution (300s timeout) |
+| **Task Execution** | Complex multi-step tasks with detailed results |
+| **Tool Selection** | User can choose tool or use automatic fallback |
 | **AI Chat** | Natural language task execution via connected AI providers |
-| **Installed Skills Viewer** | Lists all globally installed skills (npx skills list -g) |
-| **File Manager** | Browse, read, create, delete files and directories |
-| **Search Tab** | Grep-style content search across project files |
+| **Both AIs Connected** | Student and Faculty AI can use the agent |
 
 ### Installation
 
@@ -590,7 +597,7 @@ export OPENROUTER_API_KEY="your-key"  # Multi-model
 
 Game ↔ Agent via WebSocket (`ws://localhost:3002`)
 
-**16 Message Types:**
+**19 Message Types:**
 
 | # | Type | Direction | Purpose |
 |---|---|---|---|
@@ -607,10 +614,12 @@ Game ↔ Agent via WebSocket (`ws://localhost:3002`)
 | 11 | file-op | Game → Agent | File operations (read/write/list/delete/move/mkdir/exists/search) |
 | 12 | grep | Game → Agent | Content search with regex patterns |
 | 13 | ai-providers | Game → Agent | List available AI providers |
-| 14 | opencode | Game → Agent | Run OpenCode agent command |
-| 15 | opencode-status | Game → Agent | Check OpenCode Desktop status |
-| 16 | opencode-sessions | Game → Agent | List OpenCode sessions |
-| 17 | opencode-launch | Game → Agent | Launch OpenCode Desktop app |
+| 14 | task | Game → Agent | **NEW** — Execute complex task with multi-tool |
+| 15 | tool-status | Game → Agent | **NEW** — Check available tools (Aider, Cline, Custom) |
+| 16 | tool-settings | Game → Agent | **NEW** — Save/load tool settings |
+| 17 | aider-task | Game → Agent | **NEW** — Execute task with Aider |
+| 18 | cline-task | Game → Agent | **NEW** — Execute task with Cline |
+| 19 | custom-task | Game → Agent | **NEW** — Execute task with custom agent |
 
 ```typescript
 // Game → Agent
@@ -618,7 +627,8 @@ Game ↔ Agent via WebSocket (`ws://localhost:3002`)
 { id: "2", type: "ai-chat", payload: { message: "Explain SQL injection", provider: "gemini" } }
 { id: "3", type: "file-op", payload: { operation: "read", path: "/path/to/file.ts" } }
 { id: "4", type: "grep", payload: { pattern: "function\\s+\\w+", path: "./src" } }
-{ id: "5", type: "opencode-launch", payload: {} }
+{ id: "5", type: "task", payload: { task: { goal: "أنشئ موقع ويب" }, settings: { selectedTool: "aider" } } }
+{ id: "6", type: "tool-status", payload: {} }
 
 // Agent → Game
 { id: "1", status: "complete", result: { findings: [...], summary: "Found 3 issues" } }

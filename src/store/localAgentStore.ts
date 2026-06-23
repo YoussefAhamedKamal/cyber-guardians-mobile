@@ -12,8 +12,22 @@ import {
   parseSkillFile,
   setOnDisconnect,
   listInstalledSkills,
+  executeTask,
+  getToolStatus,
+  saveToolSettings,
 } from '../ai/localAgent'
-import type { Tool, Skill, ScanResult, AgentStatus, CommandResult, FileParseResult } from '../types/localAgent'
+import type {
+  Tool,
+  Skill,
+  ScanResult,
+  AgentStatus,
+  CommandResult,
+  FileParseResult,
+  TaskDefinition,
+  TaskResult,
+  ToolSettings,
+  ToolStatusResult,
+} from '../types/localAgent'
 
 interface LocalAgentState {
   connected: boolean
@@ -25,6 +39,11 @@ interface LocalAgentState {
   lastScanResult: ScanResult | null
   scanning: boolean
   error: string | null
+  // Multi-tool state
+  toolSettings: ToolSettings
+  toolStatus: ToolStatusResult | null
+  lastTaskResult: TaskResult | null
+  executingTask: boolean
   connect: (url: string, token?: string) => Promise<void>
   disconnect: () => void
   refreshStatus: () => Promise<void>
@@ -36,6 +55,11 @@ interface LocalAgentState {
   execute: (command: string, alternatives?: string[]) => Promise<CommandResult>
   parseFile: (content: string, filename: string) => Promise<FileParseResult>
   setError: (error: string | null) => void
+  // Multi-tool actions
+  executeTaskAction: (task: TaskDefinition) => Promise<TaskResult>
+  refreshToolStatus: () => Promise<void>
+  updateToolSettings: (settings: Partial<ToolSettings>) => Promise<void>
+  setToolSettingsLocal: (settings: Partial<ToolSettings>) => void
 }
 
 export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
@@ -48,6 +72,14 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   lastScanResult: null,
   scanning: false,
   error: null,
+  // Multi-tool defaults
+  toolSettings: {
+    selectedTool: null,
+    autoFallback: true,
+  },
+  toolStatus: null,
+  lastTaskResult: null,
+  executingTask: false,
 
   connect: async (url: string, token?: string) => {
     try {
@@ -77,6 +109,13 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
         set({ skills: installedSkills })
       }).catch(() => {
         // Ignore errors — skills will be loaded manually
+      })
+
+      // Auto-load tool status in background
+      getToolStatus().then(ts => {
+        set({ toolStatus: ts, toolSettings: { selectedTool: ts.selectedTool, autoFallback: ts.autoFallback } })
+      }).catch(() => {
+        // Ignore errors — tool status will be loaded manually
       })
     } catch (err: any) {
       set({ connected: false, error: err.message })
@@ -173,4 +212,48 @@ export const useLocalAgentStore = create<LocalAgentState>((set, get) => ({
   },
 
   setError: (error: string | null) => set({ error }),
+
+  // ─── Multi-Tool Actions ──────────────────────────────────────────
+
+  executeTaskAction: async (task: TaskDefinition) => {
+    set({ executingTask: true, error: null })
+    try {
+      const { toolSettings } = get()
+      const result = await executeTask(task, toolSettings)
+      set({ lastTaskResult: result, executingTask: false })
+      return result
+    } catch (err: any) {
+      set({ executingTask: false, error: err.message })
+      throw err
+    }
+  },
+
+  refreshToolStatus: async () => {
+    if (!isAgentConnected()) return
+    try {
+      const ts = await getToolStatus()
+      set({ toolStatus: ts, toolSettings: { selectedTool: ts.selectedTool, autoFallback: ts.autoFallback } })
+    } catch (err: any) {
+      set({ error: err.message })
+    }
+  },
+
+  updateToolSettings: async (settings: Partial<ToolSettings>) => {
+    if (!isAgentConnected()) {
+      // Save locally only
+      set((state) => ({ toolSettings: { ...state.toolSettings, ...settings } }))
+      return
+    }
+    try {
+      const result = await saveToolSettings(settings)
+      set({ toolSettings: result })
+    } catch (err: any) {
+      // Fallback: save locally
+      set((state) => ({ toolSettings: { ...state.toolSettings, ...settings } }))
+    }
+  },
+
+  setToolSettingsLocal: (settings: Partial<ToolSettings>) => {
+    set((state) => ({ toolSettings: { ...state.toolSettings, ...settings } }))
+  },
 }))

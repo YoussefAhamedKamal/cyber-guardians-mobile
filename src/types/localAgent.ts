@@ -101,7 +101,7 @@ export interface OpenCodeResult {
   session?: string
 }
 
-export type AgentMessageType = 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'opencode' | 'opencode-status' | 'opencode-sessions' | 'opencode-launch'
+export type AgentMessageType = 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'task' | 'tool-status' | 'tool-settings'
 
 export interface AgentMessage {
   id: string
@@ -115,4 +115,55 @@ export interface AgentResponse {
   progress?: number
   result?: any
   error?: string
+}
+
+// ─── Multi-Tool System Types ───────────────────────────────────────
+
+export type ToolName = 'aider' | 'cline' | 'custom'
+
+export interface TaskDefinition {
+  goal: string
+  context?: string
+  type: string
+  files?: string[]
+}
+
+export interface TaskStep {
+  tool: ToolName
+  action: string
+  input?: string
+  output?: string
+  success: boolean
+  duration: number
+}
+
+export interface TaskResult {
+  success: boolean
+  summary: string
+  files?: string[]
+  steps: TaskStep[]
+  tool: ToolName
+}
+
+export interface ToolStatus {
+  name: ToolName
+  available: boolean
+  version?: string
+  installed: boolean
+}
+
+export interface ToolSettings {
+  selectedTool: ToolName | null
+  autoFallback: boolean
+  aiderPath?: string
+  clinePath?: string
+  aiderModel?: string
+  clineModel?: string
+  customProvider?: string
+}
+
+export interface ToolStatusResult {
+  tools: ToolStatus[]
+  selectedTool: ToolName | null
+  autoFallback: boolean
 }

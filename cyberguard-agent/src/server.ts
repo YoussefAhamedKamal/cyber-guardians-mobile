@@ -17,11 +17,12 @@ import { SmartCache } from './cache/smartCache.js'
 import { log, verbose } from './utils/logger.js'
 import { aiManager, GeminiProvider, GroqProvider, HuggingFaceProvider, OpenRouterProvider, OllamaProvider, type AIMessage } from './ai/providers.js'
 import { executeFileOp, grepFiles } from './ai/fileOps.js'
-import { runOpenCode, runOpenCodeWithFile, getOpenCodeStatus, listSessions, launchDesktop } from './ai/opencode.js'
+import { getTaskExecutor } from './ai/taskExecutor.js'
+import type { ToolName } from './ai/types.js'
 
 interface AgentMessage {
   id: string
-  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'opencode' | 'opencode-status' | 'opencode-sessions' | 'opencode-launch'
+  type: 'scan' | 'install-skill' | 'execute' | 'find-skills' | 'install' | 'status' | 'tools' | 'parse-file' | 'list-installs' | 'ai-chat' | 'file-op' | 'grep' | 'ai-providers' | 'task' | 'tool-status' | 'tool-settings'
   payload: any
 }
 
@@ -272,17 +273,6 @@ export function createServer(config: AgentConfig) {
         break
       }
 
-      case 'ai-providers': {
-        try {
-          const providers = await aiManager.getAvailableProviders()
-          const active = aiManager.getActive()
-          sendResponse({ id: msg.id, status: 'complete', result: { providers, active } })
-        } catch (err: any) {
-          sendResponse({ id: msg.id, status: 'error', error: err.message })
-        }
-        break
-      }
-
       case 'file-op': {
         const { operation, path, content, pattern, recursive } = msg.payload
         try {
@@ -305,16 +295,24 @@ export function createServer(config: AgentConfig) {
         break
       }
 
-      case 'opencode': {
-        const { prompt, model, provider, filePath } = msg.payload
-        sendResponse({ id: msg.id, status: 'processing', result: { message: 'Running OpenCode...' } })
+      case 'ai-providers': {
         try {
-          let result
-          if (filePath) {
-            result = await runOpenCodeWithFile(prompt, filePath, { model, provider })
-          } else {
-            result = await runOpenCode(prompt, { model, provider })
-          }
+          const providers = await aiManager.getAvailableProviders()
+          const active = aiManager.getActive()
+          sendResponse({ id: msg.id, status: 'complete', result: { providers, active } })
+        } catch (err: any) {
+          sendResponse({ id: msg.id, status: 'error', error: err.message })
+        }
+        break
+      }
+
+      case 'task': {
+        const { task, settings } = msg.payload
+        sendResponse({ id: msg.id, status: 'processing', result: { message: 'Executing task...' } })
+        try {
+          const executor = getTaskExecutor()
+          if (settings) executor.updateSettings(settings)
+          const result = await executor.executeTask(task)
           sendResponse({ id: msg.id, status: 'complete', result })
         } catch (err: any) {
           sendResponse({ id: msg.id, status: 'error', error: err.message })
@@ -322,9 +320,10 @@ export function createServer(config: AgentConfig) {
         break
       }
 
-      case 'opencode-status': {
+      case 'tool-status': {
         try {
-          const status = await getOpenCodeStatus()
+          const executor = getTaskExecutor()
+          const status = await executor.getToolStatus()
           sendResponse({ id: msg.id, status: 'complete', result: status })
         } catch (err: any) {
           sendResponse({ id: msg.id, status: 'error', error: err.message })
@@ -332,21 +331,13 @@ export function createServer(config: AgentConfig) {
         break
       }
 
-      case 'opencode-sessions': {
+      case 'tool-settings': {
+        const { settings } = msg.payload
         try {
-          const sessions = await listSessions()
-          sendResponse({ id: msg.id, status: 'complete', result: sessions })
-        } catch (err: any) {
-          sendResponse({ id: msg.id, status: 'error', error: err.message })
-        }
-        break
-      }
-
-      case 'opencode-launch': {
-        const { workDir } = msg.payload || {}
-        try {
-          const result = await launchDesktop(workDir)
-          sendResponse({ id: msg.id, status: 'complete', result })
+          const executor = getTaskExecutor()
+          executor.updateSettings(settings)
+          const current = executor.getSettings()
+          sendResponse({ id: msg.id, status: 'complete', result: current })
         } catch (err: any) {
           sendResponse({ id: msg.id, status: 'error', error: err.message })
         }

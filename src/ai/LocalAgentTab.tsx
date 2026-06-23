@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useLocalAgentStore } from '../store/localAgentStore'
-import { aiChat, getAIProviders, fileOp, grepSearch, runOpenCodeAgent, getOpenCodeStatus, launchOpenCodeDesktop } from './localAgent'
-import type { ScanResult, Finding, AIProviderInfo, GrepResult, OpenCodeStatus } from '../types/localAgent'
+import { aiChat, getAIProviders, fileOp, grepSearch, executeTask, getToolStatus, saveToolSettings } from './localAgent'
+import ToolSettingsPanel from './ToolSettingsPanel'
+import type { ScanResult, Finding, AIProviderInfo, GrepResult, TaskResult, ToolStatusResult } from '../types/localAgent'
 
 const TOOLS = [
   { id: 'semgrep', name: 'Semgrep', icon: '🔍', desc: 'Static analysis for many languages' },
@@ -29,7 +30,7 @@ export function LocalAgentTab() {
   const [language, setLanguage] = useState('javascript')
   const [selectedTool, setSelectedTool] = useState('semgrep')
   const [skillQuery, setSkillQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'installed' | 'execute' | 'ai' | 'files' | 'search' | 'opencode'>('scan')
+  const [activeTab, setActiveTab] = useState<'scan' | 'skills' | 'installed' | 'execute' | 'ai' | 'files' | 'search' | 'tools'>('scan')
   const [executeCommand, setExecuteCommand] = useState('')
   const [executeResult, setExecuteResult] = useState<string | null>(null)
   const [executing, setExecuting] = useState(false)
@@ -56,26 +57,16 @@ export function LocalAgentTab() {
   const [searchResults, setSearchResults] = useState<GrepResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
 
-  // OpenCode state
-  const [opencodeInput, setOpencodeInput] = useState('')
-  const [opencodeOutput, setOpencodeOutput] = useState('')
-  const [opencodeLoading, setOpencodeLoading] = useState(false)
-  const [opencodeStatus, setOpencodeStatus] = useState<OpenCodeStatus | null>(null)
-  const [opencodeProvider, setOpencodeProvider] = useState('google')
-  const [opencodeModel, setOpencodeModel] = useState('gemini-2.0-flash')
-  const [opencodeFile, setOpencodeFile] = useState('')
+  // Multi-tool state
+  const [taskGoal, setTaskGoal] = useState('')
+  const [taskResult, setTaskResult] = useState<TaskResult | null>(null)
+  const [taskLoading, setTaskLoading] = useState(false)
+  const { executeTaskAction, toolStatus, toolSettings } = useLocalAgentStore()
 
   useEffect(() => {
     if (url) setInputUrl(url)
     if (token) setInputToken(token)
   }, [url, token])
-
-  // Auto-load OpenCode status when connected
-  useEffect(() => {
-    if (connected && activeTab === 'opencode') {
-      loadOpenCodeStatus()
-    }
-  }, [connected, activeTab])
 
   const handleConnect = async () => {
     try {
@@ -243,45 +234,26 @@ export function LocalAgentTab() {
     }
   }
 
-  // OpenCode
-  const handleOpenCode = async () => {
-    if (!opencodeInput.trim() || opencodeLoading) return
-    setOpencodeLoading(true)
-    setOpencodeOutput('')
+  // ─── Task Execution ─────────────────────────────────────────────
+  const handleExecuteTask = async () => {
+    if (!taskGoal.trim() || taskLoading) return
+    setTaskLoading(true)
+    setTaskResult(null)
     try {
-      const options: { provider: string; model?: string; filePath?: string } = { provider: opencodeProvider }
-      if (opencodeModel) options.model = opencodeModel
-      if (opencodeFile) options.filePath = opencodeFile
-      const result = await runOpenCodeAgent(opencodeInput, options)
-      setOpencodeOutput(result.output || result.error || 'No output')
+      const result = await executeTaskAction({
+        goal: taskGoal,
+        type: 'general',
+      })
+      setTaskResult(result)
     } catch (err: unknown) {
-      setOpencodeOutput(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setTaskResult({
+        success: false,
+        summary: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        steps: [],
+        tool: toolSettings.selectedTool || 'custom',
+      })
     } finally {
-      setOpencodeLoading(false)
-    }
-  }
-
-  const loadOpenCodeStatus = async () => {
-    try {
-      const status = await getOpenCodeStatus()
-      setOpencodeStatus(status)
-    } catch (err) {
-      console.error('Failed to load OpenCode status:', err)
-    }
-  }
-
-  const handleLaunchDesktop = async () => {
-    try {
-      const result = await launchOpenCodeDesktop()
-      if (result.success) {
-        alert(result.message || 'OpenCode Desktop launched!')
-      } else {
-        const errorMsg = result.error || 'Unknown error'
-        const suggestion = result.message || ''
-        alert(`Failed to launch: ${errorMsg}${suggestion ? '\n\n' + suggestion : ''}`)
-      }
-    } catch (err: unknown) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setTaskLoading(false)
     }
   }
 
@@ -347,7 +319,7 @@ export function LocalAgentTab() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        {(['scan', 'skills', 'installed', 'execute', 'ai', 'files', 'search', 'opencode'] as const).map(tab => (
+        {(['scan', 'skills', 'installed', 'execute', 'ai', 'files', 'search', 'tools'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -358,7 +330,7 @@ export function LocalAgentTab() {
               fontWeight: 700, cursor: 'pointer', fontSize: '11px'
             }}
           >
-            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Search' : tab === 'installed' ? '✅ Installed' : tab === 'execute' ? '⚡ Execute' : tab === 'ai' ? '🤖 AI' : tab === 'files' ? '📁 Files' : tab === 'search' ? '🔎 Grep' : '💻 Code'}
+            {tab === 'scan' ? '🔍 Scan' : tab === 'skills' ? '📦 Search' : tab === 'installed' ? '✅ Installed' : tab === 'execute' ? '⚡ Execute' : tab === 'ai' ? '🤖 AI' : tab === 'files' ? '📁 Files' : tab === 'search' ? '🔎 Grep' : '🛠 Tools'}
           </button>
         ))}
       </div>
@@ -744,149 +716,73 @@ export function LocalAgentTab() {
         </div>
       )}
 
-      {/* OpenCode Tab */}
-      {activeTab === 'opencode' && (
+      {/* Tools Tab */}
+      {activeTab === 'tools' && (
         <div>
-          {/* Status */}
-          <div style={{ marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={loadOpenCodeStatus}
-              disabled={!connected}
-              style={{ padding: '6px 10px', borderRadius: '4px', border: 'none', background: '#4FC3F7', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: '11px' }}
-            >
-              🔄 Status
-            </button>
-            {opencodeStatus && (
-              <>
-                <span style={{ fontSize: '10px', color: opencodeStatus.installed ? '#4CAF50' : '#f44336' }}>
-                  {opencodeStatus.installed ? `✅ v${opencodeStatus.version}` : '❌ CLI Not installed'}
-                </span>
-                <span style={{ fontSize: '10px', color: opencodeStatus.desktopInstalled ? '#4CAF50' : '#888' }}>
-                  {opencodeStatus.desktopInstalled ? '🖥️ Desktop Installed' : '🖥️ Desktop Not found'}
-                </span>
-                <span style={{ fontSize: '10px', color: opencodeStatus.desktopRunning ? '#4CAF50' : '#ff9800' }}>
-                  {opencodeStatus.desktopRunning ? '🟢 Running' : '🔴 Stopped'}
-                </span>
-              </>
-            )}
-          </div>
+          <ToolSettingsPanel />
 
-          {/* Recommendation */}
-          {opencodeStatus?.recommendation && (
-            <div style={{ 
-              marginBottom: '8px', padding: '8px', borderRadius: '4px', 
-              background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.3)',
-              fontSize: '10px', color: '#81C784' 
-            }}>
-              💡 {opencodeStatus.recommendation}
-            </div>
-          )}
-
-          {/* Launch Desktop Button */}
-          {opencodeStatus?.installed && !opencodeStatus.desktopRunning && (
-            <button
-              onClick={handleLaunchDesktop}
+          {/* Task Execution */}
+          <div style={{ marginTop: '16px' }}>
+            <h4 style={{ color: '#4FC3F7', marginBottom: '8px' }}>⚡ تنفيذ مهمة</h4>
+            <textarea
+              value={taskGoal}
+              onChange={(e) => setTaskGoal(e.target.value)}
+              placeholder="اكتب المهمة المطلوبة... مثال: أنشئ ملف index.html بسيط"
               style={{
-                width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: 'none',
-                background: 'linear-gradient(135deg,#9C27B0,#7B1FA2)',
-                color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '12px'
+                width: '100%', height: '80px', padding: '8px', borderRadius: '4px',
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)',
+                color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={handleExecuteTask}
+              disabled={!connected || !taskGoal.trim() || taskLoading}
+              style={{
+                width: '100%', padding: '10px', marginTop: '8px', borderRadius: '4px', border: 'none',
+                background: !connected || !taskGoal.trim() || taskLoading
+                  ? '#444'
+                  : 'linear-gradient(135deg,#4FC3F7,#0288D1)',
+                color: '#fff', fontWeight: 700,
+                cursor: !connected || !taskGoal.trim() || taskLoading ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
               }}
             >
-              🚀 Launch OpenCode Desktop
+              {taskLoading ? '⏳ جاري التنفيذ...' : '🚀 تنفيذ المهمة'}
             </button>
-          )}
-
-          {/* Provider selector */}
-          <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Provider:</label>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {[
-                { id: 'google', model: 'gemini-2.0-flash' },
-                { id: 'openai', model: 'gpt-4o' },
-                { id: 'anthropic', model: 'claude-3-5-sonnet' },
-                { id: 'groq', model: 'llama-3.1-70b' },
-                { id: 'ollama', model: 'llama3' },
-                { id: 'openrouter', model: 'anthropic/claude-3-5-sonnet' },
-              ].map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { setOpencodeProvider(p.id); setOpencodeModel(p.model) }}
-                  style={{
-                    padding: '4px 8px', borderRadius: '12px', border: 'none',
-                    background: opencodeProvider === p.id ? '#9C27B0' : 'rgba(156,39,176,0.15)',
-                    color: opencodeProvider === p.id ? '#fff' : '#CE93D8',
-                    fontSize: '10px', cursor: 'pointer'
-                  }}
-                >
-                  {p.id}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Model input */}
-          <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Model:</label>
-            <input
-              value={opencodeModel}
-              onChange={(e) => setOpencodeModel(e.target.value)}
-              placeholder="e.g., gemini-2.0-flash, gpt-4o, claude-3-5-sonnet"
-              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          {/* File path input */}
-          <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>File path (optional):</label>
-            <input
-              value={opencodeFile}
-              onChange={(e) => setOpencodeFile(e.target.value)}
-              placeholder="e.g., /home/user/project/src/app.ts"
-              style={{ width: '100%', padding: '6px 8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '11px', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          {/* Input */}
-          <div style={{ marginBottom: '8px' }}>
-            <label style={{ fontSize: '10px', color: '#888', marginBottom: '4px', display: 'block' }}>Your request:</label>
-            <textarea
-              value={opencodeInput}
-              onChange={(e) => setOpencodeInput(e.target.value)}
-              placeholder=" Ask OpenCode to write code, fix bugs, explain code..."
-              onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleOpenCode() }}
-              style={{ width: '100%', height: '80px', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontFamily: 'monospace', fontSize: '11px', resize: 'vertical', boxSizing: 'border-box' }}
-            />
-          </div>
-
-          <button
-            onClick={handleOpenCode}
-            disabled={!connected || !opencodeInput.trim() || opencodeLoading}
-            style={{
-              width: '100%', padding: '10px', borderRadius: '4px', border: 'none',
-              background: !connected || !opencodeInput.trim() || opencodeLoading ? '#444' : 'linear-gradient(135deg,#9C27B0,#7B1FA2)',
-              color: '#fff', fontWeight: 700, cursor: !connected || !opencodeInput.trim() || opencodeLoading ? 'not-allowed' : 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            {opencodeLoading ? '⏳ Running...' : '💻 Run OpenCode CLI'}
-          </button>
-
-          {/* Output */}
-          {opencodeOutput && (
-            <pre style={{
-              marginTop: '8px', padding: '8px', borderRadius: '4px',
-              background: 'rgba(0,0,0,0.3)', color: '#CE93D8',
-              fontFamily: 'monospace', fontSize: '10px', whiteSpace: 'pre-wrap',
-              maxHeight: '300px', overflow: 'auto'
+          {/* Task Result */}
+          {taskResult && (
+            <div style={{
+              marginTop: '12px', padding: '10px', borderRadius: '8px',
+              background: taskResult.success ? 'rgba(76,175,80,0.1)' : 'rgba(244,67,54,0.1)',
+              border: `1px solid ${taskResult.success ? 'rgba(76,175,80,0.3)' : 'rgba(244,67,54,0.3)'}`,
             }}>
-              {opencodeOutput}
-            </pre>
+              <div style={{ fontWeight: 700, color: taskResult.success ? '#4CAF50' : '#f44336', marginBottom: '6px' }}>
+                {taskResult.success ? '✅ نجح التنفيذ' : '❌ فشل التنفيذ'} — الأداة: {taskResult.tool}
+              </div>
+              <p style={{ fontSize: '11px', color: '#ccc', margin: '0 0 8px' }}>{taskResult.summary}</p>
+              {taskResult.files && taskResult.files.length > 0 && (
+                <div style={{ fontSize: '10px', color: '#888' }}>
+                  📁 الملفات المعدلة: {taskResult.files.join(', ')}
+                </div>
+              )}
+              {taskResult.steps.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  {taskResult.steps.map((step, i) => (
+                    <div key={i} style={{
+                      fontSize: '10px', padding: '4px 8px', marginBottom: '2px', borderRadius: '4px',
+                      background: 'rgba(255,255,255,0.03)',
+                      color: step.success ? '#4CAF50' : '#f44336',
+                    }}>
+                      {step.success ? '✅' : '❌'} {step.tool}: {step.action} ({step.duration}ms)
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
-
-          {/* Tip */}
-          <div style={{ marginTop: '10px', padding: '8px', borderRadius: '4px', background: 'rgba(156,39,176,0.1)', border: '1px solid rgba(156,39,176,0.3)', fontSize: '10px', color: '#CE93D8' }}>
-            💡 For best experience, use OpenCode Desktop App for coding tasks. Click "Launch" above to open it.
-          </div>
         </div>
       )}
 

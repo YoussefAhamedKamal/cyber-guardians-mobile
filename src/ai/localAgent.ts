@@ -10,8 +10,10 @@ import type {
   AIChatResult,
   FileOperationResult,
   GrepResult,
-  OpenCodeStatus,
-  OpenCodeResult
+  TaskDefinition,
+  TaskResult,
+  ToolSettings,
+  ToolStatusResult,
 } from '../types/localAgent'
 
 let ws: WebSocket | null = null
@@ -96,7 +98,7 @@ export function isAgentConnected(): boolean {
 
 const VALID_MESSAGE_TYPES = new Set([
   'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'list-installs',
-  'ai-chat', 'ai-providers', 'file-op', 'grep', 'opencode', 'opencode-status', 'opencode-sessions', 'opencode-launch'
+  'ai-chat', 'ai-providers', 'file-op', 'grep', 'task', 'tool-status', 'tool-settings'
 ])
 
 async function sendMessage(type: string, payload: any, timeout: number = 60000): Promise<any> {
@@ -194,19 +196,16 @@ export async function grepSearch(dir: string, query: string, include?: string): 
   return sendMessage('grep', { dir, query, include })
 }
 
-// OpenCode functions
-export async function runOpenCodeAgent(prompt: string, options?: { model?: string; provider?: string; filePath?: string }): Promise<OpenCodeResult> {
-  return sendMessage('opencode', { prompt, ...options }, 300000) // 5 minutes for OpenCode
+// ─── Multi-Tool System Functions ───────────────────────────────────
+
+export async function executeTask(task: TaskDefinition, settings?: ToolSettings): Promise<TaskResult> {
+  return sendMessage('task', { task, settings }, 300000) // 5 minutes for tasks
 }
 
-export async function getOpenCodeStatus(): Promise<OpenCodeStatus> {
-  return sendMessage('opencode-status', {})
+export async function getToolStatus(): Promise<ToolStatusResult> {
+  return sendMessage('tool-status', {})
 }
 
-export async function listOpenCodeSessions(): Promise<string[]> {
-  return sendMessage('opencode-sessions', {})
-}
-
-export async function launchOpenCodeDesktop(workDir?: string): Promise<{ success: boolean; error?: string; message?: string }> {
-  return sendMessage('opencode-launch', { workDir })
+export async function saveToolSettings(settings: Partial<ToolSettings>): Promise<ToolSettings> {
+  return sendMessage('tool-settings', { settings })
 }

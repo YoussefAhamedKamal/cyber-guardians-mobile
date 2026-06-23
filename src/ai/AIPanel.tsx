@@ -1432,6 +1432,42 @@ function FacultyAIChat() {
         }
       }
 
+      // Check if user wants to use Agent tools (Faculty)
+      if (lastUser?.role === 'user') {
+        const agentRequest = detectAgentRequest(lastUser.content)
+        if (agentRequest) {
+          const agentStore = useLocalAgentStore.getState()
+          if (agentStore.connected) {
+            ai.setFacultyStreaming('🤖 جارٍ تنفيذ الأمر عبر الوكيل المحلي...')
+            try {
+              let result: any
+              switch (agentRequest.type) {
+                case 'scan':
+                  result = await agentStore.scan(agentRequest.params.tool || 'semgrep', agentRequest.params.code || '// paste code here', agentRequest.params.language || 'javascript')
+                  break
+                case 'find-skills':
+                  result = await agentStore.findSkills(agentRequest.params.query || '')
+                  break
+                case 'execute':
+                  result = await agentStore.execute(agentRequest.params.command || '')
+                  break
+                case 'install-skill':
+                  result = await agentStore.installSkill(agentRequest.params.packageName || '')
+                  break
+              }
+              const resultMsg = `✅ نتيجة الوكيل:\n\n${typeof result === 'string' ? result : JSON.stringify(result, null, 2)}`
+              ai.addFacultyMessage({ role: 'assistant', content: resultMsg })
+              ai.setLoading(false); ai.setFacultyStreaming('')
+              return
+            } catch (err: any) {
+              ai.addFacultyMessage({ role: 'assistant', content: `⚠️ خطأ في الوكيل: ${err.message}\n\nتأكد من أن الوكيل متصل عبر تبويب "وكيل".` })
+              ai.setLoading(false); ai.setFacultyStreaming('')
+              return
+            }
+          }
+        }
+      }
+
       if (ai.searchEnabled) {
         ai.setFacultyStreaming('🔍 جارٍ البحث...')
         if (lastUser?.content) {
