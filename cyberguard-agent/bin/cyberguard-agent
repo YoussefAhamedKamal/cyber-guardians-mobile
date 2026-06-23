@@ -9,8 +9,8 @@ const command = args[0]
 function printHelp() {
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║  @cyberguard/agent — Universal Skill/Plugin Executor       ║
-║  Cyber Guardians Local Agent v1.0.0                        ║
+║  @cyberguard/agent — Multi-Tool Agent System               ║
+║  Cyber Guardians Local Agent v2.0.0                        ║
 ╚══════════════════════════════════════════════════════════════╝
 
 Usage:
@@ -21,14 +21,26 @@ Usage:
 
 Options:
   --port <number>     Server port (default: 3001)
-  --token <string>    Auth token (default: auto-generated)
+  --token <string>    Auth token (default: empty - no auth)
   --profile <name>    Config profile: minimal|full|education (default: full)
   --verbose           Enable verbose logging
+
+Multi-Tool System:
+  Aider (priority)  →  Cline (fallback)  →  Custom Agent (always available)
+
+Supported Tools:
+  semgrep, codeql, slither, libfuzzer, skills-discovery
+  aider, cline, custom-agent
+
+AI Providers:
+  Gemini, Ollama, Groq, HuggingFace, OpenRouter (auto-fallback)
 
 Examples:
   cyberguard-agent start --port 3001 --profile full
   cyberguard-agent start --token my-secret-token
+  cyberguard-agent start --verbose
   cyberguard-agent status
+  cyberguard-agent tools
 `)
 }
 
@@ -71,7 +83,23 @@ async function main() {
       break
     }
     case 'tools': {
-      console.log('Available tools: semgrep, codeql, slither, libfuzzer, skills-discovery')
+      console.log(`
+Available Tools:
+
+  Security Tools:
+    semgrep     - Static analysis for many languages
+    codeql      - Deep code analysis
+    slither     - Solidity smart contract analysis
+    libfuzzer   - Coverage-guided fuzzing
+
+  Multi-Tool System:
+    aider       - AI-powered coding assistant (priority 1)
+    cline       - Alternative AI coding tool (priority 2)
+    custom      - Custom agent using AI providers (always available)
+
+  Skills:
+    skills-discovery - Find and install skills from marketplace
+`)
       break
     }
     case 'help':

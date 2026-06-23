@@ -46,7 +46,7 @@ export function createServer(config: AgentConfig) {
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
           status: 'ok',
-          version: '1.0.0',
+          version: '2.0.0',
           platform: platform.os,
           tools: ['semgrep', 'codeql', 'slither', 'libfuzzer', 'skills-discovery'],
         }))
@@ -103,7 +103,7 @@ export function createServer(config: AgentConfig) {
         status: 'complete',
         result: {
           message: 'CyberGuard Agent connected',
-          version: '1.0.0',
+          version: '2.0.0',
           platform: platform.os,
         },
       }))

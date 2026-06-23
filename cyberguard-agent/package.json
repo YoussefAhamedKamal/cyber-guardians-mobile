@@ -1,7 +1,7 @@
 {
   "name": "@cyberguard/agent",
-  "version": "1.2.0",
-  "description": "Local Agent for Cyber Guardians - Universal Skill/Plugin Executor with AI Providers & OpenCode",
+  "version": "2.0.0",
+  "description": "Local Agent for Cyber Guardians - Multi-Tool Agent System (Aider/Cline/Custom)",
   "type": "module",
   "bin": {
     "cyberguard-agent": "./bin/cyberguard-agent"
