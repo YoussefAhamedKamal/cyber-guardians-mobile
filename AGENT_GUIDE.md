@@ -1057,32 +1057,122 @@ docker rm cyberguard-agent
 ### 10.2. تشغيل مع Frontend (Docker Compose)
 
 ```bash
+# إعداد ملف .env
+cp .env.example .env
+nano .env  # أدخل مفاتيح AI
+
 # تشغيل كل شيء
 docker-compose up -d
 
 # عرض السجلات
 docker-compose logs -f
 
+# عرض سجلات Agent فقط
+docker-compose logs -f agent
+
+# عرض سجلات Frontend فقط
+docker-compose logs -f frontend
+
+# إعادة تشغيل Agent
+docker-compose restart agent
+
 # إيقاف كل شيء
 docker-compose down
+
+# حذف كل شيء (بما في ذلك البيانات)
+docker-compose down -v
 ```
 
-### 10.3. إعدادات Docker
+### 10.3. إعداد مفاتيح AI
+
+```bash
+# الطريقة 1: عبر ملف .env
+echo 'GEMINI_API_KEY=your-key-here' >> .env
+
+# الطريقة 2: عبر environment variables
+export GEMINI_API_KEY=your-key-here
+docker-compose up -d
+
+# الطريقة 3: عبر docker run
+docker run -d \
+  -e GEMINI_API_KEY=your-key-here \
+  -e GROQ_API_KEY=your-key-here \
+  -p 3001:3001 \
+  cyberguard-agent
+```
+
+### 10.4. إعدادات Docker
 
 | الإعداد | القيمة | الوصف |
 |---------|--------|-------|
-| `GEMINI_API_KEY` | optional | مفتاح Gemini API |
-| `GROQ_API_KEY` | optional | مفتاح Groq API |
+| `GEMINI_API_KEY` | optional | مفتاح Gemini API (المزود الافتراضي) |
+| `GROQ_API_KEY` | optional | مفتاح Groq API (سريع جداً) |
 | `HUGGINGFACE_API_KEY` | optional | مفتاح HuggingFace API |
 | `OPENROUTER_API_KEY` | optional | مفتاح OpenRouter API |
-| `PORT` | 3001 | منفذ الخادم |
+| `AGENT_PORT` | 3001 | منفذ الخادم |
+| `AGENT_TOKEN` | optional | مفتاح المصادقة |
+| `AGENT_PROFILE` | full | الإعدادات: minimal/full/education |
+| `AGENT_VERBOSE` | false | السجلات التفصيلية |
 
-### 10.4. ملاحظات Docker
+### 10.5. مزايا Docker
 
-- Agent يعمل على Linux فقط في Docker (OpenCode Desktop غير مدعوم)
-- البيانات محفوظة في Docker volumes
-- Health check متضمن في Dockerfile
-- يُفضل استخدام Docker Compose لإدارة كل الخدمات
+| الميزة | الوصف |
+|--------|-------|
+| **عزل بيئي** | كل خدمة في حاوية منفصلة |
+| **سهولة النشر** | أمر واحد لتشغيل كل شيء |
+| **تكرار الإنتاج** | نفس البيئة على كل الأجهزة |
+| **الصيانة** | تحديث وتطبيق بسهولة |
+| **البيانات** | محفوظة في Docker volumes |
+| **Health Check** | مراقبة صحة الخدمات تلقائياً |
+| **Auto-restart** | إعادة تشغيل تلقائية عند التعطل |
+
+### 10.6. توافق Docker مع OpenCode والوكلاء
+
+| المكون | الحالة | ملاحظات |
+|--------|--------|---------|
+| **Agent Core** | ✅ مدعوم بالكامل | جميع الوظائف تعمل |
+| **AI Providers** | ✅ مدعوم بالكامل | Gemini, Groq, HuggingFace, OpenRouter |
+| **File Operations** | ✅ مدعوم بالكامل | 8 عمليات ملفات |
+| **Grep Search** | ✅ مدعوم بالكامل | بحث في محتوى الملفات |
+| **OpenCode CLI** | ⚠️ محدود | يعمل عبر Docker nhưng بطيء |
+| **OpenCode Desktop** | ❌ غير مدعوم | يحتاج GUI |
+| **Skills Discovery** | ✅ مدعوم بالكامل | npx skills |
+| **Security Tools** | ✅ مدعوم بالكامل | Semgrep, CodeQL, Slither |
+
+### 10.7. مقارنة Docker vs npm
+
+| الميزة | Docker | npm |
+|--------|--------|-----|
+| **التثبيت** | `docker-compose up -d` | `npm install -g` |
+| **العزل** | ✅ حاوية منفصلة | ❌ يتشارك النظام |
+| **الصيانة** | سهلة (docker pull) | متوسطة (npm update) |
+| **الأداء** | أبطأ قليلاً | أسرع |
+| **الذاكرة** | يستخدم المزيد | يستخدم أقل |
+| **التوافق** | Linux فقط | جميع الأنظمة |
+| **OpenCode Desktop** | ❌ | ✅ |
+| **الإنتاج** | ✅ مُوصى به | ⚠️ للتطوير فقط |
+
+### 10.8. استكشاف الأخطاء
+
+```bash
+# فحص حالة الحاويات
+docker-compose ps
+
+# عرض السجلات
+docker-compose logs agent
+
+# الدخول إلى حاوية Agent
+docker-compose exec agent sh
+
+# فحص الاتصال بالـ API
+curl http://localhost:3001/health
+
+# إعادة بناء الصور
+docker-compose build --no-cache
+
+# مسح الصور القديمة
+docker image prune -a
+```
 
 ---
 
