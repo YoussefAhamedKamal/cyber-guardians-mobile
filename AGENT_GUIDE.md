@@ -1027,6 +1027,63 @@ sudo systemctl status cyberguard-agent
 
 ---
 
+## 10. Docker Support
+
+### 10.1. تشغيل Agent بـ Docker
+
+```bash
+# بناء صورة Docker
+cd cyberguard-agent
+docker build -t cyberguard-agent .
+
+# تشغيل Agent
+docker run -d \
+  --name cyberguard-agent \
+  -p 3001:3001 \
+  -v agent-data:/data \
+  -e GEMINI_API_KEY=your-api-key \
+  cyberguard-agent
+
+# عرض السجلات
+docker logs -f cyberguard-agent
+
+# إيقاف وحذف
+docker stop cyberguard-agent
+docker rm cyberguard-agent
+```
+
+### 10.2. تشغيل مع Frontend (Docker Compose)
+
+```bash
+# تشغيل كل شيء
+docker-compose up -d
+
+# عرض السجلات
+docker-compose logs -f
+
+# إيقاف كل شيء
+docker-compose down
+```
+
+### 10.3. إعدادات Docker
+
+| الإعداد | القيمة | الوصف |
+|---------|--------|-------|
+| `GEMINI_API_KEY` | optional | مفتاح Gemini API |
+| `GROQ_API_KEY` | optional | مفتاح Groq API |
+| `HUGGINGFACE_API_KEY` | optional | مفتاح HuggingFace API |
+| `OPENROUTER_API_KEY` | optional | مفتاح OpenRouter API |
+| `PORT` | 3001 | منفذ الخادم |
+
+### 10.4. ملاحظات Docker
+
+- Agent يعمل على Linux فقط في Docker (OpenCode Desktop غير مدعوم)
+- البيانات محفوظة في Docker volumes
+- Health check متضمن في Dockerfile
+- يُفضل استخدام Docker Compose لإدارة كل الخدمات
+
+---
+
 ## مرجع سريع
 
 | الأمر | الوصف |
@@ -1046,5 +1103,5 @@ sudo systemctl status cyberguard-agent
 ---
 
 > **تُحديث آخر:** يونيو 2026
-> **الإصدار:** 1.2.1
+> **الإصدار:** 1.2.2
 > **المطور:** Cyber Guardians Team
