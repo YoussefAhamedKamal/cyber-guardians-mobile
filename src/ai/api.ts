@@ -172,9 +172,26 @@ async function proxyFetch(targetUrl: string, init: RequestInit, useDirectApi = f
 
   const proxyUrl = `${worker.url.replace(/\/+$/, '')}?target=${encodeURIComponent(targetUrl)}`
   const headers = new Headers(init.headers)
-  headers.set('X-Auth-Token', worker.authToken)
+  if (worker.authToken) {
+    headers.set('X-Auth-Token', worker.authToken)
+  }
 
-  return fetch(proxyUrl, { ...init, headers })
+  const response = await fetch(proxyUrl, { ...init, headers })
+
+  // Check if response is JSON
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('json')) {
+    const text = await response.text()
+    // Try to parse as JSON anyway (some APIs don't set content-type)
+    try {
+      JSON.parse(text)
+    } catch {
+      // Not JSON - return error response
+      throw new Error(`⚠️ الاستجابة ليست JSON: ${text.slice(0, 200)}`)
+    }
+  }
+
+  return response
 }
 
 export async function sendChatMessage(
@@ -343,13 +360,24 @@ export async function testConnection(
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
-      return `⚠️ خطأ ${res.status}: ${errText.slice(0, 200) || res.statusText}`
+      // Try to parse error as JSON
+      let errorMsg = errText.slice(0, 200) || res.statusText
+      try {
+        const errJson = JSON.parse(errText)
+        errorMsg = errJson.error?.message || errJson.error || errText.slice(0, 200)
+      } catch {}
+      return `⚠️ خطأ ${res.status}: ${errorMsg}`
     }
 
-    const data = await res.json()
-    const content = data.choices?.[0]?.message?.content
-    if (content) return '✅ متصل — تم الاستجابة بنجاح'
-    return '✅ متصل (استجابة غير متوقعة)'
+    const text = await res.text()
+    try {
+      const data = JSON.parse(text)
+      const content = data.choices?.[0]?.message?.content
+      if (content) return '✅ متصل — تم الاستجابة بنجاح'
+      return '✅ متصل (استجابة غير متوقعة)'
+    } catch {
+      return `⚠️ الاستجابة ليست JSON: ${text.slice(0, 200)}`
+    }
   } catch (err: any) {
     return `⚠️ فشل الاتصال: ${err?.message || 'خطأ غير معروف'}`
   }

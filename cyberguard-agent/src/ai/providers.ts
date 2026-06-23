@@ -307,7 +307,7 @@ export class OpenRouterProvider implements AIProvider {
 export class NvidiaProvider implements AIProvider {
   name = 'nvidia'
   type = 'cloud' as const
-  models = ['nvidia/nemotron-3-ultra-50b-a50b', 'nvidia/llama-3.1-nemotron-70b-instruct', 'meta/llama-3.1-405b-instruct']
+  models = ['meta/llama-3.1-8b-instruct', 'nvidia/llama-3.1-nemotron-70b-instruct', 'meta/llama-3.3-70b-instruct']
   private apiKey: string
   private baseUrl = 'https://integrate.api.nvidia.com/v1'
 
