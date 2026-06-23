@@ -48,7 +48,15 @@ export default {
       })
     }
 
-    const allowedHosts = ['api.openai.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'openrouter.ai']
+    const allowedHosts = [
+      'api.openai.com',
+      'generativelanguage.googleapis.com',  // Gemini
+      'api.anthropic.com',
+      'openrouter.ai',
+      'integrate.api.nvidia.com',          // NVIDIA
+      'api.groq.com',                      // Groq
+      'api-inference.huggingface.co',      // HuggingFace
+    ]
     if (!allowedHosts.includes(targetUrl.hostname)) {
       return new Response(JSON.stringify({ error: 'Host not allowed: ' + targetUrl.hostname }), {
         status: 403,
