@@ -303,6 +303,431 @@ export class OpenRouterProvider implements AIProvider {
   }
 }
 
+// ==================== NVIDIA NIM ====================
+export class NvidiaProvider implements AIProvider {
+  name = 'nvidia'
+  type = 'cloud' as const
+  models = ['nvidia/nemotron-3-ultra-50b-a50b', 'nvidia/llama-3.1-nemotron-70b-instruct', 'meta/llama-3.1-405b-instruct']
+  private apiKey: string
+  private baseUrl = 'https://integrate.api.nvidia.com/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`NVIDIA error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'nvidia',
+      usage: data.usage
+    }
+  }
+}
+
+// ==================== MISTRAL ====================
+export class MistralProvider implements AIProvider {
+  name = 'mistral'
+  type = 'cloud' as const
+  models = ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest', 'open-mistral-nemo']
+  private apiKey: string
+  private baseUrl = 'https://api.mistral.ai/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Mistral error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'mistral',
+      usage: data.usage
+    }
+  }
+}
+
+// ==================== CEREBRAS ====================
+export class CerebrasProvider implements AIProvider {
+  name = 'cerebras'
+  type = 'cloud' as const
+  models = ['llama-3.3-70b', 'llama-3.1-8b', 'llama-3.1-70b']
+  private apiKey: string
+  private baseUrl = 'https://api.cerebras.ai/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Cerebras error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'cerebras',
+      usage: data.usage
+    }
+  }
+}
+
+// ==================== COHERE ====================
+export class CohereProvider implements AIProvider {
+  name = 'cohere'
+  type = 'cloud' as const
+  models = ['command-r-plus', 'command-r', 'command-light']
+  private apiKey: string
+  private baseUrl = 'https://api.cohere.ai/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Cohere error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.message?.content?.[0]?.text || data.text || '',
+      model,
+      provider: 'cohere',
+      usage: data.meta?.billed_units
+    }
+  }
+}
+
+// ==================== GITHUB MODELS ====================
+export class GitHubModelsProvider implements AIProvider {
+  name = 'github'
+  type = 'cloud' as const
+  models = ['microsoft/Phi-3-mini-4k-instruct', 'microsoft/Phi-3-medium-4k-instruct', 'meta/llama-3.1-8b-instruct']
+  private apiKey: string
+  private baseUrl = 'https://models.inference.ai.azure.com'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`GitHub Models error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'github',
+      usage: data.usage
+    }
+  }
+}
+
+// ==================== CLOUDFLARE WORKERS AI ====================
+export class CloudflareProvider implements AIProvider {
+  name = 'cloudflare'
+  type = 'cloud' as const
+  models = ['@cf/meta/llama-3.1-8b-instruct', '@cf/mistral/mistral-7b-instruct-v0.2', '@cf/qwen/qwen1.5-14b-chat-awq']
+  private apiKey: string
+  private accountId: string
+  private baseUrl = 'https://api.cloudflare.com/client/v4'
+
+  constructor(apiKey: string, accountId?: string) {
+    this.apiKey = apiKey
+    this.accountId = accountId || ''
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/accounts/${this.accountId}/ai/models/search`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/accounts/${this.accountId}/ai/run/${model}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Cloudflare error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.result?.response || '',
+      model,
+      provider: 'cloudflare',
+      usage: data.result?.usage
+    }
+  }
+}
+
+// ==================== VERCEL AI GATEWAY ====================
+export class VercelProvider implements AIProvider {
+  name = 'vercel'
+  type = 'cloud' as const
+  models = ['openai:gpt-4o', 'openai:gpt-4o-mini', 'anthropic:claude-3-5-sonnet']
+  private apiKey: string
+  private baseUrl = 'https://api.vercel.ai/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Vercel error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'vercel',
+      usage: data.usage
+    }
+  }
+}
+
+// ==================== OPENCODE ZEN ====================
+export class OpenCodeZenProvider implements AIProvider {
+  name = 'opencodezen'
+  type = 'cloud' as const
+  models = ['zen-1', 'zen-2', 'zen-code']
+  private apiKey: string
+  private baseUrl = 'https://api.opencodezen.com/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`OpenCode Zen error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'opencodezen',
+      usage: data.usage
+    }
+  }
+}
+
 // ==================== PROVIDER MANAGER ====================
 export class AIManager {
   private providers: Map<string, AIProvider> = new Map()

@@ -13,6 +13,15 @@ export interface AgentConfig {
   groqKey: string
   huggingfaceKey: string
   openrouterKey: string
+  nvidiaKey: string
+  mistralKey: string
+  cerebrasKey: string
+  cohereKey: string
+  githubKey: string
+  cloudflareKey: string
+  cloudflareAccountId: string
+  vercelKey: string
+  opencodezenKey: string
 }
 
 const PROFILES: Record<string, Partial<AgentConfig>> = {
@@ -53,5 +62,14 @@ export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
     groqKey: overrides.groqKey || process.env.GROQ_API_KEY || '',
     huggingfaceKey: overrides.huggingfaceKey || process.env.HUGGINGFACE_API_KEY || '',
     openrouterKey: overrides.openrouterKey || process.env.OPENROUTER_API_KEY || '',
+    nvidiaKey: overrides.nvidiaKey || process.env.NVIDIA_API_KEY || '',
+    mistralKey: overrides.mistralKey || process.env.MISTRAL_API_KEY || '',
+    cerebrasKey: overrides.cerebrasKey || process.env.CEREBRAS_API_KEY || '',
+    cohereKey: overrides.cohereKey || process.env.COHERE_API_KEY || '',
+    githubKey: overrides.githubKey || process.env.GITHUB_API_KEY || '',
+    cloudflareKey: overrides.cloudflareKey || process.env.CLOUDFLARE_API_KEY || '',
+    cloudflareAccountId: overrides.cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '',
+    vercelKey: overrides.vercelKey || process.env.VERCEL_API_KEY || '',
+    opencodezenKey: overrides.opencodezenKey || process.env.OPENCODEZEN_API_KEY || '',
   }
 }

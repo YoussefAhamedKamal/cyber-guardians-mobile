@@ -15,7 +15,7 @@ import { runLibFuzzer } from './plugins/libfuzzer.js'
 import { findSkills, installSkill } from './plugins/skillsDiscovery.js'
 import { SmartCache } from './cache/smartCache.js'
 import { log, verbose } from './utils/logger.js'
-import { aiManager, GeminiProvider, GroqProvider, HuggingFaceProvider, OpenRouterProvider, OllamaProvider, type AIMessage } from './ai/providers.js'
+import { aiManager, GeminiProvider, GroqProvider, HuggingFaceProvider, OpenRouterProvider, OllamaProvider, NvidiaProvider, MistralProvider, CerebrasProvider, CohereProvider, GitHubModelsProvider, CloudflareProvider, VercelProvider, OpenCodeZenProvider, type AIMessage } from './ai/providers.js'
 import { executeFileOp, grepFiles } from './ai/fileOps.js'
 import { getTaskExecutor } from './ai/taskExecutor.js'
 import type { ToolName } from './ai/types.js'
@@ -366,6 +366,38 @@ export function createServer(config: AgentConfig) {
     if (config.openrouterKey) {
       aiManager.registerProvider(new OpenRouterProvider(config.openrouterKey))
       log('AI: OpenRouter provider registered')
+    }
+    if (config.nvidiaKey) {
+      aiManager.registerProvider(new NvidiaProvider(config.nvidiaKey))
+      log('AI: NVIDIA provider registered')
+    }
+    if (config.mistralKey) {
+      aiManager.registerProvider(new MistralProvider(config.mistralKey))
+      log('AI: Mistral provider registered')
+    }
+    if (config.cerebrasKey) {
+      aiManager.registerProvider(new CerebrasProvider(config.cerebrasKey))
+      log('AI: Cerebras provider registered')
+    }
+    if (config.cohereKey) {
+      aiManager.registerProvider(new CohereProvider(config.cohereKey))
+      log('AI: Cohere provider registered')
+    }
+    if (config.githubKey) {
+      aiManager.registerProvider(new GitHubModelsProvider(config.githubKey))
+      log('AI: GitHub Models provider registered')
+    }
+    if (config.cloudflareKey) {
+      aiManager.registerProvider(new CloudflareProvider(config.cloudflareKey, config.cloudflareAccountId))
+      log('AI: Cloudflare Workers AI provider registered')
+    }
+    if (config.vercelKey) {
+      aiManager.registerProvider(new VercelProvider(config.vercelKey))
+      log('AI: Vercel AI Gateway provider registered')
+    }
+    if (config.opencodezenKey) {
+      aiManager.registerProvider(new OpenCodeZenProvider(config.opencodezenKey))
+      log('AI: OpenCode Zen provider registered')
     }
     // Ollama is always available (local)
     const ollama = new OllamaProvider()

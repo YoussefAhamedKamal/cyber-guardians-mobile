@@ -56,6 +56,13 @@ export default {
       'integrate.api.nvidia.com',          // NVIDIA
       'api.groq.com',                      // Groq
       'api-inference.huggingface.co',      // HuggingFace
+      'api.mistral.ai',                    // Mistral
+      'api.cerebras.ai',                   // Cerebras
+      'api.cohere.ai',                     // Cohere
+      'models.inference.ai.azure.com',     // GitHub Models
+      'api.cloudflare.com',                // Cloudflare Workers AI
+      'api.vercel.ai',                     // Vercel AI Gateway
+      'api.opencodezen.com',               // OpenCode Zen
     ]
     if (!allowedHosts.includes(targetUrl.hostname)) {
       return new Response(JSON.stringify({ error: 'Host not allowed: ' + targetUrl.hostname }), {
