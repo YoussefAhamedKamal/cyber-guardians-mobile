@@ -154,9 +154,7 @@ function buildBody(modelId: string, messages: AIMessage[], maxTokens?: number) {
     model: modelId,
     messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
-  }
-  if (maxTokens && maxTokens > 0) {
-    body.max_tokens = maxTokens
+    max_tokens: maxTokens || 1024,
   }
   return body
 }
@@ -212,7 +210,7 @@ export async function sendChatMessage(
   }
 
   const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
-  const body = buildBody(modelId, messages)
+  const body = buildBody(modelId, messages, 1024)
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
