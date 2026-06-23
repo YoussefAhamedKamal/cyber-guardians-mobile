@@ -85,6 +85,16 @@ export default {
 
     const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined
 
+    // Debug: Log request details
+    console.log('Worker Debug:', {
+      target: targetUrl.toString(),
+      method: request.method,
+      hasBody: !!body,
+      bodySize: body ? body.byteLength : 0,
+      contentType: headers.get('Content-Type'),
+      hasAuth: !!headers.get('Authorization'),
+    })
+
     try {
       const resp = await fetch(targetUrl.toString(), {
         method: request.method,
