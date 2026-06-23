@@ -590,7 +590,7 @@ export OPENROUTER_API_KEY="your-key"  # Multi-model
 | Profile | Description |
 |---|---|
 | minimal | Basic scanning only |
-| full | All tools + AI providers + file ops + OpenCode |
+| full | All tools + AI providers + file ops + Multi-tool (Aider/Cline/Custom) |
 | education | Education-focused configuration |
 
 ### Protocol
@@ -638,6 +638,21 @@ Game ↔ Agent via WebSocket (`ws://localhost:3002`)
 ---
 
 ## [ORPHANS & PENDING]
+
+### Completed — v11.0.0 (Multi-Tool Agent System)
+- [x] **Multi-tool agent system** — Aider (priority), Cline, Custom Agent with automatic fallback
+- [x] **ToolManager** — Multi-tool management with fallback mechanism
+- [x] **AiderTool** — Aider CLI integration (priority 1)
+- [x] **ClineTool** — Cline CLI integration (priority 2)
+- [x] **CustomAgent** — Custom agent using AI providers directly (always available)
+- [x] **TaskExecutor** — Unified task execution with settings
+- [x] **3 new message types** — task, tool-status, tool-settings
+- [x] **ToolSettingsPanel** — Tool selection and settings UI
+- [x] **Faculty AI agent support** — Both Student and Faculty AI can use agent
+- [x] **LocalAgentTab updated** — Replaced OpenCode tab with Tools tab
+- [x] **localAgentStore updated** — Added tool settings state
+- [x] **OpenCode removed** — Replaced by multi-tool system
+- [x] **PROJECT_MAP.md updated** — Reflects v11.0.0 with all new features
 
 ### Completed — v10.2.0 (Docker + Audit Fixes)
 - [x] **Docker support** — Agent + Frontend containers with docker-compose
