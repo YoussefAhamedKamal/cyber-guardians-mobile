@@ -378,8 +378,8 @@ export function createServer(config: AgentConfig) {
 
     httpServer.listen(config.port, '0.0.0.0', () => {
       log(`╔══════════════════════════════════════════════════════════════╗`)
-      log(`║  @cyberguard/agent v1.1.0                                   ║`)
-      log(`║  Universal Skill/Plugin Executor + AI Providers             ║`)
+      log(`║  @cyberguard/agent v2.0.0                                   ║`)
+      log(`║  Multi-Tool Agent System (Aider/Cline/Custom)               ║`)
       log(`╚══════════════════════════════════════════════════════════════╝`)
       log(`Server running on ws://localhost:${config.port}`)
       log(`Platform: ${platform.os} (${platform.arch})`)

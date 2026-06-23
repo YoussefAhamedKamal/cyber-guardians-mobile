@@ -97,7 +97,7 @@ export function isAgentConnected(): boolean {
 }
 
 const VALID_MESSAGE_TYPES = new Set([
-  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'list-installs',
+  'status', 'tools', 'scan', 'parse-file', 'execute', 'find-skills', 'install-skill', 'install', 'list-installs',
   'ai-chat', 'ai-providers', 'file-op', 'grep', 'task', 'tool-status', 'tool-settings'
 ])
 
