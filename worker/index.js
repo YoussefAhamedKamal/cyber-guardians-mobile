@@ -71,28 +71,70 @@ export default {
       })
     }
 
-    const headers = new Headers(request.headers)
-    headers.delete('Origin')
-    headers.delete('Referer')
-    headers.delete('X-Auth-Token')
-    headers.set('Host', targetUrl.host)
+    // Build headers for upstream request
+    const headers = new Headers()
+    // Copy important headers from original request
+    const contentType = request.headers.get('Content-Type')
+    if (contentType) headers.set('Content-Type', contentType)
+    const authorization = request.headers.get('Authorization')
+    if (authorization) headers.set('Authorization', authorization)
+    const httpReferer = request.headers.get('HTTP-Referer')
+    if (httpReferer) headers.set('HTTP-Referer', httpReferer)
+    const xTitle = request.headers.get('X-Title')
+    if (xTitle) headers.set('X-Title', xTitle)
 
     const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined
 
-    const resp = await fetch(targetUrl.toString(), {
-      method: request.method,
-      headers,
-      body,
-    })
+    try {
+      const resp = await fetch(targetUrl.toString(), {
+        method: request.method,
+        headers,
+        body,
+      })
 
-    const respHeaders = new Headers(resp.headers)
-    Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
-    respHeaders.delete('Content-Security-Policy')
+      // Check if response is JSON
+      const contentType = resp.headers.get('content-type') || ''
+      const respText = await resp.text()
 
-    return new Response(resp.body, {
-      status: resp.status,
-      statusText: resp.statusText,
-      headers: respHeaders,
-    })
+      // Try to parse as JSON
+      let isJson = false
+      try {
+        JSON.parse(respText)
+        isJson = true
+      } catch {}
+
+      const respHeaders = new Headers(resp.headers)
+      Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
+      respHeaders.delete('Content-Security-Policy')
+
+      if (isJson) {
+        respHeaders.set('Content-Type', 'application/json')
+        return new Response(respText, {
+          status: resp.status,
+          statusText: resp.statusText,
+          headers: respHeaders,
+        })
+      } else {
+        // Return error in JSON format
+        return new Response(JSON.stringify({
+          error: 'Upstream returned non-JSON response',
+          status: resp.status,
+          contentType: contentType,
+          preview: respText.slice(0, 500)
+        }), {
+          status: resp.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    } catch (err) {
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch upstream',
+        message: err.message,
+        target: targetUrl.hostname
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
   },
 }
