@@ -422,6 +422,119 @@ npm start
 
 > ⚠️ **لا تضع مفاتيح API في ملف `.env` داخل المشروع!** لأنها قد تُرفع عن طريق الخطأ إلى GitHub.
 
+#### إضافة نماذج جديدة
+
+```bash
+# الملف: src/ai/providers.ts
+
+# --- Gemini (سطر 31) ---
+models = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3-flash']
+
+# --- Groq (سطر 144) ---
+models = ['llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768', 'gemma-7b-it']
+
+# --- HuggingFace (سطر 197) ---
+models = ['meta-llama/Llama-3-70B-Instruct', 'mistralai/Mixtral-8x7B-Instruct-v0.1', 'google/gemma-7b-it']
+
+# --- OpenRouter (سطر 255) ---
+models = ['meta-llama/llama-3-70b-instruct', 'mistralai/mixtral-8x7b-instruct', 'google/gemma-7b-it:free']
+```
+
+**مثال — إضافة نموذج جديد لـ Groq:**
+
+```typescript
+// غيّر سطر 144 من:
+models = ['llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768', 'gemma-7b-it']
+
+// إلى:
+models = ['llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768', 'gemma-7b-it', 'llama-3.3-70b-versatile']
+```
+
+#### إضافة مزود جديد بالكامل
+
+**الخطوة 1: أضف كلاس في `src/ai/providers.ts`:**
+
+```typescript
+export class MyNewProvider implements AIProvider {
+  name = 'mynewprovider'
+  type = 'cloud' as const
+  models = ['model-1', 'model-2']
+  private apiKey: string
+  private baseUrl = 'https://api.mynewprovider.com/v1'
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'Authorization': `Bearer ${this.apiKey}` }
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
+  async chat(model: string, messages: AIMessage[], options?: ChatOptions): Promise<AIResponse> {
+    const res = await fetch(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 4096,
+      })
+    })
+
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`MyNewProvider error: ${res.status} - ${err}`)
+    }
+
+    const data = await res.json() as any
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      model,
+      provider: 'mynewprovider',
+      usage: data.usage
+    }
+  }
+}
+```
+
+**الخطوة 2: سجّله في `src/server.ts` (بعد سطر 368):**
+
+```typescript
+if (config.mynewproviderKey) {
+  aiManager.registerProvider(new MyNewProvider(config.mynewproviderKey))
+  log('AI: MyNewProvider provider registered')
+}
+```
+
+**الخطوة 3: أضف المفتاح في `src/config.ts` (بعد سطر 55):**
+
+```typescript
+mynewproviderKey: overrides.mynewproviderKey || process.env.MYNEWPROVIDER_API_KEY || '',
+```
+
+**الخطوة 4: عيّن متغير البيئة:**
+
+```bash
+export MYNEWPROVIDER_API_KEY="your-key"
+```
+
+**الخطوة 5: أعد تشغيل الجهة:**
+
+```bash
+npm start
+```
+
 #### استخدام AI عبر WebSocket
 
 ```javascript
