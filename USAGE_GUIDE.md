@@ -1,7 +1,7 @@
 # دليل الاستخدام الشامل — Cyber Guardians Mobile
 
 > لعبة تعليمية تفاعلية ثلاثية الأبعاد لتعليم أساسيات الأمن السيبراني للمراهقين
-> الإصدار: **10.0.0**
+> الإصدار: **10.2.0**
 
 ---
 
@@ -1017,7 +1017,25 @@ npm install -g @cyberguard/agent
 cyberguard-agent --version
 ```
 
-### التشغيل
+### التشغيل عبر Docker (مُوصى به)
+
+```bash
+# تشغيل كل شيء (Agent + Frontend)
+docker-compose up -d
+
+# عرض السجلات
+docker-compose logs -f
+
+# إيقاف كل شيء
+docker-compose down
+
+# تشغيل Agent فقط
+cd cyberguard-agent
+docker build -t cyberguard-agent .
+docker run -d -p 3001:3001 cyberguard-agent
+```
+
+### التشغيل عبر npm
 
 ```bash
 # التشغيل الأساسي
