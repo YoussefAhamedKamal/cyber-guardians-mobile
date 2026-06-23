@@ -8,39 +8,195 @@ const command = args[0]
 
 function printHelp() {
   console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║  @cyberguard/agent — Multi-Tool Agent System               ║
-║  Cyber Guardians Local Agent v2.0.0                        ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════╗
+║  @cyberguard/agent — Multi-Tool Agent System                           ║
+║  Cyber Guardians Local Agent v2.0.0                                    ║
+╚══════════════════════════════════════════════════════════════════════════╝
 
-Usage:
-  cyberguard-agent start [options]    Start the agent server
-  cyberguard-agent status            Show agent status
-  cyberguard-agent tools             List available tools
-  cyberguard-agent help              Show this help message
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 USAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Options:
-  --port <number>     Server port (default: 3001)
-  --token <string>    Auth token (default: empty - no auth)
-  --profile <name>    Config profile: minimal|full|education (default: full)
-  --verbose           Enable verbose logging
+  cyberguard-agent <command> [options]
 
-Multi-Tool System:
-  Aider (priority)  →  Cline (fallback)  →  Custom Agent (always available)
+  Commands:
+    start     Start the agent server (WebSocket + HTTP)
+    status    Show agent status and detected platform
+    tools     List all available tools and providers
+    help      Show this help message
 
-Supported Tools:
-  semgrep, codeql, slither, libfuzzer, skills-discovery
-  aider, cline, custom-agent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️  OPTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-AI Providers:
-  Gemini, Ollama, Groq, HuggingFace, OpenRouter (auto-fallback)
+  --port <number>      Server port (default: 3001)
+  --token <string>     Auth token (default: empty — no auth required)
+  --profile <name>     Config profile:
+                         minimal   — Basic scanning only
+                         full      — All tools + AI + file ops + multi-tool
+                         education — Education-focused configuration
+  --verbose            Enable verbose logging
 
-Examples:
-  cyberguard-agent start --port 3001 --profile full
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛠️  MULTI-TOOL SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  The agent uses a multi-tool system with automatic fallback:
+
+  ┌─────────┐     ┌─────────┐     ┌─────────────────┐
+  │  Aider  │ ──► │  Cline  │ ──► │  Custom Agent   │
+  │ (1st)   │     │ (2nd)   │     │  (always works) │
+  └─────────┘     └─────────┘     └─────────────────┘
+
+  Tool Priority:
+    1. Aider        — AI-powered coding assistant (pip install aider-chat)
+    2. Cline        — Alternative CLI tool (npm install -g @anthropic-ai/cline)
+    3. Custom Agent — Uses AI providers directly (always available)
+
+  You can:
+    • Use automatic fallback (default) — tries all tools until one works
+    • Manually select a tool — forces execution with specific tool
+    • Disable fallback — fails if selected tool is unavailable
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 SECURITY TOOLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  semgrep     — Static analysis for many languages
+               Install: pip install semgrep
+
+  codeql      — Deep code analysis by GitHub
+               Install: https://github.com/github/codeql-cli-binaries
+
+  slither     — Solidity smart contract analyzer
+               Install: pip install slither-analyzer
+
+  libfuzzer   — Coverage-guided fuzzing (requires Clang)
+               Install: apt install clang (Linux) / brew install llvm (macOS)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 AI PROVIDERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  The agent supports 5 AI providers with automatic fallback:
+
+  Provider       Key Variable              Free Tier         Local?
+  ─────────────────────────────────────────────────────────────────────
+  Gemini         GEMINI_API_KEY            1500 req/day      No
+  Groq           GROQ_API_KEY              30 req/min        No
+  HuggingFace    HUGGINGFACE_API_KEY       1000 req/day      No
+  OpenRouter     OPENROUTER_API_KEY        Varies by model   No
+  Ollama         (none — runs locally)     Unlimited         Yes
+
+  Setup:
+    export GEMINI_API_KEY="your-key"
+    export GROQ_API_KEY="your-key"
+    export HUGGINGFACE_API_KEY="your-key"
+    export OPENROUTER_API_KEY="your-key"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 FILE OPERATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  The agent supports 8 file operations:
+
+    read       — Read file contents
+    write      — Create or overwrite a file
+    list       — List directory contents
+    delete     — Delete a file or directory
+    move       — Move/rename a file
+    mkdir      — Create a directory
+    exists     — Check if file/directory exists
+    search     — Search files by name pattern
+
+  Plus grep search for content searching with regex patterns.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 WEBSOCKET PROTOCOL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  The game connects via WebSocket: ws://localhost:3001
+
+  Message Types (19 total):
+    scan             — Run security scan
+    execute          — Execute a command
+    find-skills      — Search for skills
+    install-skill    — Install a skill
+    status           — Get agent status
+    tools            — List available tools
+    parse-file       — Parse SKILL.md/plugin.json
+    list-installs    — List installed skills
+    ai-chat          — Chat with AI provider
+    file-op          — File operations
+    grep             — Content search
+    ai-providers     — List AI providers
+    task             — Execute complex task (multi-tool)
+    tool-status      — Check tool availability
+    tool-settings    — Save/load tool settings
+    install          — Install package (pip/npm/apt)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🐳 DOCKER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Run with Docker (recommended):
+
+    # Full stack (Agent + Frontend)
+    docker-compose up -d
+
+    # Agent only
+    cd cyberguard-agent
+    docker build -t cyberguard-agent .
+    docker run -d -p 3001:3001 cyberguard-agent
+
+  Environment variables in .env:
+    GEMINI_API_KEY=your-key
+    GROQ_API_KEY=your-key
+    AGENT_PORT=3001
+    AGENT_TOKEN=your-token
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Start with default settings
+  cyberguard-agent start
+
+  # Start on custom port with full profile
+  cyberguard-agent start --port 3002 --profile full
+
+  # Start with auth token
   cyberguard-agent start --token my-secret-token
+
+  # Start with verbose logging
   cyberguard-agent start --verbose
+
+  # Start with specific AI provider
+  GEMINI_API_KEY=your-key cyberguard-agent start
+
+  # Check agent status
   cyberguard-agent status
+
+  # List all available tools
   cyberguard-agent tools
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 MORE INFORMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Documentation:
+    AGENT_GUIDE.md           — Full agent setup guide
+    USAGE_GUIDE.md           — Game usage guide
+    AI_ADVANCED_SETTINGS_GUIDE.md — AI settings guide
+    PROJECT_MAP.md           — Technical architecture
+
+  GitHub:
+    https://github.com/YoussefAhamedKamal/cyber-guardians-mobile
+
+  Support:
+    Report issues at GitHub Issues
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `)
 }
 
