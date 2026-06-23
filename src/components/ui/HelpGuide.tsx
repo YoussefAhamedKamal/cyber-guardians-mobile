@@ -95,11 +95,13 @@ const SECTIONS = [
     title: 'الوكيل المحلي (Local Agent)',
     items: [
       '🔄 وكيل محلي يعمل على جهازك',
+      '🛠️ نظام أداة متعدد: Aider → Cline → Agent مخصص',
       '🔍 يدعم: Semgrep, CodeQL, Slither, LibFuzzer',
       '📁 يكتشف وينفذ أوامر من ملفات SKILL.md و plugin.json',
       '🌍 يعمل على Windows, macOS, و Linux',
       '⚡ يتصل عبر WebSocket على المنفذ 3002',
       '🛡️ بدون اتصال بالإنترنت - يعمل محلياً',
+      '👨‍🏫 كلتا الذكاءين (طالب + هيئة تدريس) يمكنهما استخدام الوكيل',
     ],
   },
   {
