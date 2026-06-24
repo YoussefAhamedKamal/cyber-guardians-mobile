@@ -63,6 +63,16 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
     prompt += 'Use this skill in your responses. Follow the instructions above.\n'
   }
 
+  // Always tell AI about built-in tools (even if plugins not enabled)
+  prompt += '\n\n--- BUILT-IN TOOLS (always available) ---\n'
+  prompt += '🖼️ صور: اكتب "توليد صورة لـ [الوصف]" — يُولّد صورة فوراً\n'
+  prompt += '🎬 فيديو: اكتب "توليد فيديو لـ [الوصف]" — يُولّد فيديو\n'
+  prompt += '📄 OCR: ارفق صورة واكتب "استخرج النص" — يقرأ النص من الصور\n'
+  prompt += '🔍 بحث: اكتب "ابحث عن [الموضوع]" — يبحث في الإنترنت\n'
+  prompt += '🕸️ مسح ويب: اكتب "اقرأ [الرابط]" — يستخرج محتوى الصفحة\n'
+  prompt += '📊 رسوم بيانية: اكتب "رسم بياني من [الأرقام]" — يُولّد رسم\n'
+  prompt += '--- END BUILT-IN TOOLS ---\n'
+
   if (enabledPlugins.length > 0) {
     prompt += '\n\n--- AVAILABLE PLUGINS ---\n'
     for (const plugin of enabledPlugins) {
