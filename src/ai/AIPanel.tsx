@@ -222,43 +222,42 @@ function AISettings() {
           <input value={ai.customBaseUrl} onChange={(e) => ai.setCustomBaseUrl(e.target.value)} placeholder="https://your-api.com/v1" style={inputStyle} />
         </label>
       )}
-      {ai.providerId === 'custom' ? (
-        <label style={{ color: '#aaa' }}>اسم النموذج
+      <label style={{ color: '#aaa' }}>النموذج
+        {ai.providerId === 'custom' ? (
           <input value={ai.modelId} onChange={(e) => ai.setModel(e.target.value)} placeholder="gpt-4o-mini, ..." style={inputStyle} />
-        </label>
-      ) : (
-        <>
-          <label style={{ color: '#aaa' }}>النموذج
+        ) : (
+          <>
             <select value={usingCustom ? '__custom__' : ai.modelId} onChange={handleModelChange} style={inputStyle}>
               {allModels.map((m) => <option key={m.id} value={m.id}>{m.name} {m.free ? '🆓' : ''}</option>)}
               <option value="__custom__">— نموذج مخصص —</option>
             </select>
-          </label>
-          {usingCustom && (
-            <label style={{ color: '#aaa' }}>اسم النموذج المخصص
-              <input value={customModel} onChange={(e) => { setCustomModel(e.target.value); ai.setModel(e.target.value.trim()) }} placeholder="..." style={inputStyle} />
-            </label>
-          )}
-        </>
-      )}
+            {usingCustom && (
+              <input 
+                value={customModel} 
+                onChange={(e) => { setCustomModel(e.target.value); ai.setModel(e.target.value.trim()) }} 
+                placeholder="أدخل اسم النموذج يدوياً..." 
+                style={{ ...inputStyle, marginTop: '6px', borderColor: 'rgba(79,195,247,0.5)' }} 
+              />
+            )}
+          </>
+        )}
+      </label>
       <label style={{ color: '#aaa' }}>{provider?.apiKeyLabel || 'API Key'}
         <input type="password" value={ai.apiKeys[ai.providerId] || ''} onChange={(e) => ai.setApiKey(ai.providerId, e.target.value)} placeholder="sk-..." style={inputStyle} />
       </label>
-      {provider?.requiresMaxTokens && (
-        <label style={{ color: '#aaa' }}>حد التوكن (اختياري)
-          <input 
-            type="number" 
-            value={ai.maxTokens || ''} 
-            onChange={(e) => ai.setMaxTokens(e.target.value ? parseInt(e.target.value) : undefined)}
-            placeholder="اتركه فارغاً لعدم التحديد"
-            min="1"
-            style={inputStyle} 
-          />
-          <span style={{ fontSize: '10px', color: '#666', marginTop: '4px', display: 'block' }}>
-            اتركه فارغاً لعدم تحديد حد للتوكن
-          </span>
-        </label>
-      )}
+      <label style={{ color: '#aaa' }}>حد التوكن (اختياري)
+        <input 
+          type="number" 
+          value={ai.maxTokens || ''} 
+          onChange={(e) => ai.setMaxTokens(e.target.value ? parseInt(e.target.value) : undefined)}
+          placeholder="اتركه فارغاً لعدم التحديد"
+          min="1"
+          style={inputStyle} 
+        />
+        <span style={{ fontSize: '10px', color: '#666', marginTop: '4px', display: 'block' }}>
+          اتركه فارغاً لعدم تحديد حد للتوكن
+        </span>
+      </label>
       <label style={{ 
         display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', cursor: 'pointer',
         padding: '8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)',

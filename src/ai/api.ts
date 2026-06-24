@@ -154,7 +154,9 @@ function buildBody(modelId: string, messages: AIMessage[], maxTokens?: number) {
     model: modelId,
     messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
-    max_tokens: maxTokens || 1024,
+  }
+  if (maxTokens && maxTokens > 0) {
+    body.max_tokens = maxTokens
   }
   return body
 }
@@ -349,7 +351,9 @@ export async function testConnection(
     model: modelId,
     messages: [{ role: 'user', content: 'hi' }],
     temperature: 0.7,
-    max_tokens: maxTokens || 1024,
+  }
+  if (maxTokens && maxTokens > 0) {
+    body.max_tokens = maxTokens
   }
 
   try {
