@@ -64,13 +64,14 @@ function buildSkillsPluginsPrompt(basePrompt: string): string {
   }
 
   // Always tell AI about built-in tools (even if plugins not enabled)
-  prompt += '\n\n--- BUILT-IN TOOLS (always available) ---\n'
-  prompt += '🖼️ صور: اكتب "توليد صورة لـ [الوصف]" — يُولّد صورة فوراً\n'
-  prompt += '🎬 فيديو: اكتب "توليد فيديو لـ [الوصف]" — يُولّد فيديو\n'
-  prompt += '📄 OCR: ارفق صورة واكتب "استخرج النص" — يقرأ النص من الصور\n'
-  prompt += '🔍 بحث: اكتب "ابحث عن [الموضوع]" — يبحث في الإنترنت\n'
-  prompt += '🕸️ مسح ويب: اكتب "اقرأ [الرابط]" — يستخرج محتوى الصفحة\n'
-  prompt += '📊 رسوم بيانية: اكتب "رسم بياني من [الأرقام]" — يُولّد رسم\n'
+  prompt += '\n\n--- BUILT-IN TOOLS (always available, work automatically) ---\n'
+  prompt += '⚠️ IMPORTANT: These tools work AUTOMATICALLY. Do NOT suggest external tools.\n'
+  prompt += '🖼️ IMAGE: When user asks for image → it generates automatically. Just say "Generating..." Do NOT suggest Canva/Pixelfox/etc.\n'
+  prompt += '🎬 VIDEO: When user asks for video → it generates automatically. Just say "Generating..."\n'
+  prompt += '📄 OCR: When user attaches image + asks for text → text appears automatically\n'
+  prompt += '🔍 SEARCH: When user asks to search → results appear automatically\n'
+  prompt += '🕸️ SCRAPE: When user asks to read a URL → content appears automatically\n'
+  prompt += '📊 CHART: When user asks for chart → chart appears automatically\n'
   prompt += '--- END BUILT-IN TOOLS ---\n'
 
   if (enabledPlugins.length > 0) {
