@@ -154,9 +154,7 @@ function buildBody(modelId: string, messages: AIMessage[], maxTokens?: number) {
     model: modelId,
     messages: messages.map((m) => ({ role: m.role, content: buildMessageContent(m) })),
     temperature: 0.7,
-  }
-  if (maxTokens && maxTokens > 0) {
-    body.max_tokens = maxTokens
+    max_tokens: maxTokens || 4096,
   }
   return body
 }
@@ -176,17 +174,21 @@ async function proxyFetch(targetUrl: string, init: RequestInit, useDirectApi = f
     headers.set('X-Auth-Token', worker.authToken)
   }
 
+  // Detect streaming requests — skip body consumption so the stream passes through
+  const isStreaming = typeof init.body === 'string' && init.body.includes('"stream": true')
   const response = await fetch(proxyUrl, { ...init, headers })
 
-  // Check if response is JSON
+  if (isStreaming) {
+    return response
+  }
+
+  // For non-streaming: validate response is JSON
   const contentType = response.headers.get('content-type') || ''
   if (!contentType.includes('json')) {
     const text = await response.text()
-    // Try to parse as JSON anyway (some APIs don't set content-type)
     try {
       JSON.parse(text)
     } catch {
-      // Not JSON - return error response
       throw new Error(`⚠️ الاستجابة ليست JSON: ${text.slice(0, 200)}`)
     }
   }

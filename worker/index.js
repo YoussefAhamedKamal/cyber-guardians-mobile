@@ -102,11 +102,25 @@ export default {
         body,
       })
 
-      // Check if response is JSON
       const contentType = resp.headers.get('content-type') || ''
-      const respText = await resp.text()
+      const isStreaming = contentType.includes('text/event-stream') || contentType.includes('text/plain')
 
-      // Try to parse as JSON
+      // For streaming responses (SSE), pass through directly without buffering
+      if (isStreaming) {
+        const respHeaders = new Headers(resp.headers)
+        Object.entries(corsHeaders).forEach(([k, v]) => respHeaders.set(k, v))
+        respHeaders.delete('Content-Security-Policy')
+        respHeaders.set('Content-Type', contentType)
+
+        return new Response(resp.body, {
+          status: resp.status,
+          statusText: resp.statusText,
+          headers: respHeaders,
+        })
+      }
+
+      // For JSON responses, buffer and validate
+      const respText = await resp.text()
       let isJson = false
       try {
         JSON.parse(respText)
@@ -125,7 +139,6 @@ export default {
           headers: respHeaders,
         })
       } else {
-        // Return error in JSON format
         return new Response(JSON.stringify({
           error: 'Upstream returned non-JSON response',
           status: resp.status,
