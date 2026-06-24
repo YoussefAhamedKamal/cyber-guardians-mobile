@@ -30,7 +30,7 @@ interface AIStore extends AIState {
   togglePanel: () => void
   setPanelOpen: (v: boolean) => void
   setPanelMaximized: (v: boolean) => void
-  setActiveTab: (tab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings') => void
+  setActiveTab: (tab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings' | 'canvas') => void
   setLoading: (v: boolean) => void
   setForking: (v: boolean) => void
   setGithubStatus: (v: string | null) => void

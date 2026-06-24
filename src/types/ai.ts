@@ -250,7 +250,7 @@ export interface AIState {
   activeFacultySessionId: string
   panelOpen: boolean
   panelMaximized: boolean
-  activeTab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings'
+  activeTab: 'student' | 'faculty' | 'settings' | 'tools' | 'project' | 'ui-settings' | 'canvas'
   loading: boolean
   forking: boolean
   githubStatus: string | null

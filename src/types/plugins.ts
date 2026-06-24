@@ -327,5 +327,50 @@ export const PLUGIN_TEMPLATES: PluginTemplate[] = [
       }
     ],
     auth: { type: 'none' }
+  },
+  {
+    id: 'video_generator',
+    name: 'مولّد فيديو',
+    description: 'توليد فيديو من النصوص باستخدام الذكاء الاصطناعي',
+    icon: '🎬',
+    category: 'custom',
+    config: {},
+    endpoints: [
+      {
+        id: 'generate',
+        name: 'توليد فيديو',
+        method: 'POST',
+        path: '/generate',
+        description: 'توليد فيديو من نص',
+        parameters: [
+          { name: 'prompt', type: 'string', required: true, description: 'وصف الفيديو' },
+          { name: 'provider', type: 'string', required: false, description: 'المزود: pollinations, stable_diffusion, loremotion' },
+          { name: 'model', type: 'string', required: false, description: 'النموذج (veo, seedance-pro, wan, ltx-2)' },
+          { name: 'duration', type: 'number', required: false, description: 'المدة بالثواني (4-10)' }
+        ]
+      }
+    ],
+    auth: { type: 'none' }
+  },
+  {
+    id: 'ocr_extractor',
+    name: 'مستخرج نصوص',
+    description: 'استخراج النصوص من الصور وملفات PDF',
+    icon: '📄',
+    category: 'custom',
+    config: {},
+    endpoints: [
+      {
+        id: 'extract',
+        name: 'استخراج نص',
+        method: 'POST',
+        path: '/extract',
+        description: 'استخراج نص من صورة أو PDF',
+        parameters: [
+          { name: 'image', type: 'string', required: true, description: 'الصورة أو PDF كـ base64 أو URL' }
+        ]
+      }
+    ],
+    auth: { type: 'none' }
   }
 ]

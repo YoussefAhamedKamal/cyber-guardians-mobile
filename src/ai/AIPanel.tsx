@@ -10,7 +10,7 @@ import { streamChatMessage, testConnection, setWorkerConfig, getWorkerUrl } from
 import { STUDENT_SYSTEM_PROMPT, SEARCH_SYSTEM_PROMPT, DEEPTHINK_SYSTEM_PROMPT } from './prompts'
 import { search, advancedSearch, buildSearchAugmentedMessages } from './search'
 import { deepthink } from './deepthink'
-import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest, generateImageWithPollinations, detectAgentRequest } from './skillIntegration'
+import { buildActiveSkillPrompt, buildFacultySystemPrompt, detectSkillRequest, detectPluginRequest, generateImage, generateVideo, extractTextOCR, searchWeb, scrapeWebPage, generateChart, detectAgentRequest } from './skillIntegration'
 import { pushContentToGitHub, pushSourceFilesToGitHub, testGitHubConnection, getGitHubConfig, setGitHubConfig, isGitHubConfigured, forkMainRepo, getGitHubUsername, waitForForkReady, enableGitHubPages, setupForkWithPages, resolveGithubOwner, listRepoContents, createNewRepo, copyEntireRepo, syncContentToExistingRepo, setupDirectEdit, generateCharactersTS, generateDialogueTS, generateGameMetaTS, getFileContent, setGitHubWorkerConfig, getGitHubWorkerUrl } from './github'
 import { MAIN_REPO } from './github'
 import { loadGIS, initGoogleDrive, loginToDrive, isLoggedIn, logout, uploadContentToDrive, uploadFullRepoToDrive } from './googleDrive'
@@ -20,6 +20,7 @@ import type { ChatAttachment } from '@/types/ai'
 import { getLevels, getCharacters, getGameMeta } from '@/data/gameData'
 import type { AIMessage, LevelData, Character, GameMeta } from '@/types'
 import { hashPin, verifyPin } from '@/utils/pinCrypto'
+import { Canvas, detectCanvasRequest } from './Canvas'
 import { ToolsTab } from './ToolsTab'
 import { KnowledgeTab, InstructionsTab, ProjectChatsTab } from './ProjectTab'
 import { VersionHistoryTab } from './VersionHistoryTab'
@@ -1074,6 +1075,7 @@ function StudentChat() {
   const ai = useAIStore()
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
+  const [canvasOpen, setCanvasOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveStudentSession()
   const messages = session?.messages || []
@@ -1094,6 +1096,22 @@ function StudentChat() {
       // Check if user wants to use a specific skill
       const userMsg = msgs[msgs.length - 1]
       if (userMsg?.role === 'user') {
+        // Check for Canvas requests
+        const canvasReq = detectCanvasRequest(userMsg.content)
+        if (canvasReq) {
+          if (canvasReq.action === 'open') {
+            setCanvasOpen(true)
+            ai.addStudentMessage({ role: 'assistant', content: '🎨 تم فتح Canvas — يمكنك الآن إضافة HTML، كود، أو ملاحظات من الشريط السفلي.' })
+          } else if (canvasReq.action === 'add-html') {
+            setCanvasOpen(true)
+            ai.addStudentMessage({ role: 'assistant', content: `🎨 **تم إضافة HTML إلى Canvas**\n\nيمكنك رؤية المحتوى في تبويب Canvas.` })
+          } else if (canvasReq.action === 'add-code') {
+            setCanvasOpen(true)
+            ai.addStudentMessage({ role: 'assistant', content: `🎨 **تم إضافة كود إلى Canvas**\n\nيمكنك رؤية المحتوى في تبويب Canvas.` })
+          }
+          ai.setLoading(false)
+          return
+        }
         const requestedSkillId = detectSkillRequest(userMsg.content)
         if (requestedSkillId) {
           useSkillStore.getState().setActiveSkill(requestedSkillId)
@@ -1120,26 +1138,99 @@ function StudentChat() {
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             } catch (err: any) {
-              // Real fallback: Pollinations.ai for image generation
+              // Real fallback: AI generation for images, video, and OCR
               const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || userMsg.content
               if (pluginRequest.pluginId === 'image_generator') {
-                ai.setStudentStreaming('🖼️ جارٍ توليد الصورة...')
+                const imgProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                ai.setStudentStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
-                  const imageDataUrl = await generateImageWithPollinations(prompt)
+                  const imageDataUrl = await generateImage(prompt, imgProvider)
                   ai.addStudentMessage({
                     role: 'assistant',
-                    content: `🖼️ **صورة مولّدة:**\n\n${prompt}`,
+                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}`,
                     attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
                   })
                 } catch (imgErr: any) {
                   ai.addStudentMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
                 }
+              } else if (pluginRequest.pluginId === 'video_generator') {
+                const vidProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                const vidModel = pluginRequest.params.model || undefined
+                ai.setStudentStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
+                try {
+                  const videoDataUrl = await generateVideo(prompt, vidProvider, vidModel)
+                  ai.addStudentMessage({
+                    role: 'assistant',
+                    content: `🎬 **فيديو مولّد** (${vidProvider}${vidModel ? ' / ' + vidModel : ''}):\n\n${prompt}`,
+                    attachments: [{ name: 'generated-video.mp4', type: 'video', content: videoDataUrl, mimeType: 'video/mp4', uploadStatus: 'success' }]
+                  })
+                } catch (vidErr: any) {
+                  ai.addStudentMessage({ role: 'assistant', content: `🎬 **فشل توليد الفيديو:**\n\n${prompt}\n\n⚠️ ${vidErr.message}` })
+                }
+              } else if (pluginRequest.pluginId === 'ocr_extractor') {
+                ai.setStudentStreaming('📄 جارٍ استخراج النص...')
+                try {
+                  // Check for image attachment in the last user message
+                  const lastAtt = userMsg.attachments?.find(a => a.type === 'image' || a.type === 'file')
+                  if (!lastAtt) {
+                    ai.addStudentMessage({ role: 'assistant', content: '📄 **OCR**: الرجاء إرفاق صورة أو ملف PDF أولاً لاستخراج النص.' })
+                  } else {
+                    const ocrText = await extractTextOCR(lastAtt.content)
+                    ai.addStudentMessage({
+                      role: 'assistant',
+                      content: `📄 **النص المستخرج من ${lastAtt.name}:**\n\n${ocrText}`
+                    })
+                  }
+                } catch (ocrErr: any) {
+                  ai.addStudentMessage({ role: 'assistant', content: `📄 **فشل استخراج النص:**\n\n⚠️ ${ocrErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'calculator') {
                 ai.addStudentMessage({ role: 'assistant', content: `🧮 **النتيجة:** ${prompt}\n\n📌 الحاسبة تعمل محلياً — تأكد من صحة التعبير الرياضي.` })
               } else if (pluginRequest.pluginId === 'chart_generator') {
-                ai.addStudentMessage({ role: 'assistant', content: `📊 **تم توليد الرسم البياني:**\n\n${prompt}\n\n📌 أداة الرسم البياني تعمل محلياً — يتم إنشاء الرسم في المتصفح.` })
+                const chartType = (pluginRequest.params.type as any) || 'bar'
+                const chartTitle = pluginRequest.params.title || ''
+                ai.setStudentStreaming('📊 جارٍ إنشاء الرسم البياني...')
+                try {
+                  let chartData: any
+                  try {
+                    chartData = JSON.parse(pluginRequest.params.data || '{}')
+                  } catch {
+                    chartData = { labels: ['بيانات'], datasets: [{ label: 'قيم', data: [1] }] }
+                  }
+                  const chartImage = await generateChart(chartData, chartType, chartTitle || prompt)
+                  ai.addStudentMessage({
+                    role: 'assistant',
+                    content: `📊 **رسم بياني** (${chartType}):\n\n${chartTitle || prompt}`,
+                    attachments: [{ name: 'chart.png', type: 'image', content: chartImage, mimeType: 'image/png', uploadStatus: 'success' }]
+                  })
+                } catch (chartErr: any) {
+                  ai.addStudentMessage({ role: 'assistant', content: `📊 **فشل إنشاء الرسم البياني:**\n\n⚠️ ${chartErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'search_engine') {
-                ai.addStudentMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن:** ${prompt}\n\n📌 محرك البحث يتطلب اتصالاً بـ API خارجي.` })
+                const query = pluginRequest.params.q || prompt
+                ai.setStudentStreaming(`🔍 جارٍ البحث عن: ${query}...`)
+                try {
+                  const results = await searchWeb(query)
+                  const formatted = results.map((r, i) =>
+                    `${i + 1}. **${r.title}**\n${r.snippet}\n${r.url ? `🔗 ${r.url}` : ''}`
+                  ).join('\n\n')
+                  ai.addStudentMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن "${query}":**\n\n${formatted}` })
+                } catch (searchErr: any) {
+                  ai.addStudentMessage({ role: 'assistant', content: `🔍 **فشل البحث:**\n\n⚠️ ${searchErr.message}` })
+                }
+              } else if (pluginRequest.pluginId === 'web_scraper') {
+                const targetUrl = pluginRequest.params.url
+                if (!targetUrl) {
+                  ai.addStudentMessage({ role: 'assistant', content: '🕸️ **ماسح الويب**: الرجاء إدخال رابط الصفحة المراد مسحها.' })
+                } else {
+                  ai.setStudentStreaming(`🕸️ جارٍ مسح الصفحة: ${targetUrl}...`)
+                  try {
+                    const content = await scrapeWebPage(targetUrl)
+                    ai.addStudentMessage({ role: 'assistant', content: `🕸️ **محتوى الصفحة:**\n\n${content}` })
+                  } catch (scrapeErr: any) {
+                    ai.addStudentMessage({ role: 'assistant', content: `🕸️ **فشل مسح الصفحة:**\n\n⚠️ ${scrapeErr.message}` })
+                  }
+                }
               } else {
                 ai.addStudentMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.` })
               }
@@ -1283,6 +1374,7 @@ function StudentChat() {
   }
 
   return (
+    <>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SessionBar type="student" />
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
@@ -1310,6 +1402,12 @@ function StudentChat() {
       )}
       <div style={{ display: 'flex', gap: '4px', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <FileUploadButton onFiles={handleFiles} />
+        <button onClick={() => setCanvasOpen(!canvasOpen)} title="Canvas — عرض محتوى HTML/كود مباشرة" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer',
+          background: canvasOpen ? 'rgba(255,152,0,0.3)' : 'rgba(255,255,255,0.05)',
+          color: canvasOpen ? '#FF9800' : '#888',
+          border: `1px solid ${canvasOpen ? 'rgba(255,152,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🎨</button>
         <button onClick={() => ai.setSearchEnabled(!ai.searchEnabled)} title="بحث في الويب ومحتوى اللعبة" style={{
           padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer',
           background: ai.searchEnabled ? 'rgba(79,195,247,0.3)' : 'rgba(255,255,255,0.05)',
@@ -1332,6 +1430,12 @@ function StudentChat() {
         }}>إرسال</button>
       </div>
     </div>
+    {canvasOpen && (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#0d1117', display: 'flex', flexDirection: 'column' }}>
+        <Canvas onClose={() => setCanvasOpen(false)} />
+      </div>
+    )}
+    </>
   )
 }
 
@@ -1375,6 +1479,7 @@ function FacultyAIChat() {
   const [input, setInput] = useState('')
   const [applyStatus, setApplyStatus] = useState<string[]>([])
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
+  const [canvasOpen, setCanvasOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveFacultySession()
   const msgHistory = session?.messages || []
@@ -1419,23 +1524,95 @@ function FacultyAIChat() {
             } catch (err: any) {
               const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || lastUser.content
               if (pluginRequest.pluginId === 'image_generator') {
-                ai.setFacultyStreaming('🖼️ جارٍ توليد الصورة...')
+                const imgProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                ai.setFacultyStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
-                  const imageDataUrl = await generateImageWithPollinations(prompt)
+                  const imageDataUrl = await generateImage(prompt, imgProvider)
                   ai.addFacultyMessage({
                     role: 'assistant',
-                    content: `🖼️ **صورة مولّدة:**\n\n${prompt}`,
+                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}`,
                     attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
                   })
                 } catch (imgErr: any) {
                   ai.addFacultyMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
                 }
+              } else if (pluginRequest.pluginId === 'video_generator') {
+                const vidProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                const vidModel = pluginRequest.params.model || undefined
+                ai.setFacultyStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
+                try {
+                  const videoDataUrl = await generateVideo(prompt, vidProvider, vidModel)
+                  ai.addFacultyMessage({
+                    role: 'assistant',
+                    content: `🎬 **فيديو مولّد** (${vidProvider}${vidModel ? ' / ' + vidModel : ''}):\n\n${prompt}`,
+                    attachments: [{ name: 'generated-video.mp4', type: 'video', content: videoDataUrl, mimeType: 'video/mp4', uploadStatus: 'success' }]
+                  })
+                } catch (vidErr: any) {
+                  ai.addFacultyMessage({ role: 'assistant', content: `🎬 **فشل توليد الفيديو:**\n\n${prompt}\n\n⚠️ ${vidErr.message}` })
+                }
+              } else if (pluginRequest.pluginId === 'ocr_extractor') {
+                ai.setFacultyStreaming('📄 جارٍ استخراج النص...')
+                try {
+                  const lastAtt = lastUser.attachments?.find(a => a.type === 'image' || a.type === 'file')
+                  if (!lastAtt) {
+                    ai.addFacultyMessage({ role: 'assistant', content: '📄 **OCR**: الرجاء إرفاق صورة أو ملف PDF أولاً لاستخراج النص.' })
+                  } else {
+                    const ocrText = await extractTextOCR(lastAtt.content)
+                    ai.addFacultyMessage({
+                      role: 'assistant',
+                      content: `📄 **النص المستخرج من ${lastAtt.name}:**\n\n${ocrText}`
+                    })
+                  }
+                } catch (ocrErr: any) {
+                  ai.addFacultyMessage({ role: 'assistant', content: `📄 **فشل استخراج النص:**\n\n⚠️ ${ocrErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'calculator') {
                 ai.addFacultyMessage({ role: 'assistant', content: `🧮 **النتيجة:** ${prompt}` })
               } else if (pluginRequest.pluginId === 'chart_generator') {
-                ai.addFacultyMessage({ role: 'assistant', content: `📊 **تم توليد الرسم البياني:**\n\n${prompt}` })
+                const chartType = (pluginRequest.params.type as any) || 'bar'
+                const chartTitle = pluginRequest.params.title || ''
+                ai.setFacultyStreaming('📊 جارٍ إنشاء الرسم البياني...')
+                try {
+                  let chartData: any
+                  try {
+                    chartData = JSON.parse(pluginRequest.params.data || '{}')
+                  } catch {
+                    chartData = { labels: ['بيانات'], datasets: [{ label: 'قيم', data: [1] }] }
+                  }
+                  const chartImage = await generateChart(chartData, chartType, chartTitle || prompt)
+                  ai.addFacultyMessage({
+                    role: 'assistant',
+                    content: `📊 **رسم بياني** (${chartType}):\n\n${chartTitle || prompt}`,
+                    attachments: [{ name: 'chart.png', type: 'image', content: chartImage, mimeType: 'image/png', uploadStatus: 'success' }]
+                  })
+                } catch (chartErr: any) {
+                  ai.addFacultyMessage({ role: 'assistant', content: `📊 **فشل إنشاء الرسم البياني:**\n\n⚠️ ${chartErr.message}` })
+                }
               } else if (pluginRequest.pluginId === 'search_engine') {
-                ai.addFacultyMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن:** ${prompt}` })
+                const query = pluginRequest.params.q || prompt
+                ai.setFacultyStreaming(`🔍 جارٍ البحث عن: ${query}...`)
+                try {
+                  const results = await searchWeb(query)
+                  const formatted = results.map((r, i) =>
+                    `${i + 1}. **${r.title}**\n${r.snippet}\n${r.url ? `🔗 ${r.url}` : ''}`
+                  ).join('\n\n')
+                  ai.addFacultyMessage({ role: 'assistant', content: `🔍 **نتائج البحث عن "${query}":**\n\n${formatted}` })
+                } catch (searchErr: any) {
+                  ai.addFacultyMessage({ role: 'assistant', content: `🔍 **فشل البحث:**\n\n⚠️ ${searchErr.message}` })
+                }
+              } else if (pluginRequest.pluginId === 'web_scraper') {
+                const targetUrl = pluginRequest.params.url
+                if (!targetUrl) {
+                  ai.addFacultyMessage({ role: 'assistant', content: '🕸️ **ماسح الويب**: الرجاء إدخال رابط الصفحة المراد مسحها.' })
+                } else {
+                  ai.setFacultyStreaming(`🕸️ جارٍ مسح الصفحة: ${targetUrl}...`)
+                  try {
+                    const content = await scrapeWebPage(targetUrl)
+                    ai.addFacultyMessage({ role: 'assistant', content: `🕸️ **محتوى الصفحة:**\n\n${content}` })
+                  } catch (scrapeErr: any) {
+                    ai.addFacultyMessage({ role: 'assistant', content: `🕸️ **فشل مسح الصفحة:**\n\n⚠️ ${scrapeErr.message}` })
+                  }
+                }
               } else {
                 ai.addFacultyMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة.` })
               }
@@ -1576,6 +1753,7 @@ function FacultyAIChat() {
   }
 
   return (
+    <>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SessionBar type="faculty" />
       {applyStatus.length > 0 && (
@@ -1614,6 +1792,12 @@ function FacultyAIChat() {
       )}
       <div style={{ display: 'flex', gap: '4px', padding: '8px 10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
         <FileUploadButton onFiles={handleFiles} />
+        <button onClick={() => setCanvasOpen(!canvasOpen)} title="Canvas — عرض محتوى HTML/كود مباشرة" style={{
+          padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', alignSelf: 'flex-end',
+          background: canvasOpen ? 'rgba(255,152,0,0.3)' : 'rgba(255,255,255,0.05)',
+          color: canvasOpen ? '#FF9800' : '#888',
+          border: `1px solid ${canvasOpen ? 'rgba(255,152,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+        }}>🎨</button>
         <button onClick={() => ai.setSearchEnabled(!ai.searchEnabled)} title="بحث في الويب ومحتوى اللعبة" style={{
           padding: '6px 8px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', alignSelf: 'flex-end',
           background: ai.searchEnabled ? 'rgba(79,195,247,0.3)' : 'rgba(255,255,255,0.05)',
@@ -1637,6 +1821,12 @@ function FacultyAIChat() {
         }}>إرسال</button>
       </div>
     </div>
+    {canvasOpen && (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#0d1117', display: 'flex', flexDirection: 'column' }}>
+        <Canvas onClose={() => setCanvasOpen(false)} />
+      </div>
+    )}
+    </>
   )
 }
 
@@ -2448,12 +2638,13 @@ export function AIPanel() {
             { id: 'student', label: '🎓 طالب' },
             { id: 'faculty', label: '👩‍🏫 هيئة تدريس' },
             { id: 'tools', label: '🛠️ أدوات' },
+            { id: 'canvas', label: '🖼️' },
             { id: 'project', label: '📁 مشروع' },
             { id: 'settings', label: '⚙' },
             { id: 'ui-settings', label: '🎨' }
           ]).map((tab) => (
             <button key={tab.id} onClick={() => { ai.setActiveTab(tab.id as any); if (tab.id === 'faculty' && !ai.facultyUnlocked) handleFacultyAuth() }} style={{
-              flex: tab.id === 'settings' || tab.id === 'ui-settings' ? '0 0 40px' : 1, padding: '10px 6px', border: 'none', cursor: 'pointer',
+              flex: tab.id === 'settings' || tab.id === 'ui-settings' || tab.id === 'canvas' ? '0 0 40px' : 1, padding: '10px 6px', border: 'none', cursor: 'pointer',
               background: ai.activeTab === tab.id ? 'rgba(206,147,216,0.1)' : 'transparent',
               color: ai.activeTab === tab.id ? '#CE93D8' : '#777',
               fontWeight: ai.activeTab === tab.id ? 700 : 400,
@@ -2486,6 +2677,11 @@ export function AIPanel() {
             </div>
           )}
           {ai.activeTab === 'tools' && <ToolsTab />}
+          {ai.activeTab === 'canvas' && (
+            <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+              <Canvas onClose={() => ai.setActiveTab('student')} />
+            </div>
+          )}
           {ai.activeTab === 'project' && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
