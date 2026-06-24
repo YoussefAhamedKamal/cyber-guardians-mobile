@@ -175,7 +175,7 @@ async function proxyFetch(targetUrl: string, init: RequestInit, useDirectApi = f
   }
 
   // Detect streaming requests — skip body consumption so the stream passes through
-  const isStreaming = typeof init.body === 'string' && init.body.includes('"stream": true')
+  const isStreaming = typeof init.body === 'string' && /"stream"\s*:\s*true/.test(init.body)
   const response = await fetch(proxyUrl, { ...init, headers })
 
   if (isStreaming) {
