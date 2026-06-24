@@ -2,7 +2,7 @@
 
 > Educational cybersecurity game for teenagers with AI assistant, faculty editor, GitHub sync, and advanced AI features.
 > Status: **🟢 Live on Cloudflare Pages**
-> Version: **11.0.0** (Multi-Tool Agent System)
+> Version: **12.0.0** (Canvas + Real APIs + 15 AI Providers)
 > Last Audit: **2026-06-23** — 13 issues found, **13 resolved** (100%)
 
 ---
@@ -106,8 +106,8 @@ Keyboard Shortcuts: M (mute), B (BGM mute), Esc (back)
 UI Layout (top-right corner):
 - AI FAB button: y = 16px ← lazy
 - BGM toggle button: y = 72px
-- AI Panel: centered, 6 main tabs ← lazy
-   - Main tabs: Student, Faculty, Tools, Project, Settings, UI
+- AI Panel: centered, 7 main tabs ← lazy
+   - Main tabs: Student, Faculty, Tools, Canvas, Project, Settings, UI
    - Tools: 13 sub-tabs
    - Project: 4 sub-tabs
    - Skills/Plugins integration with AI chat
@@ -130,7 +130,8 @@ src/
 ├── main.tsx                         # Entry point + I18nProvider + Service Worker
 │
 ├── ai/
-│   ├── AIPanel.tsx                  # AI Assistant panel — 6 main tabs
+│   ├── AIPanel.tsx                  # AI Assistant panel — 7 main tabs
+│   ├── Canvas.tsx                   # Canvas — interactive HTML/code/text rendering (Gemini Canvas style)
 │   ├── api.ts                       # OpenAI-compatible API + URL validation + direct mode
 │   ├── search.ts                    # Web search (DuckDuckGo API + HTML + Worker)
 │   ├── deepthink.ts                 # Multi-step reasoning (think → review → answer)
@@ -321,20 +322,27 @@ src/
 
 | Feature | Details |
 |---|---|
-| Providers | OpenAI, OpenRouter, Google Gemini (default), Ollama, Custom |
-| Models | ~16 models total |
+| Providers | 15 providers: Gemini, OpenRouter, OpenAI, Groq, HuggingFace, NVIDIA NIM, Mistral, Cerebras, Cohere, GitHub Models, Cloudflare, Vercel, OpenCode Zen, Ollama, Custom |
+| Models | ~40+ models total |
 | Default Model | Gemini 3.5 Flash (free, 1500 req/day) |
 | Deepthink | 3-step reasoning with streaming (think → review → answer) |
-| Image Generation | Pollinations.ai integration |
+| Canvas | Interactive side panel for HTML/code/text rendering (Gemini Canvas style) |
+| Image Generation | 3 providers: Pollinations.ai (default), Puter.js, Stable Diffusion |
+| Video Generation | 3 providers: Pollinations.ai (default), Stable Diffusion, LoreMotion (10+ models) |
+| OCR | OCR.space API (free 500/day, images + PDFs, Arabic + English) |
+| Web Search | DuckDuckGo API (real results, not simulation) |
+| Web Scraping | CORS proxy chain (allorigins.win → corsproxy.io) |
+| Charts | chart.js library (bar/line/pie/doughnut/polarArea → PNG) |
 | Faculty Mode | PIN-protected, file editor, content management |
 
-### Main Tabs (6)
+### Main Tabs (7)
 
 | Tab | Arabic | Purpose |
 |---|---|---|
 | Student | طالب | Student interaction |
 | Faculty | هيئة تدريس | Faculty editor + admin |
 | Tools | 🛠️ أدوات | Skills, plugins, connectors, marketplace, analytics, etc. |
+| Canvas | 🖼️ | Interactive HTML/code/text rendering panel |
 | Project | 📁 مشروع | Knowledge, instructions, shared chats, history |
 | Settings | ⚙ | Sound, display, fonts, video, general |
 | UI | 🎨 | Themes, language, font size, compact mode |
@@ -370,9 +378,22 @@ src/
 
 translator, code_analyzer, summarizer, math_solver, email_writer, researcher, creative_writer, data_analyst, cybersecurity_expert, teacher, content_writer, software_engineer
 
-### Plugin Templates (10)
+### Plugin Templates (12)
 
-calculator, database, chart_generator, web_scraper, file_manager, api_caller, stats_analyzer, image_generator, text_editor, search_engine
+| # | Template | Purpose |
+|---|----------|---------|
+| 1 | calculator | حاسبة رياضية |
+| 2 | database | قاعدة بيانات |
+| 3 | chart_generator | رسوم بيانية (chart.js) |
+| 4 | web_scraper | ماسح ويب (CORS proxy) |
+| 5 | file_manager | إدارة ملفات |
+| 6 | api_caller | استدعاء API |
+| 7 | stats_analyzer | محلل إحصائيات |
+| 8 | image_generator | توليد صور (3 مزودين) |
+| 9 | video_generator | توليد فيديو (3 مزودين) |
+| 10 | ocr_extractor | استخراج نصوص (OCR.space) |
+| 11 | text_editor | محرر نصوص |
+| 12 | search_engine | محرك بحث (DuckDuckGo) |
 
 ### Connector Templates (13)
 
@@ -638,6 +659,26 @@ Game ↔ Agent via WebSocket (`ws://localhost:3002`)
 ---
 
 ## [ORPHANS & PENDING]
+
+### Completed — v12.0.0 (Canvas + Real APIs + 15 Providers)
+- [x] **Canvas component** — Interactive side panel for HTML/code/text rendering (Gemini Canvas style)
+- [x] **Canvas in Student/Faculty** — 🎨 button in toolbars, opens full-screen Canvas
+- [x] **Canvas auto-detection** — "افتح canvas" / "أضف HTML في canvas" → opens automatically
+- [x] **Real web search** — DuckDuckGo API with RelatedTopics parsing
+- [x] **Real web scraping** — CORS proxy chain (allorigins.win → corsproxy.io)
+- [x] **Real chart generation** — chart.js library (bar/line/pie/doughnut/polarArea → PNG)
+- [x] **OCR text extraction** — OCR.space API (free 500/day, images + PDFs, Arabic + English)
+- [x] **Video generation** — 3 providers: Pollinations.ai, Stable Diffusion, LoreMotion (10+ models)
+- [x] **Multi-provider image generation** — Pollinations.ai (default), Puter.js, Stable Diffusion
+- [x] **8 new AI providers** — NVIDIA NIM, Mistral, Cerebras, Cohere, GitHub Models, Cloudflare, Vercel, OpenCode Zen
+- [x] **15 total AI providers** — expanded from 5 to 15
+- [x] **Max tokens optional for ALL providers** — user can set or leave empty
+- [x] **Worker proxy streaming fix** — SSE responses pass through correctly
+- [x] **Worker JSON error responses** — structured errors instead of HTML pages
+- [x] **Canvas main tab** — 🖼️ tab in AI panel
+- [x] **detectPluginRequest updated** — video/ocr/search/scraper/chart detection
+- [x] **chart.js dependency** — installed and integrated
+- [x] **PROJECT_MAP.md updated** — reflects v12.0.0
 
 ### Completed — v11.0.0 (Multi-Tool Agent System)
 - [x] **Multi-tool agent system** — Aider (priority), Cline, Custom Agent with automatic fallback
