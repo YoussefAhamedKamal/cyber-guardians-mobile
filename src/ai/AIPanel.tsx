@@ -1125,6 +1125,8 @@ function StudentChat() {
         const pluginRequest = detectPluginRequest(userMsg.content)
         if (pluginRequest) {
           const plugin = usePluginStore.getState().plugins.find(p => p.id === pluginRequest.pluginId)
+          
+          // If plugin exists, try to execute it first
           if (plugin) {
             ai.setStudentStreaming(`🔌 جارٍ تنفيذ الأداة: ${plugin.name}...`)
             try {
@@ -1138,9 +1140,13 @@ function StudentChat() {
               ai.setLoading(false); ai.setStudentStreaming('')
               return
             } catch (err: any) {
-              // Real fallback: AI generation for images, video, and OCR
-              const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || userMsg.content
-              if (pluginRequest.pluginId === 'image_generator') {
+              // Plugin execution failed, fall through to built-in tools
+            }
+          }
+
+          // Built-in tools fallback (works even without plugins)
+          const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || userMsg.content
+          if (pluginRequest.pluginId === 'image_generator') {
                 const imgProvider = (pluginRequest.params.provider as any) || 'pollinations'
                 ai.setStudentStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
@@ -1232,12 +1238,10 @@ function StudentChat() {
                   }
                 }
               } else {
-                ai.addStudentMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة — أضف API للتنفيذ الحقيقي.` })
+                ai.addStudentMessage({ role: 'assistant', content: `⚠️ الأداة غير متوفرة حالياً` })
               }
               ai.setLoading(false); ai.setStudentStreaming('')
               return
-            }
-          }
         }
       }
 
@@ -1509,6 +1513,8 @@ function FacultyAIChat() {
         const pluginRequest = detectPluginRequest(lastUser.content)
         if (pluginRequest) {
           const plugin = usePluginStore.getState().plugins.find(p => p.id === pluginRequest.pluginId)
+          
+          // If plugin exists, try to execute it first
           if (plugin) {
             ai.setFacultyStreaming(`🔌 جارٍ تنفيذ الأداة: ${plugin.name}...`)
             try {
@@ -1522,8 +1528,13 @@ function FacultyAIChat() {
               ai.setLoading(false); ai.setFacultyStreaming('')
               return
             } catch (err: any) {
-              const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || lastUser.content
-              if (pluginRequest.pluginId === 'image_generator') {
+              // Plugin execution failed, fall through to built-in tools
+            }
+          }
+
+          // Built-in tools fallback (works even without plugins)
+          const prompt = pluginRequest.params.prompt || pluginRequest.params.expr || lastUser.content
+          if (pluginRequest.pluginId === 'image_generator') {
                 const imgProvider = (pluginRequest.params.provider as any) || 'pollinations'
                 ai.setFacultyStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
@@ -1614,12 +1625,10 @@ function FacultyAIChat() {
                   }
                 }
               } else {
-                ai.addFacultyMessage({ role: 'assistant', content: `✅ **${plugin.name}**: ${prompt}\n\n📌 الأداة تعمل في وضع المحاكاة.` })
+                ai.addFacultyMessage({ role: 'assistant', content: `⚠️ الأداة غير متوفرة حالياً` })
               }
               ai.setLoading(false); ai.setFacultyStreaming('')
               return
-            }
-          }
         }
       }
 
