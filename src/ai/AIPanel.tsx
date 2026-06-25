@@ -1167,7 +1167,7 @@ function StudentChat() {
                   ai.addStudentMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
                 }
               } else if (pluginRequest.pluginId === 'video_generator') {
-                const vidProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                const vidProvider = (pluginRequest.params.provider as any) || 'puter'
                 const vidModel = pluginRequest.params.model || undefined
                 ai.setStudentStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
                 try {
@@ -1564,7 +1564,7 @@ function FacultyAIChat() {
                   ai.addFacultyMessage({ role: 'assistant', content: `🖼️ **تم توليد وصف الصورة:**\n\n${prompt}\n\n⚠️ فشل توليد الصورة: ${imgErr.message}` })
                 }
               } else if (pluginRequest.pluginId === 'video_generator') {
-                const vidProvider = (pluginRequest.params.provider as any) || 'pollinations'
+                const vidProvider = (pluginRequest.params.provider as any) || 'puter'
                 const vidModel = pluginRequest.params.model || undefined
                 ai.setFacultyStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
                 try {

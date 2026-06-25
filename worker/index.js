@@ -19,6 +19,39 @@ export default {
       return new Response('ok', { headers: { ...corsHeaders, 'Content-Type': 'text/plain' } })
     }
 
+    // Web scraping endpoint
+    if (url.pathname === '/scrape') {
+      const scrapeUrl = url.searchParams.get('url')
+      if (!scrapeUrl) {
+        return new Response(JSON.stringify({ error: 'Missing ?url= parameter' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      try {
+        const resp = await fetch(scrapeUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CyberGuardiansBot/1.0)' },
+          signal: AbortSignal.timeout(15000),
+        })
+        if (!resp.ok) {
+          return new Response(JSON.stringify({ error: `HTTP ${resp.status}` }), {
+            status: resp.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          })
+        }
+        const html = await resp.text()
+        return new Response(JSON.stringify({ html, url: scrapeUrl }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
     const authToken = env.AUTH_TOKEN
     if (authToken) {
       const provided = request.headers.get('X-Auth-Token')

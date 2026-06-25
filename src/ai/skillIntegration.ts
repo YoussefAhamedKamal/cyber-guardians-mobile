@@ -4,6 +4,7 @@ import { useConnectorStore } from '@/store/connectorStore'
 import { useProjectStore } from '@/store/projectStore'
 import { useLocalAgentStore } from '@/store/localAgentStore'
 import { STUDENT_SYSTEM_PROMPT, FACULTY_SYSTEM_PROMPT } from './prompts'
+import { getWorkerUrl } from './api'
 
 function buildSkillsPluginsPrompt(basePrompt: string): string {
   const skillStore = useSkillStore.getState()
@@ -203,11 +204,28 @@ export async function generateImage(prompt: string, provider: ImageProvider = 'p
 
 // ==================== VIDEO GENERATION ====================
 
-async function generateVideoPollinations(prompt: string, model = 'veo', duration = 4): Promise<string> {
+async function generateVideoPuter(prompt: string, model = 'google/veo-2.0'): Promise<string> {
+  // Puter.js Veo API — free, no API key needed (client-side)
+  // @ts-ignore — Puter.js loaded dynamically
+  if (typeof puter === 'undefined') {
+    throw new Error('Puter.js not loaded — ضع <script src="https://js.puter.com/v2/"></script> في HTML')
+  }
+  // @ts-ignore
+  const blob = await puter.ai.txt2video(prompt, { model })
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function generateVideoPollinationsFallback(prompt: string, model = 'veo'): Promise<string> {
+  // Fallback: try Pollinations without auth (may fail with 401)
   const encoded = encodeURIComponent(prompt)
-  const url = `https://gen.pollinations.ai/video/${encoded}?model=${model}&duration=${duration}&nologo=true`
+  const url = `https://gen.pollinations.ai/video/${encoded}?model=${model}&duration=4&nologo=true`
   const response = await fetch(url)
-  if (!response.ok) throw new Error(`Pollinations Video API error: ${response.status}`)
+  if (!response.ok) throw new Error(`Pollinations Video API error: ${response.status} — جرب Puter.js أو أضف API key`)
   const blob = await response.blob()
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -217,55 +235,22 @@ async function generateVideoPollinations(prompt: string, model = 'veo', duration
   })
 }
 
-async function generateVideoStableDiffusion(prompt: string): Promise<string> {
-  // Use Pollinations with SVD/AnimateDiff models
-  const encoded = encodeURIComponent(prompt)
-  const url = `https://gen.pollinations.ai/video/${encoded}?model=wan-fast&duration=4&nologo=true`
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`Stable Video API error: ${response.status}`)
-  const blob = await response.blob()
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
-
-async function generateVideoLoreMotion(prompt: string): Promise<string> {
-  // LoreMotion uses LTX-Video — route through Pollinations ltx-2 model
-  const encoded = encodeURIComponent(prompt)
-  const url = `https://gen.pollinations.ai/video/${encoded}?model=ltx-2&duration=4&nologo=true`
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`LoreMotion API error: ${response.status}`)
-  const blob = await response.blob()
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
-
-export type VideoProvider = 'pollinations' | 'stable_diffusion' | 'loremotion'
+export type VideoProvider = 'puter' | 'pollinations'
 export const VIDEO_MODELS: Record<VideoProvider, string[]> = {
-  pollinations: ['veo', 'seedance-pro', 'seedance-2.0', 'wan', 'wan-fast', 'wan-pro', 'ltx-2', 'grok-video-pro', 'nova-reel'],
-  stable_diffusion: ['wan-fast', 'wan', 'ltx-2'],
-  loremotion: ['ltx-2'],
+  puter: ['google/veo-3.1-lite', 'google/veo-3.1', 'google/veo-3.0', 'google/veo-2.0'],
+  pollinations: ['veo', 'seedance-pro', 'wan', 'wan-fast', 'ltx-2'],
 }
 
 export async function generateVideo(
   prompt: string,
-  provider: VideoProvider = 'pollinations',
+  provider: VideoProvider = 'puter',
   model?: string,
   duration = 4
 ): Promise<string> {
-  const resolvedModel = model || (provider === 'pollinations' ? 'veo' : 'ltx-2')
   switch (provider) {
-    case 'stable_diffusion': return generateVideoStableDiffusion(prompt)
-    case 'loremotion': return generateVideoLoreMotion(prompt)
-    case 'pollinations':
-    default: return generateVideoPollinations(prompt, resolvedModel, duration)
+    case 'pollinations': return generateVideoPollinationsFallback(prompt, model || 'veo')
+    case 'puter':
+    default: return generateVideoPuter(prompt, model || 'google/veo-2.0')
   }
 }
 
@@ -377,11 +362,13 @@ export async function searchWeb(query: string): Promise<SearchResult[]> {
 // ==================== WEB SCRAPER ====================
 
 export async function scrapeWebPage(targetUrl: string): Promise<string> {
-  // Use CORS proxy to fetch external pages
+  // Use Worker proxy for scraping (primary) + CORS proxies as fallback
+  const workerUrl = await getWorkerUrl()
   const proxyUrls = [
+    workerUrl ? `${workerUrl}/scrape?url=${encodeURIComponent(targetUrl)}` : null,
+    `https://api.cors.lol/?url=${encodeURIComponent(targetUrl)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-  ]
+  ].filter(Boolean) as string[]
 
   let lastError: Error | null = null
 
@@ -390,8 +377,16 @@ export async function scrapeWebPage(targetUrl: string): Promise<string> {
       const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) })
       if (!response.ok) continue
 
-      const html = await response.text()
-      return extractContentFromHtml(html, targetUrl)
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await response.json()
+        if (data.html) {
+          return extractContentFromHtml(data.html, targetUrl)
+        }
+      } else {
+        const html = await response.text()
+        return extractContentFromHtml(html, targetUrl)
+      }
     } catch (err: any) {
       lastError = err
       continue
@@ -624,18 +619,17 @@ export function detectPluginRequest(message: string): { pluginId: string; endpoi
         },
         provider: (msg): string | null => {
           const lower = msg.toLowerCase()
-          if (lower.includes('loremotion') || lower.includes('لور موشن')) return 'loremotion'
-          if (lower.includes('stable') || lower.includes('ستايبل')) return 'stable_diffusion'
-          return 'pollinations'
+          if (lower.includes('pollinations')) return 'pollinations'
+          return 'puter'
         },
         model: (msg): string | null => {
           const lower = msg.toLowerCase()
-          if (lower.includes('veo')) return 'veo'
-          if (lower.includes('seedance')) return 'seedance-pro'
+          if (lower.includes('veo 3.1 lite')) return 'google/veo-3.1-lite'
+          if (lower.includes('veo 3.1')) return 'google/veo-3.1'
+          if (lower.includes('veo 3')) return 'google/veo-3.0'
+          if (lower.includes('veo')) return 'google/veo-2.0'
           if (lower.includes('wan')) return 'wan'
           if (lower.includes('ltx')) return 'ltx-2'
-          if (lower.includes('grok')) return 'grok-video-pro'
-          if (lower.includes('nova')) return 'nova-reel'
           return null
         }
       }
