@@ -849,7 +849,7 @@ function MarkdownContent({ content }: { content: string }) {
   )
 }
 
-function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: number; onEdit?: (idx: number, content: string) => void; onRegenerate?: (idx: number) => void }) {
+function Bubble({ msg, index, onEdit, onRegenerate, onImageLoad }: { msg: AIMessage; index?: number; onEdit?: (idx: number, content: string) => void; onRegenerate?: (idx: number) => void; onImageLoad?: () => void }) {
   const isUser = msg.role === 'user'
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(msg.content)
@@ -882,14 +882,14 @@ function Bubble({ msg, index, onEdit, onRegenerate }: { msg: AIMessage; index?: 
               <div style={{ fontSize: '13px', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {msg.content}
                 {msg.attachments?.filter((a) => a.type === 'image').map((att, i) => (
-                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} />
+                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} onLoad={onImageLoad} onError={onImageLoad} />
                 ))}
               </div>
             ) : (
               <>
                 <MarkdownContent content={msg.content} />
                 {msg.attachments?.filter((a) => a.type === 'image').map((att, i) => (
-                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} />
+                  <img key={i} src={att.content} alt={att.name} style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '8px', marginTop: '6px', display: 'block' }} onLoad={onImageLoad} onError={onImageLoad} />
                 ))}
               </>
             )}
@@ -1076,6 +1076,7 @@ function StudentChat() {
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const [canvasOpen, setCanvasOpen] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveStudentSession()
   const messages = session?.messages || []
@@ -1151,9 +1152,15 @@ function StudentChat() {
                 ai.setStudentStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
                   const imageDataUrl = await generateImage(prompt, imgProvider)
+                  setImageLoading(true)
+                  const encodedPrompt = encodeURIComponent(prompt)
+                  const imageUrl = imgProvider === 'pollinations' || imgProvider === 'stable_diffusion'
+                    ? `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`
+                    : ''
+                  const linkLine = imageUrl ? `\n\n🔗 [رابط الصورة الأصلية](${imageUrl})` : ''
                   ai.addStudentMessage({
                     role: 'assistant',
-                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}`,
+                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}${linkLine}`,
                     attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
                   })
                 } catch (imgErr: any) {
@@ -1165,6 +1172,7 @@ function StudentChat() {
                 ai.setStudentStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
                 try {
                   const videoDataUrl = await generateVideo(prompt, vidProvider, vidModel)
+                  setImageLoading(true)
                   ai.addStudentMessage({
                     role: 'assistant',
                     content: `🎬 **فيديو مولّد** (${vidProvider}${vidModel ? ' / ' + vidModel : ''}):\n\n${prompt}`,
@@ -1204,6 +1212,7 @@ function StudentChat() {
                     chartData = { labels: ['بيانات'], datasets: [{ label: 'قيم', data: [1] }] }
                   }
                   const chartImage = await generateChart(chartData, chartType, chartTitle || prompt)
+                  setImageLoading(true)
                   ai.addStudentMessage({
                     role: 'assistant',
                     content: `📊 **رسم بياني** (${chartType}):\n\n${chartTitle || prompt}`,
@@ -1383,8 +1392,8 @@ function StudentChat() {
       <SessionBar type="student" />
       <div style={{ flex: 1, overflow: 'auto', padding: '8px' }}>
         {messages.length === 0 && !streaming && <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginTop: '40px' }}>اسأل عن أي موضوع — أمن سيبراني، علوم، تكنولوجيا، تاريخ، أو أي شيء آخر</div>}
-        {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
-        {streaming && <Bubble msg={{ role: 'assistant', content: streaming }} />}
+        {messages.map((msg, i) => <Bubble key={i} msg={msg} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} onImageLoad={() => setImageLoading(false)} />)}
+        {(streaming || imageLoading) && <Bubble msg={{ role: 'assistant', content: imageLoading ? '🖼️ جارٍ تحميل الصورة...' : streaming }} />}
         <div ref={bottomRef} />
       </div>
       {pendingAttachments.length > 0 && (
@@ -1484,6 +1493,7 @@ function FacultyAIChat() {
   const [applyStatus, setApplyStatus] = useState<string[]>([])
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([])
   const [canvasOpen, setCanvasOpen] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const session = ai.getActiveFacultySession()
   const msgHistory = session?.messages || []
@@ -1539,9 +1549,15 @@ function FacultyAIChat() {
                 ai.setFacultyStreaming(`🖼️ جارٍ توليد الصورة (${imgProvider})...`)
                 try {
                   const imageDataUrl = await generateImage(prompt, imgProvider)
+                  setImageLoading(true)
+                  const encodedPrompt = encodeURIComponent(prompt)
+                  const imageUrl = imgProvider === 'pollinations' || imgProvider === 'stable_diffusion'
+                    ? `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`
+                    : ''
+                  const linkLine = imageUrl ? `\n\n🔗 [رابط الصورة الأصلية](${imageUrl})` : ''
                   ai.addFacultyMessage({
                     role: 'assistant',
-                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}`,
+                    content: `🖼️ **صورة مولّدة** (${imgProvider}):\n\n${prompt}${linkLine}`,
                     attachments: [{ name: 'generated-image.png', type: 'image', content: imageDataUrl, mimeType: 'image/png', uploadStatus: 'success' }]
                   })
                 } catch (imgErr: any) {
@@ -1553,6 +1569,7 @@ function FacultyAIChat() {
                 ai.setFacultyStreaming(`🎬 جارٍ توليد الفيديو (${vidProvider})...`)
                 try {
                   const videoDataUrl = await generateVideo(prompt, vidProvider, vidModel)
+                  setImageLoading(true)
                   ai.addFacultyMessage({
                     role: 'assistant',
                     content: `🎬 **فيديو مولّد** (${vidProvider}${vidModel ? ' / ' + vidModel : ''}):\n\n${prompt}`,
@@ -1591,6 +1608,7 @@ function FacultyAIChat() {
                     chartData = { labels: ['بيانات'], datasets: [{ label: 'قيم', data: [1] }] }
                   }
                   const chartImage = await generateChart(chartData, chartType, chartTitle || prompt)
+                  setImageLoading(true)
                   ai.addFacultyMessage({
                     role: 'assistant',
                     content: `📊 **رسم بياني** (${chartType}):\n\n${chartTitle || prompt}`,
@@ -1778,8 +1796,8 @@ function FacultyAIChat() {
             <span style={{ fontSize: '11px', color: '#555' }}>مثال: غيّر عنوان المستوى الأول، أضف شخصية جديدة، احذف مستوى 7</span>
           </div>
         )}
-        {msgHistory.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} />)}
-        {streaming && <Bubble msg={{ role: 'assistant', content: getDisplayText(streaming) }} />}
+        {msgHistory.map((m, i) => <Bubble key={i} msg={m} index={i} onEdit={handleEdit} onRegenerate={handleRegenerate} onImageLoad={() => setImageLoading(false)} />)}
+        {(streaming || imageLoading) && <Bubble msg={{ role: 'assistant', content: imageLoading ? '🖼️ جارٍ تحميل الصورة...' : getDisplayText(streaming) }} />}
         <div ref={bottomRef} />
       </div>
       {pendingAttachments.length > 0 && (
